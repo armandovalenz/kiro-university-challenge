@@ -8,11 +8,11 @@ This plan implements Math Man as a Phaser 3 + Vite browser game, ordered so the 
 
 - [ ] 1. Scaffold the Phaser + Vite project
   - Create `package.json` with pinned `phaser` and `vite` (and `vitest` as an optional devDependency).
-  - Add `vite.config.js` and an `index.html` that hosts a `#game` container and a DOM overlay root for modals.
+  - Add `vite.config.js` and an `index.html` that hosts a `#game` container and a DOM overlay root for modals, and references `public/assets/images/03_app_icon.png` as the favicon.
   - Create `src/main.js` with the `Phaser.Game` config (`Phaser.AUTO`, Arcade physics, FIT scale mode) and an empty scene list placeholder.
-  - Create `src/config.js` with core constants: `TILE_SIZE`, entity speeds, `LIVES_START = 6`, `LIVES_MAX = 10`, ghost colors, timings, storage key `mathman.v1`.
+  - Create `src/config.js` with core constants: `TILE_SIZE`, entity speeds, `LIVES_START = 6`, `LIVES_MAX = 10`, ghost colors, timings, storage key `mathman.v1`, and asset key/path definitions for the images in `public/assets/images/` (see `ASSETS.md`).
   - Verify `npm install` and `npm run dev` serve a blank Phaser canvas.
-  - _Requirements: 8.1, 8.2, 8.3, 8.5_
+  - _Requirements: 8.1, 8.2, 8.3, 8.5, 11.5_
 
 - [ ] 2. Implement the Storage module with in-memory fallback
   - Create `src/systems/Storage.js` wrapping `localStorage` under the `mathman.v1` key.
@@ -27,46 +27,47 @@ This plan implements Math Man as a Phaser 3 + Vite browser game, ordered so the 
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
 
 - [ ] 4. Build the BootScene and asset preload pipeline
-  - Create `src/scenes/BootScene.js` that preloads images (logo, sprites, tiles) and audio (`.mp3` keys from the audio mapping), using placeholder assets where final art is missing.
-  - Register a Phaser loader error handler that marks missing assets so later code can fall back gracefully.
-  - Initialize `Storage` and transition to `SplashScene`.
-  - _Requirements: 8.2, 11.1, 12.3, 12.7_
+  - Create `src/scenes/BootScene.js` that preloads the image assets from `public/assets/images/` — `02_logo.png`, `09_hero_einstein_enemies.png`, `06_ui_kit.png` as images, and `04_mascot_sprite_sheet.png` + `05_collectibles_and_math_icons.png` as spritesheets/atlases (define frame size or a JSON atlas) — plus the audio keys from the mapping (WAV files in `public/assets/audio/`).
+  - Register a Phaser loader error handler that marks missing assets so later code can fall back to drawn shapes/text.
+  - Initialize `Storage` and `AudioBus`, then transition to `SplashScene`.
+  - _Requirements: 8.2, 11.1, 12.3, 12.7, 13.1, 13.2, 13.5_
 
 - [ ] 5. Build the SplashScene with the Math Man logo
-  - Create `src/scenes/SplashScene.js` that centers `logo.svg` with a short intro tween.
+  - Create `src/scenes/SplashScene.js` that centers the `02_logo.png` logo with a short intro tween.
   - Auto-advance to `MenuScene` after ~2s, or immediately on key/click.
   - Render a styled text title as a fallback if the logo asset failed to load.
-  - _Requirements: 7.1, 7.2, 11.1, 11.3_
+  - _Requirements: 7.1, 7.2, 11.1, 11.3, 13.5_
 
 - [ ] 6. Build the MenuScene with grade selection and high score
-  - Create `src/scenes/MenuScene.js` showing the logo/title, a Play button, a 5/6/7 grade selector, and the current high score from `Storage`.
+  - Create `src/scenes/MenuScene.js` showing the logo (`02_logo.png`) over the `09_hero_einstein_enemies.png` hero background, a Play button, a 5/6/7 grade selector, and the current high score from `Storage`. Style controls with the UI kit (`06_ui_kit.png`) where practical.
   - Default the grade selection to the persisted `lastDifficulty` (or 5th grade), and persist changes.
   - Starting a game passes the chosen grade to `GameScene`.
-  - _Requirements: 7.3, 7.4, 10.1, 10.2, 10.5, 11.2_
+  - _Requirements: 7.3, 7.4, 10.1, 10.2, 10.5, 11.2, 13.3_
 
 - [ ] 7. Implement the Maze model and tilemap
   - Create `src/maze/mazeData.js` (tile-code rows) and `src/maze/Maze.js` that builds a Phaser Tilemap with a wall collision layer.
   - Implement helpers: `isWall`, `tileToWorld`, `worldToTile`, `wrapIfTunnel`, `pelletCount`, `eatPelletAt`, and `reset(level)`.
-  - Spawn pellets and fruit points as sprite groups from the tile codes.
-  - _Requirements: 1.1, 1.3, 1.5_
+  - Spawn pellets and fruit points as sprite groups from the tile codes, using icons from `05_collectibles_and_math_icons.png`.
+  - _Requirements: 1.1, 1.3, 1.5, 13.2_
 
 - [ ] 8. Implement Math Man with grid-locked movement and input
-  - Create `src/entities/MathMan.js` as a Phaser sprite with `direction`/`nextDirection`/`speed`.
+  - Create `src/entities/MathMan.js` as a Phaser sprite using frames from `04_mascot_sprite_sheet.png`, with `direction`/`nextDirection`/`speed`.
+  - Define the sprite-sheet frame config/animations; fall back to a drawn wedge if the sheet is missing.
   - Implement turn-buffered grid movement: change direction only when tile-centered and the target tile is not a wall; block on walls; wrap tunnels.
-  - Wire arrow keys / WASD in `GameScene` to set the queued direction; add the mouth-open/close animation facing the direction.
-  - _Requirements: 1.2, 1.3, 8.4_
+  - Wire arrow keys / WASD in `GameScene` to set the queued direction; play the movement/mouth animation facing the direction.
+  - _Requirements: 1.2, 1.3, 8.4, 13.1, 13.5_
 
 - [ ] 9. Wire pellet collection, scoring, and the HUD (UIScene)
   - Create `src/scenes/GameScene.js` that builds the maze and Math Man and runs the gameplay `update()`.
   - Use Arcade overlap to eat pellets, remove them, and call `ScoreSystem.addScore`.
-  - Create `src/scenes/UIScene.js` run in parallel to display score, lives, and level, updating on `ScoreSystem` events.
-  - _Requirements: 1.1, 1.4, 1.6_
+  - Create `src/scenes/UIScene.js` run in parallel to display score, lives (life icons from `05_collectibles_and_math_icons.png`), and level, styled with the UI kit (`06_ui_kit.png`) and updating on `ScoreSystem` events.
+  - _Requirements: 1.1, 1.4, 1.6, 13.2, 13.3_
 
 - [ ] 10. Implement Einstein ghosts and AI
   - Create `src/entities/Ghost.js` as a Phaser sprite with a color and a Pac-Man-style `personality` (red chase, pink ahead, cyan vector, orange chase/scatter).
   - Spawn four ghosts in distinct colors from the ghost house; compute non-reversing direction toward each ghost's target tile at tile centers.
-  - Render the Einstein motif (hair/mustache) per color; scale speed/cadence by selected grade.
-  - _Requirements: 3.1, 3.2, 3.5, 3.6, 10.4_
+  - Render the Einstein motif (hair/mustache) per color, consistent with the concept art (`08_poster_einstein_enemies.png` / `09_hero_einstein_enemies.png`), with a tinted drawn-ghost fallback; scale speed/cadence by selected grade.
+  - _Requirements: 3.1, 3.2, 3.5, 3.6, 10.4, 13.4, 13.5_
 
 - [ ] 11. Implement ghost/Math Man collision and reset
   - Add Arcade overlap between ghosts and Math Man that emits a `mathman-caught` event.
@@ -80,13 +81,13 @@ This plan implements Math Man as a Phaser 3 + Vite browser game, ordered so the 
   - _Requirements: 4.1, 4.2, 4.7_
 
 - [ ] 13. Build the QuizScene, QuizModal, and QuizSystem
-  - Create `src/ui/QuizModal.js` (accessible DOM form: prompt, multiple-choice options, numeric entry where needed, keyboard 1-4/arrows + Enter).
+  - Create `src/ui/QuizModal.js` (accessible DOM form: prompt, multiple-choice options, numeric entry where needed, keyboard 1-4/arrows + Enter), styled with UI-kit cues from `06_ui_kit.png`.
   - Create `src/scenes/QuizScene.js` that pauses `GameScene`, opens the modal with a `QuestionBank` question, and blocks movement while open.
   - Create `src/systems/QuizSystem.js` to check the answer: correct -> resume with no life lost; wrong -> show correct answer + explanation, `loseLife()`, then resume or go to game over; update `quizStats` in `Storage`.
   - _Requirements: 4.1, 4.3, 4.4, 4.5, 4.6, 6.6_
 
 - [ ] 14. Implement fruit, LessonBank, and the LessonScene
-  - Create `src/entities/Fruit.js` that spawns at an `F` tile on a timer or pellet threshold.
+  - Create `src/entities/Fruit.js` that spawns at an `F` tile on a timer or pellet threshold, drawn from a fruit icon in `05_collectibles_and_math_icons.png`.
   - Create `src/systems/LessonBank.js` with tagged math/science micro-lessons that vary between showings.
   - On fruit overlap, call `ScoreSystem.gainLife()` (capped at 10) and launch `src/scenes/LessonScene.js` (DOM panel via `src/ui/LessonModal.js`) that pauses the game and resumes on dismiss.
   - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 2.4, 2.5_
@@ -114,9 +115,10 @@ This plan implements Math Man as a Phaser 3 + Vite browser game, ordered so the 
 
 - [ ] 19. Accessibility, fallbacks, and final verification
   - Ensure quiz/lesson modals are keyboard-operable and dismissible, with sufficient contrast; add visible life gain/loss feedback.
-  - Confirm graceful fallbacks: missing logo -> text title, missing audio -> silent, blocked/absent `localStorage` -> in-memory records.
+  - Confirm graceful fallbacks: missing logo/sprite art -> drawn shapes/text, missing audio -> silent, blocked/absent `localStorage` -> in-memory records.
+  - Produce optimized/resized copies of the large source PNGs for runtime to keep load times reasonable.
   - Run `npm run build` and smoke-test the production build on Chrome, Firefox, Safari, and Edge.
-  - _Requirements: 9.1, 9.2, 9.3, 6.5, 11.3, 8.1, 8.5_
+  - _Requirements: 9.1, 9.2, 9.3, 6.5, 11.3, 13.5, 13.6, 8.1, 8.5_
 
 ## Task Dependency Graph
 

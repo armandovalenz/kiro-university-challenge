@@ -152,16 +152,31 @@ The game targets modern browsers (Chrome, Firefox, Safari, Edge), requires no lo
 5. THE system SHALL persist the last selected difficulty in `localStorage` and preselect it on the next visit.
 6. THE system SHALL maintain a single global high score across all difficulty levels.
 
-### Requirement 11: Branding and Splash Logo
+### Requirement 11: Branding and Visual Assets
 
-**User Story:** As a player, I want a recognizable Math Man logo and identity, so that the game feels complete and memorable.
+**User Story:** As a player, I want a recognizable Math Man logo and consistent art, so that the game feels complete and memorable.
 
 #### Acceptance Criteria
 
-1. THE system SHALL display a Math Man logo on the splash screen.
-2. THE system SHALL show the Math Man branding (logo or title) on the start menu.
-3. THE logo SHALL be delivered as a web-friendly asset (e.g., SVG or PNG) or rendered on the canvas, and SHALL scale without breaking layout.
-4. THE branding SHALL visually reflect the math/education theme (e.g., a Pac-Man-style character combined with a math motif).
+1. THE system SHALL display the Math Man logo (`public/assets/images/02_logo.png`) on the splash screen.
+2. THE system SHALL show the Math Man branding (logo, and optionally the hero image `09_hero_einstein_enemies.png`) on the start menu.
+3. THE logo and other image assets SHALL be delivered as web-friendly files (the provided PNGs, optionally optimized/exported to SVG) and SHALL scale without breaking layout.
+4. THE branding SHALL visually reflect the math/education theme (a Pac-Man-style character combined with a math motif), consistent with the provided art.
+5. THE system SHALL use the app icon (`03_app_icon.png`) as the source for the browser favicon and any PWA icon.
+6. THE provided image assets and their intended uses SHALL be documented in `public/assets/images/ASSETS.md`.
+
+### Requirement 13: Sprites and In-Game Art
+
+**User Story:** As a player, I want the characters and items drawn with real art rather than plain shapes, so that the game looks polished.
+
+#### Acceptance Criteria
+
+1. THE system SHALL render Math Man using frames from the mascot sprite sheet (`04_mascot_sprite_sheet.png`) for movement/pose animation.
+2. THE system SHALL render pellets, fruit, and life icons using the collectibles/math icon art (`05_collectibles_and_math_icons.png`).
+3. THE system SHALL style the HUD, buttons, and quiz/lesson panels using the UI kit art (`06_ui_kit.png`) where practical.
+4. THE Einstein ghosts SHALL be rendered with distinct colors and an Einstein motif, consistent with the provided concept art (`08_poster_einstein_enemies.png`, `09_hero_einstein_enemies.png`).
+5. IF an image asset fails to load THEN the system SHALL fall back to a simple drawn shape or text so gameplay continues (see Requirement 9 and error handling).
+6. THE system SHOULD use optimized/resized versions of the large source PNGs to keep load times reasonable.
 
 ### Requirement 12: Music and Sound Effects
 

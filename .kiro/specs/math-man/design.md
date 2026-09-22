@@ -40,6 +40,81 @@ Rendering, menus, and gameplay are handled by Phaser Scenes. Text-heavy, accessi
 
 Phaser is loaded as an npm dependency and pinned to an exact version in `package.json`.
 
+## System Architecture
+
+High-level component view: the Phaser game owns the scenes; scenes read/write the framework-agnostic systems; systems talk to the browser (localStorage, Web Audio) and the DOM overlays sit above the canvas.
+
+```mermaid
+graph TD
+  subgraph Browser
+    DOM["DOM overlays<br/>(QuizModal, LessonModal)"]
+    Canvas["Canvas / WebGL surface"]
+    LS[("localStorage")]
+    WA["Web Audio"]
+  end
+
+  subgraph PhaserGame["Phaser.Game (main.js + config.js)"]
+    SM["Scene Manager"]
+    subgraph Scenes
+      Boot[BootScene]
+      Splash[SplashScene]
+      Menu[MenuScene]
+      Game[GameScene]
+      UI[UIScene]
+      Quiz[QuizScene]
+      Lesson[LessonScene]
+      Pause[PauseScene]
+      Over[GameOverScene]
+    end
+    subgraph Entities
+      MM[MathMan]
+      GH[Ghost x4]
+      FR[Fruit]
+    end
+    Maze["Maze / mazeData<br/>(tilemap + helpers)"]
+  end
+
+  subgraph Systems["Systems (framework-agnostic unless noted)"]
+    Score[ScoreSystem]
+    QSys[QuizSystem]
+    QBank[QuestionBank]
+    LBank[LessonBank]
+    Store[Storage]
+    Audio["AudioBus (Phaser sound)"]
+  end
+
+  subgraph Assets["public/assets"]
+    Img["images/ (logo, sprite sheets, UI kit)"]
+    Aud["audio/ (Pac-Man WAV)"]
+  end
+
+  SM --> Scenes
+  Boot -->|preload| Img
+  Boot -->|preload| Aud
+  Game --> Entities
+  Game --> Maze
+  Game --> Canvas
+  UI --> Canvas
+  Quiz --> DOM
+  Lesson --> DOM
+
+  Game --> Score
+  Quiz --> QSys
+  QSys --> QBank
+  QSys --> Score
+  QSys --> Store
+  Lesson --> LBank
+  FR --> Score
+  Menu --> Store
+  Over --> Store
+  UI --> Score
+
+  Store --> LS
+  Audio --> WA
+  Boot --> Audio
+  Boot --> Store
+```
+
 ## Project Structure
 
 ```
@@ -48,8 +123,15 @@ package.json               # phaser (pinned), vite, (optional) vitest
 vite.config.js
 public/
   assets/
-    images/                # logo.svg, mathman/ghost/fruit sprites, tiles
-    audio/                 # *.mp3 music + sfx (see Audio System)
+    images/                # Math Man art (see Image Assets section) + ASSETS.md
+      02_logo.png          #   logo (splash/menu)
+      03_app_icon.png      #   favicon / PWA icon source
+      04_mascot_sprite_sheet.png   # Math Man animation frames
+      05_collectibles_and_math_icons.png  # pellets, fruit, life icons
+      06_ui_kit.png        #   HUD, buttons, modal styling
+      09_hero_einstein_enemies.png # title/menu hero
+      ...                  #   posters/hero originals for marketing
+    audio/                 # Pac-Man *.wav music + sfx (+ NOTICE.md; see Audio System)
 src/
   main.js                  # Phaser.Game config; registers scene list
   config.js                # Constants: tile size, speeds, LIVES_START=6, LIVES_MAX=10, colors, timings
@@ -64,9 +146,9 @@ src/
     PauseScene.js          # Pause overlay
     GameOverScene.js       # Final + high score; restart or menu
   entities/
-    MathMan.js             # Player sprite: grid movement, direction buffering, animation
-    Ghost.js               # Einstein ghost sprite: color, AI personality, movement
-    Fruit.js               # Fruit sprite: spawn, collect
+    MathMan.js             # Player sprite (frames from 04_mascot_sprite_sheet.png): movement, animation
+    Ghost.js               # Einstein ghost sprite: per-color frames, AI personality, movement
+    Fruit.js               # Fruit sprite (from 05_collectibles_and_math_icons.png): spawn, collect
   maze/
     mazeData.js            # Tile layouts (per level)
     Maze.js                # Tilemap build + helpers: isWall, tile<->pixel, tunnel wrap, pellets
@@ -83,6 +165,27 @@ src/
 ```
 
 `QuestionBank`, `LessonBank`, `ScoreSystem`, `Storage`, and the pure helpers in `Maze` are framework-agnostic (no Phaser imports) so they stay unit-testable and reusable.
+
+## Image Assets
+
+Art lives in `public/assets/images/` (catalogued in `ASSETS.md`). These PNGs were AI-generated for the project; they are loaded in `BootScene` and mapped to game elements as follows.
+
+| File | Role in game | Loaded as |
+|------|--------------|-----------|
+| `02_logo.png` | Logo on SplashScene and MenuScene (Req 11.1, 11.2) | image |
+| `03_app_icon.png` | Favicon / PWA icon (Req 11.5) | referenced from `index.html` / manifest |
+| `04_mascot_sprite_sheet.png` | Math Man movement/pose frames (Req 13.1) | spritesheet / atlas |
+| `05_collectibles_and_math_icons.png` | Pellets, fruit, life icons (Req 13.2) | spritesheet / atlas |
+| `06_ui_kit.png` | HUD, buttons, modal styling cues (Req 13.3) | image / 9-slice where useful |
+| `08_poster_einstein_enemies.png` | Ghost concept reference; marketing | image (menu/marketing) |
+| `09_hero_einstein_enemies.png` | Title/menu hero background (Req 11.2) | image |
+| `01_poster_original.png`, `07_hero_original.png` | Original concept/marketing art | not required at runtime |
+
+Implementation notes:
+
+- The mascot and collectibles sheets need frame definitions (either fixed-size `spritesheet` frames or a JSON `atlas`); the exact frame size/coordinates are established when wiring animations in the entity tasks.
+- Source PNGs are high-resolution (~1.5-2 MB each); optimized/resized copies should be produced for runtime to keep load times reasonable (Req 11.3, 13.6).
+- Every image load is guarded: on failure the game falls back to drawn shapes/text so it still boots and plays (Req 13.5; see Error Handling).
 
 ## Scene Architecture (replaces the manual state machine)
 
@@ -102,6 +205,32 @@ BootScene ──> SplashScene ──> MenuScene ──> GameScene (+ UIScene par
                             GameOverScene ── menu ────> MenuScene
 ```
 
+The same flow as a state diagram:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Boot
+  Boot --> Splash
+  Splash --> Menu
+  Menu --> Playing: start(grade)
+  Playing --> Paused: P / Esc
+  Paused --> Playing: P / Esc
+  Playing --> Quiz: Einstein catches Math Man
+  Quiz --> Playing: correct, or wrong with lives left
+  Quiz --> GameOver: wrong and lives == 0
+  Playing --> Lesson: fruit collected
+  Lesson --> Playing: dismiss
+  Playing --> Playing: level cleared (next level)
+  Playing --> GameOver: lives == 0
+  GameOver --> Playing: restart
+  GameOver --> Menu: menu
+  note right of Quiz
+    GameScene is paused while
+    Quiz / Lesson / Paused is open
+    (entity movement frozen)
+  end note
+```
+
 | Scene | Runs GameScene? | Responsibility |
 |-------|-----------------|----------------|
 | BootScene | — | Preload assets, init Storage + AudioBus, then start Splash. |
@@ -115,6 +244,79 @@ BootScene ──> SplashScene ──> MenuScene ──> GameScene (+ UIScene par
 | GameOverScene | stopped | Final + high score; restart or menu (Req 7.6). |
 
 When `QuizScene`/`LessonScene`/`PauseScene` launch, they call `this.scene.pause('GameScene')`, which halts its `update()` — freezing all entity movement (satisfies Req 3.3, 4.6, 5.4). The frozen frame remains rendered underneath.
+
+## Event Flow
+
+Key runtime interactions between the scenes and systems. Each overlap/collision is detected in `GameScene.update()` and routed to the relevant system, with `AudioBus` firing the matching cue.
+
+### Gameplay collisions and outcomes
+
+```mermaid
+flowchart TD
+  U[Player input: arrows / WASD] --> MV[MathMan grid move]
+  MV --> OV{Overlap?}
+  OV -->|pellet| P[Maze.eatPelletAt + ScoreSystem.addScore + sfx_pellet]
+  P --> PC{pellets == 0?}
+  PC -->|yes| LC[Level clear: sfx_level_clear -> ScoreSystem.nextLevel -> Maze.reset]
+  PC -->|no| MV
+  OV -->|fruit| F[ScoreSystem.gainLife capped 10 + sfx_1up -> LessonScene]
+  F --> LR[Show lesson -> dismiss -> resume]
+  OV -->|Einstein ghost| C[sfx_caught -> pause GameScene -> QuizScene]
+  C --> Q{Answer correct?}
+  Q -->|yes| QR[sfx_correct -> resume, no life lost]
+  Q -->|no| QW[sfx_wrong -> ScoreSystem.loseLife + show explanation]
+  QW --> GO{lives == 0?}
+  GO -->|yes| GOV[sfx_death/game over -> GameOverScene -> Storage.updateHighScore]
+  GO -->|no| RS[reset positions -> resume]
+```
+
+### Einstein quiz sequence
+
+```mermaid
+sequenceDiagram
+  participant G as GameScene
+  participant Gh as Ghost
+  participant AB as AudioBus
+  participant QS as QuizScene
+  participant QB as QuestionBank
+  participant Q as QuizSystem
+  participant SC as ScoreSystem
+  participant ST as Storage
+
+  Gh->>G: overlap -> "mathman-caught"
+  G->>AB: sfx("sfx_caught")
+  G->>QS: pause GameScene, launch QuizScene(grade)
+  QS->>QB: next(grade, recentIds)
+  QB-->>QS: question (prompt, choices, answerIndex, explanation)
+  QS->>QS: render accessible DOM modal
+  Note over QS: player selects an answer (keyboard/mouse)
+  QS->>Q: check(answer)
+  alt correct
+    Q->>AB: sfx("sfx_correct")
+    Q->>ST: quizStats.correct++
+    Q-->>G: resume (no life lost)
+  else incorrect
+    Q->>AB: sfx("sfx_wrong")
+    Q->>SC: loseLife()
+    Q->>ST: quizStats.answered++
+    alt lives == 0
+      Q-->>G: -> GameOverScene
+    else lives remain
+      Q-->>G: show explanation -> reset -> resume
+    end
+  end
+```
+
+### Audio unlock and mute
+
+```mermaid
+flowchart LR
+  Boot[BootScene preload audio] --> Lock[Sound locked by autoplay policy]
+  Lock -->|first key/click| Unlock[AudioBus starts music]
+  Mkey["M key"] --> Mute[AudioBus.setMuted toggle]
+  Mute --> Persist[Storage.audioMuted]
+  Persist --> Restore[Restored on next visit]
+```
 
 ## Game Loop and Movement
 
@@ -150,7 +352,7 @@ The maze is defined in `mazeData.js` as rows of tile codes and built into a Phas
 - `wrapIfTunnel(entity)` — horizontal wrap-around at tunnel edges.
 - `reset(level)` — rebuild pellet layer (and optionally swap layout) for the next level.
 
-Pellets and fruit render as Phaser sprites/images in groups above the tile layer; Math Man and ghosts render above pellets.
+Pellets and fruit render as Phaser sprites/images in groups above the tile layer, using icons cut from `05_collectibles_and_math_icons.png` (Req 13.2); Math Man and ghosts render above pellets.
 
 ## Entities
 
@@ -161,7 +363,7 @@ Entities extend Phaser sprite/GameObject classes so they participate in the disp
 - Fields: `direction`, `nextDirection`, `speed` (from `config.js`).
 - `setDirection(dir)` queues `nextDirection`; applied when tile-centered and unobstructed.
 - `preUpdate`/scene `update` advances along `direction`, calls `Maze.wrapIfTunnel`, and relies on Arcade overlap for pellet/fruit pickup.
-- Animation: Phaser sprite animation for the opening/closing wedge mouth, flipped/rotated to face `direction`.
+- Animation: frames sliced from `04_mascot_sprite_sheet.png` (loaded as a Phaser spritesheet/atlas) drive the movement/mouth animation, flipped/rotated to face `direction`. Falls back to a drawn wedge if the sheet fails to load (Req 13.1, 13.5).
 
 ### Ghost (Einstein)
 
@@ -172,13 +374,13 @@ Entities extend Phaser sprite/GameObject classes so they participate in the disp
   - Cyan — vector target using Math Man and the red ghost.
   - Orange — chase when far, retreat to a corner when close.
 - At each tile center, choose the non-reversing direction minimizing distance to the current target tile.
-- Appearance: colored ghost body plus an Einstein motif (wild white hair, small mustache) so every ghost reads as Einstein while staying color-distinct (Req 3.5). Implemented as per-color sprite frames.
+- Appearance: colored ghost body plus an Einstein motif (wild white hair, small mustache) so every ghost reads as Einstein while staying color-distinct (Req 3.5, 13.4). Implemented as per-color sprite frames, consistent with the concept art (`08_poster_einstein_enemies.png`, `09_hero_einstein_enemies.png`); falls back to a tinted drawn ghost if art is missing.
 - Difficulty scales `speed` and chase/scatter cadence (Req 3.6, 10.4).
 - On overlap with Math Man → emit a `mathman-caught` event; `GameScene` launches `QuizScene`.
 
 ### Fruit
 
-- Spawns at an `F` tile on a timer or after a pellet threshold (configurable in `config.js`; Req 5.1). Spawn plays the "fruit spawned" cue.
+- Spawns at an `F` tile on a timer or after a pellet threshold (configurable in `config.js`; Req 5.1), drawn from a fruit icon in `05_collectibles_and_math_icons.png`. Spawn plays the "fruit spawned" cue.
 - On overlap with Math Man → `ScoreSystem.gainLife()` (capped at 10), then `GameScene` launches `LessonScene` with a `LessonBank` entry (Req 5.2, 5.3).
 
 ## Educational Systems
@@ -319,10 +521,11 @@ Because each scene owns its input, the same physical key does the right thing pe
 
 ## Branding / Logo
 
-- `public/assets/images/logo.svg`: a Pac-Man-style wedge character paired with a math motif (e.g., "+ − × ÷" or √) plus the "MATH MAN" wordmark; SVG scales crisply (Req 11.3).
+- `public/assets/images/02_logo.png`: the Math Man logo (Pac-Man-style character + math motif + wordmark); an optimized/exported SVG or smaller PNG is preferred for crisp scaling (Req 11.1, 11.3).
 - `SplashScene` centers the logo with a short intro tween, then auto-advances (~2s) or on key/click (Req 7.1, 7.2).
-- `MenuScene` shows the logo/title above the Play button and grade selector (Req 11.2).
-- Fallback: if the logo asset fails to load, scenes render a styled text title so the game still boots.
+- `MenuScene` shows the logo above the Play button and grade selector, optionally over the `09_hero_einstein_enemies.png` hero background (Req 11.2).
+- `03_app_icon.png` is the source for the favicon/PWA icon, referenced from `index.html` (Req 11.5).
+- Fallback: if the logo asset fails to load, scenes render a styled text title so the game still boots (Req 13.5).
 
 ## Error Handling
 
