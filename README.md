@@ -122,3 +122,27 @@ Detailed design and requirements live under [`.kiro/specs/math-man/`](.kiro/spec
 - [`requirements.md`](.kiro/specs/math-man/requirements.md) — user stories and acceptance criteria
 - [`design.md`](.kiro/specs/math-man/design.md) — architecture and technical design
 - [`tasks.md`](.kiro/specs/math-man/tasks.md) — the incremental implementation plan
+
+## Credits & Attribution
+
+### Audio — demo use only (non-commercial)
+
+The sound effects and music are the original **Namco Pac-Man** arcade sounds, sourced from [The Spriters Resource](https://sounds.spriters-resource.com/arcade/pacman/asset/404131/).
+
+- These audio files are **© Namco / Bandai Namco Entertainment** and remain the property of their respective owner.
+- They are included here **strictly for demonstration, educational, and prototyping purposes only**.
+- **Do NOT use these audio assets for any commercial purpose.** They are not covered by this project's MIT license.
+- Before any public or commercial release, **replace them with original or appropriately licensed audio**. The `AudioBus` uses stable keys, so swapping files is a drop-in change (see [`design.md`](.kiro/specs/math-man/design.md)).
+
+See [`public/assets/audio/NOTICE.md`](public/assets/audio/NOTICE.md) for the attribution that ships alongside the audio files.
+
+### Other
+
+- Built with [Phaser 3](https://phaser.io/) and [Vite](https://vitejs.dev/).
+- Inspired by Namco's Pac-Man. Pac-Man is a trademark of its respective owner; this project is an educational, non-commercial homage and is not affiliated with or endorsed by Namco / Bandai Namco.
+
+## License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+
+> Note: the MIT license covers this project's own source code. It does not grant rights to third-party assets bundled for prototyping (e.g., the Pac-Man sound effects noted above), which remain the property of their respective owners.
