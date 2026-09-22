@@ -136,6 +136,10 @@ The sound effects and music are the original **Namco Pac-Man** arcade sounds, so
 
 See [`public/assets/audio/NOTICE.md`](public/assets/audio/NOTICE.md) for the attribution that ships alongside the audio files.
 
+### Images
+
+The game's visual assets (logo, app icon, mascot sprite sheet, collectibles, UI kit, posters, and hero images in `public/assets/images/`) were **generated with ChatGPT (OpenAI image generation)**. Under OpenAI's Terms of Use, the creator owns and may use these outputs, including commercially. Note that purely AI-generated images may have limited copyright protection in some jurisdictions. Per-file details are in [`public/assets/images/ASSETS.md`](public/assets/images/ASSETS.md).
+
 ### Other
 
 - Built with [Phaser 3](https://phaser.io/) and [Vite](https://vitejs.dev/).
