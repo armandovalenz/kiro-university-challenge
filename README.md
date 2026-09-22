@@ -1,13 +1,14 @@
 # Math Man
 
-Math Man is an educational, browser-based maze arcade game inspired by Pac-Man. Guide **Math Man** through a maze collecting pellets while avoiding a colorful quartet of **Einstein ghosts**. The twist: when a ghost catches you, instead of an instant loss you're given a grade-appropriate math question — answer correctly to survive. Fruits grant an extra life and a short math or science micro-lesson.
+Math Man is an educational, browser-based maze arcade game inspired by Pac-Man. Guide **Math Man** through a maze collecting pellets while avoiding a colorful quartet of **Einstein ghosts**. The twist: when a ghost catches you, instead of an instant loss you're given a grade-appropriate **math or science** question — answer correctly to survive. Fruits grant an extra life and a short math or science micro-lesson.
 
 Built with **Phaser 3** and **Vite**, it runs entirely in the browser with no backend and no login — all records (high score, difficulty preference, mute state, quiz stats) are saved in `localStorage`.
 
 ## Features
 
 - **Classic maze gameplay** — grid-locked movement, wall collisions, pellets, and level progression.
-- **Educational core** — Einstein ghosts trigger math quizzes matched to a selected grade (5th, 6th, or 7th).
+- **Educational core** — Einstein ghosts trigger quizzes matched to a selected grade (5th, 6th, or 7th).
+- **120-question bank** — bundled math and science questions (40 per grade, even math/science split, easy/medium/hard) with per-question explanations; loaded from JSON with a built-in fallback.
 - **Fruits & micro-lessons** — collecting a fruit grants an extra life and shows a short math/science fun fact.
 - **Lives system** — start with 6 lives, capped at a maximum of 10.
 - **Colorful Einstein ghosts** — red, pink, cyan, and orange, each with classic Pac-Man-style AI personalities.
@@ -81,7 +82,7 @@ npm run test
 ## How to Play
 
 1. Move Math Man through the maze to eat all the pellets and clear the level.
-2. Avoid the Einstein ghosts. If one catches you, answer the math question:
+2. Avoid the Einstein ghosts. If one catches you, answer the math or science question:
    - **Correct** → keep your life and resume playing.
    - **Incorrect** → lose a life (the correct answer and a short explanation are shown).
 3. Collect fruits for an extra life and a quick math/science lesson.
@@ -95,11 +96,12 @@ package.json               # phaser (pinned), vite, (optional) vitest
 vite.config.js
 public/
   assets/
-    images/                # logo, sprites, tiles
-    audio/                 # music + sound effects
+    images/                # logo, sprite sheets, UI kit (+ ASSETS.md)
+    audio/                 # music + sound effects (+ NOTICE.md)
+    questions/             # math_man_question_bank_120.json
 src/
   main.js                  # Phaser.Game config; registers the scene list
-  config.js                # Constants: tile size, speeds, LIVES_START=6, LIVES_MAX=10, colors
+  config.js                # Constants: tile size, speeds, LIVES_START=6, LIVES_MAX=10, colors, asset keys
   scenes/                  # Boot, Splash, Menu, Game, UI, Quiz, Lesson, Pause, GameOver
   entities/                # MathMan, Ghost, Fruit
   maze/                    # mazeData, Maze (tilemap + helpers)
@@ -107,6 +109,8 @@ src/
   ui/                      # QuizModal, LessonModal (DOM overlays)
 .kiro/
   specs/math-man/          # requirements.md, design.md, tasks.md
+  steering/                # product.md, tech.md, structure.md (project guidance)
+  skills/game-engine/      # imported game-engine skill (Phaser/maze references)
 ```
 
 `QuestionBank`, `LessonBank`, `ScoreSystem`, `Storage`, and the pure helpers in `Maze` are framework-agnostic (no Phaser imports) so they stay unit-testable.
@@ -120,8 +124,30 @@ Runs in current versions of Chrome, Firefox, Safari, and Edge. If `localStorage`
 Detailed design and requirements live under [`.kiro/specs/math-man/`](.kiro/specs/math-man/):
 
 - [`requirements.md`](.kiro/specs/math-man/requirements.md) — user stories and acceptance criteria
-- [`design.md`](.kiro/specs/math-man/design.md) — architecture and technical design
+- [`design.md`](.kiro/specs/math-man/design.md) — architecture, system & event-flow diagrams, and module design
 - [`tasks.md`](.kiro/specs/math-man/tasks.md) — the incremental implementation plan
+
+Project conventions are captured as Kiro steering in [`.kiro/steering/`](.kiro/steering/) (`product.md`, `tech.md`, `structure.md`).
+
+### Question bank
+
+Quiz content is bundled at [`public/assets/questions/math_man_question_bank_120.json`](public/assets/questions/math_man_question_bank_120.json) — 120 questions. Each record:
+
+```json
+{
+  "id": "MM-G5-MATH-001",
+  "grade": 5,
+  "subject": "math",
+  "topic": "whole-number-operations",
+  "difficulty": "easy",
+  "question": "A game awards 36 stars equally across 6 levels. How many stars are in each level?",
+  "choices": ["5", "6", "7", "8"],
+  "answer": "6",
+  "explanation": "Divide 36 by 6. Each level receives 6 stars."
+}
+```
+
+`answer` holds the correct choice **value** (not an index). To extend the bank, add records following this schema; `QuestionBank` validates each one and drops any whose `answer` is not among its `choices`.
 
 ## Credits & Attribution
 
