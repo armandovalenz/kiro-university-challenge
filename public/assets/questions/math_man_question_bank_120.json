@@ -1,0 +1,1922 @@
+[
+  {
+    "id": "MM-G5-MATH-001",
+    "grade": 5,
+    "subject": "math",
+    "topic": "whole-number-operations",
+    "difficulty": "easy",
+    "question": "A game awards 36 stars equally across 6 levels. How many stars are in each level?",
+    "choices": [
+      "5",
+      "6",
+      "7",
+      "8"
+    ],
+    "answer": "6",
+    "explanation": "Divide 36 by 6. Each level receives 6 stars."
+  },
+  {
+    "id": "MM-G5-MATH-002",
+    "grade": 5,
+    "subject": "math",
+    "topic": "whole-number-operations",
+    "difficulty": "easy",
+    "question": "A library places 84 books on 7 equal shelves. How many books go on each shelf?",
+    "choices": [
+      "10",
+      "11",
+      "12",
+      "14"
+    ],
+    "answer": "12",
+    "explanation": "84 divided by 7 equals 12."
+  },
+  {
+    "id": "MM-G5-MATH-003",
+    "grade": 5,
+    "subject": "math",
+    "topic": "whole-number-operations",
+    "difficulty": "medium",
+    "question": "A factory packs 9 boxes with 48 markers in each box. How many markers are packed?",
+    "choices": [
+      "432",
+      "412",
+      "392",
+      "442"
+    ],
+    "answer": "432",
+    "explanation": "Multiply 48 by 9 to get 432."
+  },
+  {
+    "id": "MM-G5-MATH-004",
+    "grade": 5,
+    "subject": "math",
+    "topic": "whole-number-operations",
+    "difficulty": "medium",
+    "question": "A theater sold 275 tickets on Friday and 348 on Saturday. How many tickets were sold altogether?",
+    "choices": [
+      "613",
+      "623",
+      "633",
+      "643"
+    ],
+    "answer": "623",
+    "explanation": "Add 275 and 348 to get 623."
+  },
+  {
+    "id": "MM-G5-MATH-005",
+    "grade": 5,
+    "subject": "math",
+    "topic": "fractions",
+    "difficulty": "easy",
+    "question": "What is 2/3 of 27?",
+    "choices": [
+      "9",
+      "12",
+      "18",
+      "21"
+    ],
+    "answer": "18",
+    "explanation": "Divide 27 by 3 and multiply by 2: 9 × 2 = 18."
+  },
+  {
+    "id": "MM-G5-MATH-006",
+    "grade": 5,
+    "subject": "math",
+    "topic": "fractions",
+    "difficulty": "medium",
+    "question": "Lena drank 3/8 of a 40-ounce bottle. How many ounces did she drink?",
+    "choices": [
+      "12",
+      "15",
+      "18",
+      "24"
+    ],
+    "answer": "15",
+    "explanation": "One eighth of 40 is 5, and 3 × 5 = 15."
+  },
+  {
+    "id": "MM-G5-MATH-007",
+    "grade": 5,
+    "subject": "math",
+    "topic": "fractions",
+    "difficulty": "medium",
+    "question": "Which fraction is equivalent to 4/6?",
+    "choices": [
+      "2/3",
+      "3/4",
+      "4/8",
+      "6/8"
+    ],
+    "answer": "2/3",
+    "explanation": "Divide the numerator and denominator of 4/6 by 2."
+  },
+  {
+    "id": "MM-G5-MATH-008",
+    "grade": 5,
+    "subject": "math",
+    "topic": "fractions",
+    "difficulty": "medium",
+    "question": "What is 1/4 + 2/4?",
+    "choices": [
+      "2/8",
+      "3/4",
+      "3/8",
+      "1/2"
+    ],
+    "answer": "3/4",
+    "explanation": "The denominators match, so add the numerators: 1 + 2 = 3."
+  },
+  {
+    "id": "MM-G5-MATH-009",
+    "grade": 5,
+    "subject": "math",
+    "topic": "decimals",
+    "difficulty": "easy",
+    "question": "What is 7.5 + 2.35?",
+    "choices": [
+      "9.75",
+      "9.85",
+      "10.75",
+      "10.85"
+    ],
+    "answer": "9.85",
+    "explanation": "Align the decimal points and add to get 9.85."
+  },
+  {
+    "id": "MM-G5-MATH-010",
+    "grade": 5,
+    "subject": "math",
+    "topic": "decimals",
+    "difficulty": "medium",
+    "question": "A toy costs $12.60. You pay with $20.00. How much change should you receive?",
+    "choices": [
+      "$6.40",
+      "$7.40",
+      "$7.60",
+      "$8.40"
+    ],
+    "answer": "$7.40",
+    "explanation": "Subtract 12.60 from 20.00 to get 7.40."
+  },
+  {
+    "id": "MM-G5-MATH-011",
+    "grade": 5,
+    "subject": "math",
+    "topic": "decimal-comparison",
+    "difficulty": "easy",
+    "question": "Which number is smallest?",
+    "choices": [
+      "0.48",
+      "0.5",
+      "0.405",
+      "0.45"
+    ],
+    "answer": "0.405",
+    "explanation": "Writing all values to three decimal places shows 0.405 is the smallest."
+  },
+  {
+    "id": "MM-G5-MATH-012",
+    "grade": 5,
+    "subject": "math",
+    "topic": "place-value",
+    "difficulty": "medium",
+    "question": "In 47.286, what value does the digit 8 represent?",
+    "choices": [
+      "8",
+      "0.8",
+      "0.08",
+      "0.008"
+    ],
+    "answer": "0.08",
+    "explanation": "The 8 is in the hundredths place, so its value is 0.08."
+  },
+  {
+    "id": "MM-G5-MATH-013",
+    "grade": 5,
+    "subject": "math",
+    "topic": "area-and-perimeter",
+    "difficulty": "easy",
+    "question": "A rectangle is 12 m long and 4 m wide. What is its perimeter?",
+    "choices": [
+      "16 m",
+      "32 m",
+      "48 m",
+      "64 m"
+    ],
+    "answer": "32 m",
+    "explanation": "Perimeter is 2 × (12 + 4), which equals 32 m."
+  },
+  {
+    "id": "MM-G5-MATH-014",
+    "grade": 5,
+    "subject": "math",
+    "topic": "area-and-perimeter",
+    "difficulty": "easy",
+    "question": "A square playground has sides of 9 m. What is its area?",
+    "choices": [
+      "18 m²",
+      "36 m²",
+      "72 m²",
+      "81 m²"
+    ],
+    "answer": "81 m²",
+    "explanation": "Area of a square is side × side: 9 × 9 = 81 m²."
+  },
+  {
+    "id": "MM-G5-MATH-015",
+    "grade": 5,
+    "subject": "math",
+    "topic": "volume",
+    "difficulty": "medium",
+    "question": "A box is 5 cm long, 3 cm wide, and 4 cm high. What is its volume?",
+    "choices": [
+      "12 cm³",
+      "20 cm³",
+      "47 cm³",
+      "60 cm³"
+    ],
+    "answer": "60 cm³",
+    "explanation": "Multiply the three dimensions: 5 × 3 × 4 = 60 cm³."
+  },
+  {
+    "id": "MM-G5-MATH-016",
+    "grade": 5,
+    "subject": "math",
+    "topic": "measurement",
+    "difficulty": "medium",
+    "question": "How many centimeters are in 2.5 meters?",
+    "choices": [
+      "25 cm",
+      "250 cm",
+      "2,500 cm",
+      "0.25 cm"
+    ],
+    "answer": "250 cm",
+    "explanation": "One meter is 100 centimeters, so 2.5 × 100 = 250."
+  },
+  {
+    "id": "MM-G5-MATH-017",
+    "grade": 5,
+    "subject": "math",
+    "topic": "data",
+    "difficulty": "easy",
+    "question": "The scores are 8, 10, 7, and 9. What is their sum?",
+    "choices": [
+      "24",
+      "32",
+      "34",
+      "36"
+    ],
+    "answer": "34",
+    "explanation": "Add the four scores: 8 + 10 + 7 + 9 = 34."
+  },
+  {
+    "id": "MM-G5-MATH-018",
+    "grade": 5,
+    "subject": "math",
+    "topic": "data",
+    "difficulty": "medium",
+    "question": "A survey recorded 6 red votes, 9 blue votes, and 5 green votes. How many votes were recorded?",
+    "choices": [
+      "14",
+      "19",
+      "20",
+      "21"
+    ],
+    "answer": "20",
+    "explanation": "Add 6 + 9 + 5 to get 20."
+  },
+  {
+    "id": "MM-G5-MATH-019",
+    "grade": 5,
+    "subject": "math",
+    "topic": "patterns",
+    "difficulty": "medium",
+    "question": "What number comes next: 6, 12, 18, 24, __?",
+    "choices": [
+      "28",
+      "30",
+      "32",
+      "36"
+    ],
+    "answer": "30",
+    "explanation": "The pattern adds 6 each time, so 24 + 6 = 30."
+  },
+  {
+    "id": "MM-G5-MATH-020",
+    "grade": 5,
+    "subject": "math",
+    "topic": "order-of-operations",
+    "difficulty": "hard",
+    "question": "What is 30 - (8 + 7)?",
+    "choices": [
+      "15",
+      "17",
+      "29",
+      "45"
+    ],
+    "answer": "15",
+    "explanation": "Evaluate the parentheses first: 8 + 7 = 15, then 30 - 15 = 15."
+  },
+  {
+    "id": "MM-G6-MATH-001",
+    "grade": 6,
+    "subject": "math",
+    "topic": "ratios",
+    "difficulty": "easy",
+    "question": "A paint mix uses 3 cups of blue for every 2 cups of white. How many cups of blue are needed with 6 cups of white?",
+    "choices": [
+      "6",
+      "8",
+      "9",
+      "12"
+    ],
+    "answer": "9",
+    "explanation": "Six cups of white is three times 2, so use 3 × 3 = 9 cups of blue."
+  },
+  {
+    "id": "MM-G6-MATH-002",
+    "grade": 6,
+    "subject": "math",
+    "topic": "ratios",
+    "difficulty": "medium",
+    "question": "The ratio of cats to dogs is 4:5. If there are 20 cats, how many dogs are there?",
+    "choices": [
+      "16",
+      "21",
+      "25",
+      "40"
+    ],
+    "answer": "25",
+    "explanation": "Twenty cats is five groups of 4, so there are five groups of 5 dogs: 25."
+  },
+  {
+    "id": "MM-G6-MATH-003",
+    "grade": 6,
+    "subject": "math",
+    "topic": "unit-rates",
+    "difficulty": "medium",
+    "question": "Five notebooks cost $15. What is the cost per notebook?",
+    "choices": [
+      "$2",
+      "$3",
+      "$4",
+      "$5"
+    ],
+    "answer": "$3",
+    "explanation": "Divide $15 by 5 notebooks to get $3 each."
+  },
+  {
+    "id": "MM-G6-MATH-004",
+    "grade": 6,
+    "subject": "math",
+    "topic": "unit-rates",
+    "difficulty": "medium",
+    "question": "A cyclist travels 72 km in 4 hours. What is the average distance per hour?",
+    "choices": [
+      "16 km",
+      "18 km",
+      "24 km",
+      "28 km"
+    ],
+    "answer": "18 km",
+    "explanation": "Divide 72 km by 4 hours to get 18 km per hour."
+  },
+  {
+    "id": "MM-G6-MATH-005",
+    "grade": 6,
+    "subject": "math",
+    "topic": "fractions",
+    "difficulty": "medium",
+    "question": "What is 3/4 × 8?",
+    "choices": [
+      "4",
+      "6",
+      "8",
+      "12"
+    ],
+    "answer": "6",
+    "explanation": "One fourth of 8 is 2, and 3 × 2 = 6."
+  },
+  {
+    "id": "MM-G6-MATH-006",
+    "grade": 6,
+    "subject": "math",
+    "topic": "fractions",
+    "difficulty": "hard",
+    "question": "What is 5/6 ÷ 1/3?",
+    "choices": [
+      "5/18",
+      "5/6",
+      "2 1/2",
+      "3"
+    ],
+    "answer": "2 1/2",
+    "explanation": "Multiply 5/6 by the reciprocal 3/1 to get 15/6, or 2 1/2."
+  },
+  {
+    "id": "MM-G6-MATH-007",
+    "grade": 6,
+    "subject": "math",
+    "topic": "decimals",
+    "difficulty": "medium",
+    "question": "What is 4.8 × 2.5?",
+    "choices": [
+      "7.3",
+      "10.0",
+      "12.0",
+      "120.0"
+    ],
+    "answer": "12.0",
+    "explanation": "Multiplying 4.8 by 2.5 gives 12.0."
+  },
+  {
+    "id": "MM-G6-MATH-008",
+    "grade": 6,
+    "subject": "math",
+    "topic": "decimals",
+    "difficulty": "medium",
+    "question": "What is 15.75 ÷ 3?",
+    "choices": [
+      "5.15",
+      "5.25",
+      "5.35",
+      "5.75"
+    ],
+    "answer": "5.25",
+    "explanation": "Divide 15.75 by 3 to get 5.25."
+  },
+  {
+    "id": "MM-G6-MATH-009",
+    "grade": 6,
+    "subject": "math",
+    "topic": "percentages",
+    "difficulty": "easy",
+    "question": "What is 10% of 350?",
+    "choices": [
+      "3.5",
+      "25",
+      "35",
+      "350"
+    ],
+    "answer": "35",
+    "explanation": "Ten percent is one tenth, and 350 ÷ 10 = 35."
+  },
+  {
+    "id": "MM-G6-MATH-010",
+    "grade": 6,
+    "subject": "math",
+    "topic": "percentages",
+    "difficulty": "medium",
+    "question": "A $40 game is on sale for 15% off. How much is the discount?",
+    "choices": [
+      "$4",
+      "$6",
+      "$8",
+      "$15"
+    ],
+    "answer": "$6",
+    "explanation": "Multiply 40 by 0.15 to get a $6 discount."
+  },
+  {
+    "id": "MM-G6-MATH-011",
+    "grade": 6,
+    "subject": "math",
+    "topic": "integers",
+    "difficulty": "easy",
+    "question": "What is -7 + 12?",
+    "choices": [
+      "-19",
+      "-5",
+      "5",
+      "19"
+    ],
+    "answer": "5",
+    "explanation": "Starting at -7 and moving 12 units right lands at 5."
+  },
+  {
+    "id": "MM-G6-MATH-012",
+    "grade": 6,
+    "subject": "math",
+    "topic": "integers",
+    "difficulty": "medium",
+    "question": "What is -4 - 9?",
+    "choices": [
+      "-13",
+      "-5",
+      "5",
+      "13"
+    ],
+    "answer": "-13",
+    "explanation": "Subtracting 9 from -4 moves 9 units farther left to -13."
+  },
+  {
+    "id": "MM-G6-MATH-013",
+    "grade": 6,
+    "subject": "math",
+    "topic": "expressions",
+    "difficulty": "medium",
+    "question": "Evaluate 3a + 5 when a = 4.",
+    "choices": [
+      "12",
+      "17",
+      "20",
+      "32"
+    ],
+    "answer": "17",
+    "explanation": "Substitute 4 for a: 3 × 4 + 5 = 17."
+  },
+  {
+    "id": "MM-G6-MATH-014",
+    "grade": 6,
+    "subject": "math",
+    "topic": "expressions",
+    "difficulty": "medium",
+    "question": "Which expression means “seven less than twice n”?",
+    "choices": [
+      "7 - 2n",
+      "2n - 7",
+      "2(n - 7)",
+      "7n - 2"
+    ],
+    "answer": "2n - 7",
+    "explanation": "Twice n is 2n, and seven less means subtract 7."
+  },
+  {
+    "id": "MM-G6-MATH-015",
+    "grade": 6,
+    "subject": "math",
+    "topic": "equations",
+    "difficulty": "medium",
+    "question": "Solve x + 14 = 31.",
+    "choices": [
+      "15",
+      "16",
+      "17",
+      "45"
+    ],
+    "answer": "17",
+    "explanation": "Subtract 14 from both sides: x = 17."
+  },
+  {
+    "id": "MM-G6-MATH-016",
+    "grade": 6,
+    "subject": "math",
+    "topic": "equations",
+    "difficulty": "hard",
+    "question": "Solve 5x = 45.",
+    "choices": [
+      "5",
+      "8",
+      "9",
+      "40"
+    ],
+    "answer": "9",
+    "explanation": "Divide both sides by 5 to get x = 9."
+  },
+  {
+    "id": "MM-G6-MATH-017",
+    "grade": 6,
+    "subject": "math",
+    "topic": "geometry",
+    "difficulty": "medium",
+    "question": "A parallelogram has a base of 11 cm and height of 6 cm. What is its area?",
+    "choices": [
+      "17 cm²",
+      "34 cm²",
+      "66 cm²",
+      "132 cm²"
+    ],
+    "answer": "66 cm²",
+    "explanation": "Area is base × height: 11 × 6 = 66 cm²."
+  },
+  {
+    "id": "MM-G6-MATH-018",
+    "grade": 6,
+    "subject": "math",
+    "topic": "geometry",
+    "difficulty": "hard",
+    "question": "A triangle has a base of 10 cm and height of 7 cm. What is its area?",
+    "choices": [
+      "17 cm²",
+      "35 cm²",
+      "70 cm²",
+      "140 cm²"
+    ],
+    "answer": "35 cm²",
+    "explanation": "Triangle area is one half of base × height: 10 × 7 ÷ 2 = 35 cm²."
+  },
+  {
+    "id": "MM-G6-MATH-019",
+    "grade": 6,
+    "subject": "math",
+    "topic": "statistics",
+    "difficulty": "medium",
+    "question": "What is the mean of 4, 8, 10, and 14?",
+    "choices": [
+      "8",
+      "9",
+      "10",
+      "36"
+    ],
+    "answer": "9",
+    "explanation": "The sum is 36, and 36 ÷ 4 = 9."
+  },
+  {
+    "id": "MM-G6-MATH-020",
+    "grade": 6,
+    "subject": "math",
+    "topic": "statistics",
+    "difficulty": "medium",
+    "question": "What is the median of 3, 11, 7, 5, and 9?",
+    "choices": [
+      "5",
+      "7",
+      "9",
+      "11"
+    ],
+    "answer": "7",
+    "explanation": "Order the values as 3, 5, 7, 9, 11. The middle value is 7."
+  },
+  {
+    "id": "MM-G7-MATH-001",
+    "grade": 7,
+    "subject": "math",
+    "topic": "proportions",
+    "difficulty": "medium",
+    "question": "If 4 movie tickets cost $36, how much will 7 tickets cost at the same rate?",
+    "choices": [
+      "$54",
+      "$63",
+      "$72",
+      "$81"
+    ],
+    "answer": "$63",
+    "explanation": "Each ticket costs $9, and 7 × $9 = $63."
+  },
+  {
+    "id": "MM-G7-MATH-002",
+    "grade": 7,
+    "subject": "math",
+    "topic": "proportions",
+    "difficulty": "medium",
+    "question": "A map scale says 1 cm represents 8 km. What distance does 6.5 cm represent?",
+    "choices": [
+      "14.5 km",
+      "48 km",
+      "52 km",
+      "64 km"
+    ],
+    "answer": "52 km",
+    "explanation": "Multiply 6.5 by 8 to get 52 km."
+  },
+  {
+    "id": "MM-G7-MATH-003",
+    "grade": 7,
+    "subject": "math",
+    "topic": "percentages",
+    "difficulty": "medium",
+    "question": "A price rises from $50 to $60. What is the percent increase?",
+    "choices": [
+      "10%",
+      "20%",
+      "25%",
+      "50%"
+    ],
+    "answer": "20%",
+    "explanation": "The increase is $10. Divide 10 by the original 50 to get 0.20, or 20%."
+  },
+  {
+    "id": "MM-G7-MATH-004",
+    "grade": 7,
+    "subject": "math",
+    "topic": "percentages",
+    "difficulty": "hard",
+    "question": "A $75 backpack is discounted 30%. What is the sale price?",
+    "choices": [
+      "$22.50",
+      "$45.00",
+      "$52.50",
+      "$67.50"
+    ],
+    "answer": "$52.50",
+    "explanation": "The discount is $22.50, so $75 - $22.50 = $52.50."
+  },
+  {
+    "id": "MM-G7-MATH-005",
+    "grade": 7,
+    "subject": "math",
+    "topic": "rational-numbers",
+    "difficulty": "medium",
+    "question": "What is -3.5 + 1.8?",
+    "choices": [
+      "-5.3",
+      "-1.7",
+      "1.7",
+      "5.3"
+    ],
+    "answer": "-1.7",
+    "explanation": "The values have different signs. Subtract 1.8 from 3.5 and keep the negative sign."
+  },
+  {
+    "id": "MM-G7-MATH-006",
+    "grade": 7,
+    "subject": "math",
+    "topic": "rational-numbers",
+    "difficulty": "hard",
+    "question": "What is (-6) × (-4)?",
+    "choices": [
+      "-24",
+      "-10",
+      "10",
+      "24"
+    ],
+    "answer": "24",
+    "explanation": "The product of two negative numbers is positive: 6 × 4 = 24."
+  },
+  {
+    "id": "MM-G7-MATH-007",
+    "grade": 7,
+    "subject": "math",
+    "topic": "rational-numbers",
+    "difficulty": "hard",
+    "question": "What is 3/5 - 7/10?",
+    "choices": [
+      "-1/10",
+      "1/10",
+      "2/5",
+      "4/10"
+    ],
+    "answer": "-1/10",
+    "explanation": "Rewrite 3/5 as 6/10. Then 6/10 - 7/10 = -1/10."
+  },
+  {
+    "id": "MM-G7-MATH-008",
+    "grade": 7,
+    "subject": "math",
+    "topic": "order-of-operations",
+    "difficulty": "medium",
+    "question": "Evaluate 5 + 2(9 - 6).",
+    "choices": [
+      "11",
+      "15",
+      "21",
+      "27"
+    ],
+    "answer": "11",
+    "explanation": "Evaluate parentheses first: 9 - 6 = 3. Then 2 × 3 + 5 = 11."
+  },
+  {
+    "id": "MM-G7-MATH-009",
+    "grade": 7,
+    "subject": "math",
+    "topic": "algebra",
+    "difficulty": "medium",
+    "question": "Solve 3x - 8 = 13.",
+    "choices": [
+      "5",
+      "7",
+      "15",
+      "21"
+    ],
+    "answer": "7",
+    "explanation": "Add 8 to get 3x = 21, then divide by 3."
+  },
+  {
+    "id": "MM-G7-MATH-010",
+    "grade": 7,
+    "subject": "math",
+    "topic": "algebra",
+    "difficulty": "hard",
+    "question": "Solve 2(x + 5) = 24.",
+    "choices": [
+      "7",
+      "9",
+      "12",
+      "17"
+    ],
+    "answer": "7",
+    "explanation": "Divide by 2 to get x + 5 = 12, then subtract 5."
+  },
+  {
+    "id": "MM-G7-MATH-011",
+    "grade": 7,
+    "subject": "math",
+    "topic": "algebra",
+    "difficulty": "hard",
+    "question": "Solve 5 - 2x = 17.",
+    "choices": [
+      "-11",
+      "-6",
+      "6",
+      "11"
+    ],
+    "answer": "-6",
+    "explanation": "Subtract 5 to get -2x = 12, then divide by -2."
+  },
+  {
+    "id": "MM-G7-MATH-012",
+    "grade": 7,
+    "subject": "math",
+    "topic": "inequalities",
+    "difficulty": "medium",
+    "question": "Which value satisfies x + 4 > 10?",
+    "choices": [
+      "4",
+      "5",
+      "6",
+      "7"
+    ],
+    "answer": "7",
+    "explanation": "Subtract 4 from both sides to get x > 6, so 7 works."
+  },
+  {
+    "id": "MM-G7-MATH-013",
+    "grade": 7,
+    "subject": "math",
+    "topic": "geometry",
+    "difficulty": "medium",
+    "question": "Two angles form a straight line. One is 127°. What is the other angle?",
+    "choices": [
+      "43°",
+      "53°",
+      "63°",
+      "127°"
+    ],
+    "answer": "53°",
+    "explanation": "Angles on a straight line total 180°, so 180 - 127 = 53°."
+  },
+  {
+    "id": "MM-G7-MATH-014",
+    "grade": 7,
+    "subject": "math",
+    "topic": "geometry",
+    "difficulty": "medium",
+    "question": "A circle has diameter 14 cm. What is its radius?",
+    "choices": [
+      "3.5 cm",
+      "7 cm",
+      "14 cm",
+      "28 cm"
+    ],
+    "answer": "7 cm",
+    "explanation": "The radius is half the diameter: 14 ÷ 2 = 7 cm."
+  },
+  {
+    "id": "MM-G7-MATH-015",
+    "grade": 7,
+    "subject": "math",
+    "topic": "geometry",
+    "difficulty": "hard",
+    "question": "Using π ≈ 3.14, what is the circumference of a circle with diameter 10 cm?",
+    "choices": [
+      "15.7 cm",
+      "31.4 cm",
+      "62.8 cm",
+      "314 cm"
+    ],
+    "answer": "31.4 cm",
+    "explanation": "Circumference is π × diameter: 3.14 × 10 = 31.4 cm."
+  },
+  {
+    "id": "MM-G7-MATH-016",
+    "grade": 7,
+    "subject": "math",
+    "topic": "scale-drawings",
+    "difficulty": "hard",
+    "question": "A drawing uses a scale of 1:50. A wall is 8 cm long in the drawing. How long is the real wall?",
+    "choices": [
+      "0.4 m",
+      "4 m",
+      "40 m",
+      "400 m"
+    ],
+    "answer": "4 m",
+    "explanation": "8 × 50 = 400 cm, which equals 4 m."
+  },
+  {
+    "id": "MM-G7-MATH-017",
+    "grade": 7,
+    "subject": "math",
+    "topic": "probability",
+    "difficulty": "easy",
+    "question": "A bag contains 3 red, 2 blue, and 5 yellow marbles. What is the probability of drawing a blue marble?",
+    "choices": [
+      "1/10",
+      "1/5",
+      "1/2",
+      "2/5"
+    ],
+    "answer": "1/5",
+    "explanation": "There are 10 marbles total and 2 are blue, so 2/10 = 1/5."
+  },
+  {
+    "id": "MM-G7-MATH-018",
+    "grade": 7,
+    "subject": "math",
+    "topic": "probability",
+    "difficulty": "medium",
+    "question": "A fair number cube is rolled. What is the probability of rolling a number greater than 4?",
+    "choices": [
+      "1/6",
+      "1/3",
+      "1/2",
+      "2/3"
+    ],
+    "answer": "1/3",
+    "explanation": "The favorable outcomes are 5 and 6, so 2 out of 6 outcomes equals 1/3."
+  },
+  {
+    "id": "MM-G7-MATH-019",
+    "grade": 7,
+    "subject": "math",
+    "topic": "statistics",
+    "difficulty": "medium",
+    "question": "What is the range of 12, 7, 19, 15, and 10?",
+    "choices": [
+      "7",
+      "10",
+      "12",
+      "26"
+    ],
+    "answer": "12",
+    "explanation": "Subtract the smallest value from the largest: 19 - 7 = 12."
+  },
+  {
+    "id": "MM-G7-MATH-020",
+    "grade": 7,
+    "subject": "math",
+    "topic": "statistics",
+    "difficulty": "hard",
+    "question": "The mean of four scores is 18. Three scores are 12, 20, and 17. What is the fourth score?",
+    "choices": [
+      "19",
+      "21",
+      "23",
+      "25"
+    ],
+    "answer": "23",
+    "explanation": "The total must be 4 × 18 = 72. The known scores total 49, so the missing score is 23."
+  },
+  {
+    "id": "MM-G5-SCI-001",
+    "grade": 5,
+    "subject": "science",
+    "topic": "plants",
+    "difficulty": "easy",
+    "question": "Which plant structure usually captures the most sunlight?",
+    "choices": [
+      "Flower",
+      "Leaf",
+      "Root",
+      "Seed"
+    ],
+    "answer": "Leaf",
+    "explanation": "Leaves contain chlorophyll and are shaped to capture light for photosynthesis."
+  },
+  {
+    "id": "MM-G5-SCI-002",
+    "grade": 5,
+    "subject": "science",
+    "topic": "plants",
+    "difficulty": "medium",
+    "question": "What is the main job of a flower in many plants?",
+    "choices": [
+      "Absorb minerals",
+      "Make seeds possible",
+      "Store all water",
+      "Anchor the plant"
+    ],
+    "answer": "Make seeds possible",
+    "explanation": "Flowers contain reproductive structures that help the plant produce seeds."
+  },
+  {
+    "id": "MM-G5-SCI-003",
+    "grade": 5,
+    "subject": "science",
+    "topic": "ecosystems",
+    "difficulty": "easy",
+    "question": "Which organism is a producer in a pond ecosystem?",
+    "choices": [
+      "Algae",
+      "Frog",
+      "Fish",
+      "Snail"
+    ],
+    "answer": "Algae",
+    "explanation": "Algae use sunlight to make their own food, so they are producers."
+  },
+  {
+    "id": "MM-G5-SCI-004",
+    "grade": 5,
+    "subject": "science",
+    "topic": "ecosystems",
+    "difficulty": "medium",
+    "question": "If insects disappear from a food web, which animal would be affected first?",
+    "choices": [
+      "An insect-eating bird",
+      "A grass plant",
+      "A rock-dwelling lizard that eats seeds",
+      "A tree that uses sunlight"
+    ],
+    "answer": "An insect-eating bird",
+    "explanation": "An animal that depends directly on insects for food would lose its main energy source first."
+  },
+  {
+    "id": "MM-G5-SCI-005",
+    "grade": 5,
+    "subject": "science",
+    "topic": "adaptations",
+    "difficulty": "medium",
+    "question": "Why do many desert plants have waxy outer surfaces?",
+    "choices": [
+      "To attract snow",
+      "To reduce water loss",
+      "To make deeper shade",
+      "To absorb salt"
+    ],
+    "answer": "To reduce water loss",
+    "explanation": "A waxy surface slows evaporation and helps conserve water."
+  },
+  {
+    "id": "MM-G5-SCI-006",
+    "grade": 5,
+    "subject": "science",
+    "topic": "matter",
+    "difficulty": "easy",
+    "question": "Which state of matter keeps its own shape and volume?",
+    "choices": [
+      "Gas",
+      "Liquid",
+      "Plasma",
+      "Solid"
+    ],
+    "answer": "Solid",
+    "explanation": "A solid has a definite shape and a definite volume."
+  },
+  {
+    "id": "MM-G5-SCI-007",
+    "grade": 5,
+    "subject": "science",
+    "topic": "matter",
+    "difficulty": "medium",
+    "question": "What usually happens to water vapor when it cools enough?",
+    "choices": [
+      "It condenses",
+      "It burns",
+      "It becomes heavier atoms",
+      "It disappears"
+    ],
+    "answer": "It condenses",
+    "explanation": "Cooling water vapor causes it to change from gas into liquid droplets."
+  },
+  {
+    "id": "MM-G5-SCI-008",
+    "grade": 5,
+    "subject": "science",
+    "topic": "mixtures",
+    "difficulty": "medium",
+    "question": "Which method best separates iron filings from sand?",
+    "choices": [
+      "Use a magnet",
+      "Add sugar",
+      "Heat gently",
+      "Use a ruler"
+    ],
+    "answer": "Use a magnet",
+    "explanation": "A magnet attracts the iron but not the sand."
+  },
+  {
+    "id": "MM-G5-SCI-009",
+    "grade": 5,
+    "subject": "science",
+    "topic": "forces",
+    "difficulty": "easy",
+    "question": "Which force slows a sliding book across a table?",
+    "choices": [
+      "Friction",
+      "Gravity only",
+      "Light",
+      "Sound"
+    ],
+    "answer": "Friction",
+    "explanation": "Friction opposes motion between surfaces in contact."
+  },
+  {
+    "id": "MM-G5-SCI-010",
+    "grade": 5,
+    "subject": "science",
+    "topic": "forces",
+    "difficulty": "medium",
+    "question": "What happens when two equal forces push an object in opposite directions?",
+    "choices": [
+      "It must speed up",
+      "The forces are balanced",
+      "Its mass disappears",
+      "Gravity stops"
+    ],
+    "answer": "The forces are balanced",
+    "explanation": "Equal opposite forces create zero net force."
+  },
+  {
+    "id": "MM-G5-SCI-011",
+    "grade": 5,
+    "subject": "science",
+    "topic": "energy",
+    "difficulty": "easy",
+    "question": "Which object has stored elastic energy?",
+    "choices": [
+      "A stretched rubber band",
+      "A ringing bell",
+      "A glowing lamp",
+      "A rolling ball"
+    ],
+    "answer": "A stretched rubber band",
+    "explanation": "Stretching the band stores elastic potential energy."
+  },
+  {
+    "id": "MM-G5-SCI-012",
+    "grade": 5,
+    "subject": "science",
+    "topic": "energy",
+    "difficulty": "medium",
+    "question": "A toaster changes electrical energy mainly into what form?",
+    "choices": [
+      "Chemical energy",
+      "Thermal energy",
+      "Nuclear energy",
+      "Sound energy only"
+    ],
+    "answer": "Thermal energy",
+    "explanation": "The heating elements convert electrical energy into thermal energy."
+  },
+  {
+    "id": "MM-G5-SCI-013",
+    "grade": 5,
+    "subject": "science",
+    "topic": "earth-systems",
+    "difficulty": "easy",
+    "question": "Which process wears rock into smaller pieces?",
+    "choices": [
+      "Weathering",
+      "Orbiting",
+      "Freezing water only",
+      "Photosynthesis"
+    ],
+    "answer": "Weathering",
+    "explanation": "Weathering breaks rock into smaller pieces through physical or chemical processes."
+  },
+  {
+    "id": "MM-G5-SCI-014",
+    "grade": 5,
+    "subject": "science",
+    "topic": "earth-systems",
+    "difficulty": "medium",
+    "question": "What carries most eroded soil downstream in a river?",
+    "choices": [
+      "Moving water",
+      "Moonlight",
+      "Stationary air",
+      "Magnetism"
+    ],
+    "answer": "Moving water",
+    "explanation": "Flowing water transports sediment downstream."
+  },
+  {
+    "id": "MM-G5-SCI-015",
+    "grade": 5,
+    "subject": "science",
+    "topic": "water-cycle",
+    "difficulty": "easy",
+    "question": "What is precipitation?",
+    "choices": [
+      "Water falling from clouds",
+      "Water soaking into roots",
+      "Ice melting underground",
+      "Ocean water becoming salty"
+    ],
+    "answer": "Water falling from clouds",
+    "explanation": "Rain, snow, sleet, and hail are forms of precipitation."
+  },
+  {
+    "id": "MM-G5-SCI-016",
+    "grade": 5,
+    "subject": "science",
+    "topic": "solar-system",
+    "difficulty": "easy",
+    "question": "What causes day and night on Earth?",
+    "choices": [
+      "Earth rotating",
+      "Earth orbiting once a year",
+      "The Moon changing shape",
+      "Clouds blocking the Sun"
+    ],
+    "answer": "Earth rotating",
+    "explanation": "As Earth rotates, locations move into and out of sunlight."
+  },
+  {
+    "id": "MM-G5-SCI-017",
+    "grade": 5,
+    "subject": "science",
+    "topic": "solar-system",
+    "difficulty": "medium",
+    "question": "Why does the Sun appear larger than other stars?",
+    "choices": [
+      "It is the only star",
+      "It is much closer to Earth",
+      "It is inside Earth’s atmosphere",
+      "Other stars produce no light"
+    ],
+    "answer": "It is much closer to Earth",
+    "explanation": "The Sun appears larger because it is far closer to us than other stars."
+  },
+  {
+    "id": "MM-G5-SCI-018",
+    "grade": 5,
+    "subject": "science",
+    "topic": "human-body",
+    "difficulty": "easy",
+    "question": "Which body system brings oxygen into the lungs?",
+    "choices": [
+      "Digestive system",
+      "Respiratory system",
+      "Skeletal system",
+      "Nervous system"
+    ],
+    "answer": "Respiratory system",
+    "explanation": "The respiratory system moves air into and out of the lungs."
+  },
+  {
+    "id": "MM-G5-SCI-019",
+    "grade": 5,
+    "subject": "science",
+    "topic": "human-body",
+    "difficulty": "medium",
+    "question": "Why are bones important besides helping the body stand?",
+    "choices": [
+      "They protect organs",
+      "They digest food",
+      "They make sunlight",
+      "They pump air"
+    ],
+    "answer": "They protect organs",
+    "explanation": "Bones such as the skull and ribs shield delicate organs."
+  },
+  {
+    "id": "MM-G5-SCI-020",
+    "grade": 5,
+    "subject": "science",
+    "topic": "scientific-practice",
+    "difficulty": "medium",
+    "question": "Why should an experiment change only one tested variable at a time?",
+    "choices": [
+      "To make the test fair",
+      "To guarantee the preferred result",
+      "To remove all measurements",
+      "To make every object identical"
+    ],
+    "answer": "To make the test fair",
+    "explanation": "Controlling other variables helps show whether the tested variable caused the result."
+  },
+  {
+    "id": "MM-G6-SCI-001",
+    "grade": 6,
+    "subject": "science",
+    "topic": "cells",
+    "difficulty": "easy",
+    "question": "Which structure controls what enters and leaves a cell?",
+    "choices": [
+      "Cell membrane",
+      "Cell wall only",
+      "Nucleus",
+      "Vacuole"
+    ],
+    "answer": "Cell membrane",
+    "explanation": "The cell membrane regulates the movement of materials into and out of the cell."
+  },
+  {
+    "id": "MM-G6-SCI-002",
+    "grade": 6,
+    "subject": "science",
+    "topic": "cells",
+    "difficulty": "medium",
+    "question": "Which cell structure contains most of a eukaryotic cell’s genetic material?",
+    "choices": [
+      "Cytoplasm",
+      "Nucleus",
+      "Ribosome",
+      "Cell membrane"
+    ],
+    "answer": "Nucleus",
+    "explanation": "The nucleus stores most of the cell’s DNA."
+  },
+  {
+    "id": "MM-G6-SCI-003",
+    "grade": 6,
+    "subject": "science",
+    "topic": "photosynthesis",
+    "difficulty": "medium",
+    "question": "Which two raw materials do plants use to make sugar during photosynthesis?",
+    "choices": [
+      "Carbon dioxide and water",
+      "Oxygen and soil",
+      "Nitrogen and sunlight",
+      "Sugar and minerals"
+    ],
+    "answer": "Carbon dioxide and water",
+    "explanation": "Plants combine carbon dioxide and water using light energy to make sugar."
+  },
+  {
+    "id": "MM-G6-SCI-004",
+    "grade": 6,
+    "subject": "science",
+    "topic": "ecosystems",
+    "difficulty": "medium",
+    "question": "What role do fungi often play in an ecosystem?",
+    "choices": [
+      "Decomposer",
+      "Primary producer",
+      "Sunlight source",
+      "Top predator only"
+    ],
+    "answer": "Decomposer",
+    "explanation": "Many fungi break down dead material and recycle nutrients."
+  },
+  {
+    "id": "MM-G6-SCI-005",
+    "grade": 6,
+    "subject": "science",
+    "topic": "food-webs",
+    "difficulty": "medium",
+    "question": "About what happens to available energy at higher levels of a food chain?",
+    "choices": [
+      "It generally decreases",
+      "It doubles at each level",
+      "It becomes matter",
+      "It stays exactly equal"
+    ],
+    "answer": "It generally decreases",
+    "explanation": "Organisms use much of their energy, so less is transferred to the next level."
+  },
+  {
+    "id": "MM-G6-SCI-006",
+    "grade": 6,
+    "subject": "science",
+    "topic": "matter",
+    "difficulty": "easy",
+    "question": "Which particle has a negative electric charge?",
+    "choices": [
+      "Electron",
+      "Neutron",
+      "Proton",
+      "Nucleus"
+    ],
+    "answer": "Electron",
+    "explanation": "Electrons carry a negative charge."
+  },
+  {
+    "id": "MM-G6-SCI-007",
+    "grade": 6,
+    "subject": "science",
+    "topic": "matter",
+    "difficulty": "medium",
+    "question": "What is an element?",
+    "choices": [
+      "A substance made from one kind of atom",
+      "Any liquid mixture",
+      "Two substances physically combined",
+      "A material without particles"
+    ],
+    "answer": "A substance made from one kind of atom",
+    "explanation": "An element contains atoms with the same number of protons."
+  },
+  {
+    "id": "MM-G6-SCI-008",
+    "grade": 6,
+    "subject": "science",
+    "topic": "chemical-changes",
+    "difficulty": "medium",
+    "question": "Which observation most strongly suggests a chemical change?",
+    "choices": [
+      "A new gas forms",
+      "Ice melts",
+      "Paper is cut",
+      "Salt dissolves in water"
+    ],
+    "answer": "A new gas forms",
+    "explanation": "Unexpected gas production can indicate that new substances formed."
+  },
+  {
+    "id": "MM-G6-SCI-009",
+    "grade": 6,
+    "subject": "science",
+    "topic": "thermal-energy",
+    "difficulty": "medium",
+    "question": "In which direction does thermal energy naturally flow?",
+    "choices": [
+      "From warmer to cooler matter",
+      "From cooler to warmer matter only",
+      "Toward larger objects only",
+      "Away from all metals"
+    ],
+    "answer": "From warmer to cooler matter",
+    "explanation": "Thermal energy moves from higher-temperature matter to lower-temperature matter."
+  },
+  {
+    "id": "MM-G6-SCI-010",
+    "grade": 6,
+    "subject": "science",
+    "topic": "waves",
+    "difficulty": "easy",
+    "question": "What does a sound wave need in order to travel?",
+    "choices": [
+      "A medium",
+      "Sunlight",
+      "A magnetic field",
+      "Empty space only"
+    ],
+    "answer": "A medium",
+    "explanation": "Sound travels through vibrating particles in matter."
+  },
+  {
+    "id": "MM-G6-SCI-011",
+    "grade": 6,
+    "subject": "science",
+    "topic": "waves",
+    "difficulty": "medium",
+    "question": "A sound becomes higher in pitch when what increases?",
+    "choices": [
+      "Frequency",
+      "Mass of the listener",
+      "Travel distance",
+      "Volume of the room"
+    ],
+    "answer": "Frequency",
+    "explanation": "Higher-frequency vibrations are heard as higher pitches."
+  },
+  {
+    "id": "MM-G6-SCI-012",
+    "grade": 6,
+    "subject": "science",
+    "topic": "forces",
+    "difficulty": "medium",
+    "question": "What is the net force when 10 N pushes right and 6 N pushes left?",
+    "choices": [
+      "4 N right",
+      "4 N left",
+      "16 N right",
+      "60 N right"
+    ],
+    "answer": "4 N right",
+    "explanation": "Subtract opposing forces: 10 - 6 = 4 N toward the stronger force."
+  },
+  {
+    "id": "MM-G6-SCI-013",
+    "grade": 6,
+    "subject": "science",
+    "topic": "motion",
+    "difficulty": "easy",
+    "question": "What does speed describe?",
+    "choices": [
+      "Distance traveled per unit of time",
+      "Only the direction of motion",
+      "The mass of an object",
+      "The force of gravity"
+    ],
+    "answer": "Distance traveled per unit of time",
+    "explanation": "Speed compares the distance traveled with the time taken."
+  },
+  {
+    "id": "MM-G6-SCI-014",
+    "grade": 6,
+    "subject": "science",
+    "topic": "gravity",
+    "difficulty": "medium",
+    "question": "Why would an astronaut weigh less on the Moon than on Earth?",
+    "choices": [
+      "The Moon’s gravity is weaker",
+      "The astronaut loses mass",
+      "The Moon has no motion",
+      "Spacesuits remove gravity"
+    ],
+    "answer": "The Moon’s gravity is weaker",
+    "explanation": "Weight depends on gravitational pull, which is weaker on the Moon."
+  },
+  {
+    "id": "MM-G6-SCI-015",
+    "grade": 6,
+    "subject": "science",
+    "topic": "earth-structure",
+    "difficulty": "easy",
+    "question": "Which Earth layer is liquid and made mainly of iron and nickel?",
+    "choices": [
+      "Outer core",
+      "Inner core",
+      "Crust",
+      "Upper mantle"
+    ],
+    "answer": "Outer core",
+    "explanation": "Earth’s outer core is a liquid metallic layer."
+  },
+  {
+    "id": "MM-G6-SCI-016",
+    "grade": 6,
+    "subject": "science",
+    "topic": "plate-tectonics",
+    "difficulty": "medium",
+    "question": "What commonly happens where two tectonic plates move apart?",
+    "choices": [
+      "New crust forms",
+      "All volcanoes stop",
+      "A continent instantly disappears",
+      "Gravity reverses"
+    ],
+    "answer": "New crust forms",
+    "explanation": "Magma can rise and cool, creating new crust at divergent boundaries."
+  },
+  {
+    "id": "MM-G6-SCI-017",
+    "grade": 6,
+    "subject": "science",
+    "topic": "weather",
+    "difficulty": "medium",
+    "question": "Which instrument measures air pressure?",
+    "choices": [
+      "Barometer",
+      "Thermometer",
+      "Rain gauge",
+      "Anemometer"
+    ],
+    "answer": "Barometer",
+    "explanation": "A barometer measures atmospheric pressure."
+  },
+  {
+    "id": "MM-G6-SCI-018",
+    "grade": 6,
+    "subject": "science",
+    "topic": "climate",
+    "difficulty": "medium",
+    "question": "How is climate different from weather?",
+    "choices": [
+      "Climate describes long-term patterns",
+      "Climate changes every hour",
+      "Weather covers centuries only",
+      "They mean exactly the same thing"
+    ],
+    "answer": "Climate describes long-term patterns",
+    "explanation": "Climate summarizes typical weather conditions over long periods."
+  },
+  {
+    "id": "MM-G6-SCI-019",
+    "grade": 6,
+    "subject": "science",
+    "topic": "solar-system",
+    "difficulty": "medium",
+    "question": "Why do planets stay in orbit around the Sun?",
+    "choices": [
+      "Gravity pulls them inward as they move forward",
+      "There is no force on them",
+      "Solar wind holds them still",
+      "They follow light beams"
+    ],
+    "answer": "Gravity pulls them inward as they move forward",
+    "explanation": "Gravity continually bends each planet’s motion into an orbit."
+  },
+  {
+    "id": "MM-G6-SCI-020",
+    "grade": 6,
+    "subject": "science",
+    "topic": "scientific-practice",
+    "difficulty": "medium",
+    "question": "What is the dependent variable in an experiment?",
+    "choices": [
+      "The outcome that is measured",
+      "The factor intentionally changed",
+      "Every fixed condition",
+      "The scientist’s opinion"
+    ],
+    "answer": "The outcome that is measured",
+    "explanation": "The dependent variable is the response measured after changing the independent variable."
+  },
+  {
+    "id": "MM-G7-SCI-001",
+    "grade": 7,
+    "subject": "science",
+    "topic": "cells",
+    "difficulty": "medium",
+    "question": "Which organelle releases usable energy from food in most eukaryotic cells?",
+    "choices": [
+      "Mitochondrion",
+      "Cell wall",
+      "Chloroplast only",
+      "Vacuole"
+    ],
+    "answer": "Mitochondrion",
+    "explanation": "Mitochondria carry out cellular respiration to release usable energy."
+  },
+  {
+    "id": "MM-G7-SCI-002",
+    "grade": 7,
+    "subject": "science",
+    "topic": "cells",
+    "difficulty": "medium",
+    "question": "What is the main function of ribosomes?",
+    "choices": [
+      "Build proteins",
+      "Store water only",
+      "Control cell division alone",
+      "Break down all waste"
+    ],
+    "answer": "Build proteins",
+    "explanation": "Ribosomes assemble amino acids into proteins."
+  },
+  {
+    "id": "MM-G7-SCI-003",
+    "grade": 7,
+    "subject": "science",
+    "topic": "genetics",
+    "difficulty": "easy",
+    "question": "What is a gene?",
+    "choices": [
+      "A segment of DNA with inherited information",
+      "An entire organ system",
+      "A type of energy",
+      "A mineral inside bone"
+    ],
+    "answer": "A segment of DNA with inherited information",
+    "explanation": "Genes are DNA sequences that influence inherited traits."
+  },
+  {
+    "id": "MM-G7-SCI-004",
+    "grade": 7,
+    "subject": "science",
+    "topic": "genetics",
+    "difficulty": "medium",
+    "question": "Why can siblings from the same parents have different traits?",
+    "choices": [
+      "They inherit different combinations of alleles",
+      "They always have different numbers of chromosomes",
+      "Only the oldest receives genes",
+      "Environment has no effect at all"
+    ],
+    "answer": "They inherit different combinations of alleles",
+    "explanation": "Each child can receive a different combination of parental alleles."
+  },
+  {
+    "id": "MM-G7-SCI-005",
+    "grade": 7,
+    "subject": "science",
+    "topic": "natural-selection",
+    "difficulty": "medium",
+    "question": "Which trait is most likely to become common in a cold environment?",
+    "choices": [
+      "A heritable trait that improves survival in cold",
+      "Any trait acquired during one winter",
+      "A trait that prevents reproduction",
+      "A random color with no possible effect"
+    ],
+    "answer": "A heritable trait that improves survival in cold",
+    "explanation": "Helpful heritable traits can lead to greater survival and reproduction."
+  },
+  {
+    "id": "MM-G7-SCI-006",
+    "grade": 7,
+    "subject": "science",
+    "topic": "body-systems",
+    "difficulty": "medium",
+    "question": "Which two systems work together to deliver oxygen to body cells?",
+    "choices": [
+      "Respiratory and circulatory",
+      "Digestive and skeletal",
+      "Nervous and integumentary only",
+      "Muscular and reproductive"
+    ],
+    "answer": "Respiratory and circulatory",
+    "explanation": "The respiratory system brings in oxygen, and the circulatory system transports it."
+  },
+  {
+    "id": "MM-G7-SCI-007",
+    "grade": 7,
+    "subject": "science",
+    "topic": "homeostasis",
+    "difficulty": "medium",
+    "question": "Sweating on a hot day helps the body do what?",
+    "choices": [
+      "Maintain a stable temperature",
+      "Increase internal heat",
+      "Stop blood flow",
+      "Produce more bones"
+    ],
+    "answer": "Maintain a stable temperature",
+    "explanation": "Evaporation of sweat removes thermal energy and helps cool the body."
+  },
+  {
+    "id": "MM-G7-SCI-008",
+    "grade": 7,
+    "subject": "science",
+    "topic": "chemical-reactions",
+    "difficulty": "medium",
+    "question": "In a closed system, what happens to total mass during a chemical reaction?",
+    "choices": [
+      "It remains constant",
+      "It doubles",
+      "It vanishes",
+      "It becomes energy only"
+    ],
+    "answer": "It remains constant",
+    "explanation": "Matter is rearranged, but total mass is conserved in a closed system."
+  },
+  {
+    "id": "MM-G7-SCI-009",
+    "grade": 7,
+    "subject": "science",
+    "topic": "chemical-reactions",
+    "difficulty": "hard",
+    "question": "Which sign indicates an endothermic reaction?",
+    "choices": [
+      "The surroundings cool as energy is absorbed",
+      "The surroundings warm as energy is released",
+      "Mass is created",
+      "Atoms disappear"
+    ],
+    "answer": "The surroundings cool as energy is absorbed",
+    "explanation": "An endothermic reaction absorbs thermal energy from its surroundings."
+  },
+  {
+    "id": "MM-G7-SCI-010",
+    "grade": 7,
+    "subject": "science",
+    "topic": "atoms",
+    "difficulty": "medium",
+    "question": "The atomic number of an element equals the number of what particles?",
+    "choices": [
+      "Protons",
+      "Neutrons only",
+      "Electron shells",
+      "Molecules"
+    ],
+    "answer": "Protons",
+    "explanation": "An element is identified by its number of protons."
+  },
+  {
+    "id": "MM-G7-SCI-011",
+    "grade": 7,
+    "subject": "science",
+    "topic": "forces",
+    "difficulty": "medium",
+    "question": "If the same force is applied to two objects, which accelerates more?",
+    "choices": [
+      "The object with less mass",
+      "The object with more mass",
+      "Both always accelerate equally",
+      "Neither can accelerate"
+    ],
+    "answer": "The object with less mass",
+    "explanation": "For the same force, lower mass produces greater acceleration."
+  },
+  {
+    "id": "MM-G7-SCI-012",
+    "grade": 7,
+    "subject": "science",
+    "topic": "kinetic-energy",
+    "difficulty": "hard",
+    "question": "If an object’s speed doubles while its mass stays constant, how does its kinetic energy change?",
+    "choices": [
+      "It becomes four times as great",
+      "It doubles",
+      "It is cut in half",
+      "It stays the same"
+    ],
+    "answer": "It becomes four times as great",
+    "explanation": "Kinetic energy depends on speed squared, so doubling speed multiplies it by four."
+  },
+  {
+    "id": "MM-G7-SCI-013",
+    "grade": 7,
+    "subject": "science",
+    "topic": "potential-energy",
+    "difficulty": "medium",
+    "question": "Which change increases an object’s gravitational potential energy?",
+    "choices": [
+      "Raising it higher",
+      "Cooling it",
+      "Painting it",
+      "Moving it sideways at the same height"
+    ],
+    "answer": "Raising it higher",
+    "explanation": "Gravitational potential energy increases with height."
+  },
+  {
+    "id": "MM-G7-SCI-014",
+    "grade": 7,
+    "subject": "science",
+    "topic": "heat-transfer",
+    "difficulty": "medium",
+    "question": "Warm water rising while cool water sinks is an example of what?",
+    "choices": [
+      "Convection",
+      "Conduction",
+      "Radiation",
+      "Reflection"
+    ],
+    "answer": "Convection",
+    "explanation": "Convection transfers thermal energy through movement within a fluid."
+  },
+  {
+    "id": "MM-G7-SCI-015",
+    "grade": 7,
+    "subject": "science",
+    "topic": "waves",
+    "difficulty": "hard",
+    "question": "What happens to wavelength if wave speed stays constant and frequency increases?",
+    "choices": [
+      "Wavelength decreases",
+      "Wavelength increases",
+      "Wavelength stays constant",
+      "The wave stops"
+    ],
+    "answer": "Wavelength decreases",
+    "explanation": "At constant speed, frequency and wavelength vary inversely."
+  },
+  {
+    "id": "MM-G7-SCI-016",
+    "grade": 7,
+    "subject": "science",
+    "topic": "earth-history",
+    "difficulty": "medium",
+    "question": "Why are index fossils useful to geologists?",
+    "choices": [
+      "They help compare the ages of rock layers",
+      "They measure today’s wind speed",
+      "They create new rocks",
+      "They identify every mineral"
+    ],
+    "answer": "They help compare the ages of rock layers",
+    "explanation": "Widespread species that lived for limited times help correlate rock layers."
+  },
+  {
+    "id": "MM-G7-SCI-017",
+    "grade": 7,
+    "subject": "science",
+    "topic": "plate-tectonics",
+    "difficulty": "medium",
+    "question": "What feature commonly forms when one oceanic plate sinks beneath another plate?",
+    "choices": [
+      "A deep-ocean trench",
+      "A wide river delta",
+      "A sand dune",
+      "A coral atoll only"
+    ],
+    "answer": "A deep-ocean trench",
+    "explanation": "Subduction bends the descending plate and creates a deep trench."
+  },
+  {
+    "id": "MM-G7-SCI-018",
+    "grade": 7,
+    "subject": "science",
+    "topic": "water-cycle",
+    "difficulty": "medium",
+    "question": "What process moves water from plant leaves into the atmosphere?",
+    "choices": [
+      "Transpiration",
+      "Infiltration",
+      "Condensation",
+      "Precipitation"
+    ],
+    "answer": "Transpiration",
+    "explanation": "Plants release water vapor through small openings in their leaves."
+  },
+  {
+    "id": "MM-G7-SCI-019",
+    "grade": 7,
+    "subject": "science",
+    "topic": "astronomy",
+    "difficulty": "medium",
+    "question": "What mainly causes the seasons on Earth?",
+    "choices": [
+      "Earth’s tilted axis as it orbits the Sun",
+      "Changes in Earth’s distance each month",
+      "The Moon blocking sunlight",
+      "Daily cloud cover"
+    ],
+    "answer": "Earth’s tilted axis as it orbits the Sun",
+    "explanation": "Axial tilt changes sunlight angle and day length during Earth’s orbit."
+  },
+  {
+    "id": "MM-G7-SCI-020",
+    "grade": 7,
+    "subject": "science",
+    "topic": "scientific-practice",
+    "difficulty": "hard",
+    "question": "A graph shows plant height increasing as fertilizer amount rises, then decreasing at the highest amount. What is the best conclusion?",
+    "choices": [
+      "A moderate amount worked best in this test",
+      "More fertilizer always helps",
+      "Fertilizer never affects growth",
+      "The tallest plant proves causation everywhere"
+    ],
+    "answer": "A moderate amount worked best in this test",
+    "explanation": "The observed peak indicates that the middle range produced the greatest height under these conditions."
+  }
+]

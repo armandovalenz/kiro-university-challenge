@@ -29,8 +29,9 @@ This plan implements Math Man as a Phaser 3 + Vite browser game, ordered so the 
 - [ ] 4. Build the BootScene and asset preload pipeline
   - Create `src/scenes/BootScene.js` that preloads the image assets from `public/assets/images/` — `02_logo.png`, `09_hero_einstein_enemies.png`, `06_ui_kit.png` as images, and `04_mascot_sprite_sheet.png` + `05_collectibles_and_math_icons.png` as spritesheets/atlases (define frame size or a JSON atlas) — plus the audio keys from the mapping (WAV files in `public/assets/audio/`).
   - Register a Phaser loader error handler that marks missing assets so later code can fall back to drawn shapes/text.
+  - Load and validate the question bank (`public/assets/questions/math_man_question_bank_120.json`) via `QuestionBank.load()`.
   - Initialize `Storage` and `AudioBus`, then transition to `SplashScene`.
-  - _Requirements: 8.2, 11.1, 12.3, 12.7, 13.1, 13.2, 13.5_
+  - _Requirements: 8.2, 11.1, 12.3, 12.7, 13.1, 13.2, 13.5, 4.2, 4.9_
 
 - [ ] 5. Build the SplashScene with the Math Man logo
   - Create `src/scenes/SplashScene.js` that centers the `02_logo.png` logo with a short intro tween.
@@ -74,17 +75,17 @@ This plan implements Math Man as a Phaser 3 + Vite browser game, ordered so the 
   - On catch, pause `GameScene` and prepare to launch the quiz; after a resolved quiz, reset Math Man and ghosts to spawn positions when lives remain.
   - _Requirements: 3.3, 3.4_
 
-- [ ] 12. Implement the QuestionBank
-  - Create `src/systems/QuestionBank.js` with generated arithmetic plus a curated pool, tagged by grade and category.
-  - Return questions in the documented shape (`prompt`, `choices`, `answerIndex`, `explanation`).
-  - Implement `next(grade, recentIds)` that avoids repeating the immediately previous question and maps categories per grade (5/6/7).
-  - _Requirements: 4.1, 4.2, 4.7_
+- [ ] 12. Implement the QuestionBank (load the bundled JSON bank)
+  - Create `src/systems/QuestionBank.js` with `load()` that fetches and validates `public/assets/questions/math_man_question_bank_120.json` (fields: `id`, `grade`, `subject`, `topic`, `difficulty`, `question`, `choices`, `answer`, `explanation`).
+  - Validate each record (required fields present; `answer` is one of `choices`), drop invalid ones, and index by `grade` (sub-grouped by `subject`/`difficulty`). Provide a small built-in fallback set if the file fails to load/parse.
+  - Implement `next(grade, { subject, difficulty } = {}, recentIds = [])` that returns a grade-matched question, avoids repeating the immediately previous `id`, and avoids `recentIds` where possible.
+  - _Requirements: 4.2, 4.3, 4.8, 4.9_
 
 - [ ] 13. Build the QuizScene, QuizModal, and QuizSystem
   - Create `src/ui/QuizModal.js` (accessible DOM form: prompt, multiple-choice options, numeric entry where needed, keyboard 1-4/arrows + Enter), styled with UI-kit cues from `06_ui_kit.png`.
-  - Create `src/scenes/QuizScene.js` that pauses `GameScene`, opens the modal with a `QuestionBank` question, and blocks movement while open.
-  - Create `src/systems/QuizSystem.js` to check the answer: correct -> resume with no life lost; wrong -> show correct answer + explanation, `loseLife()`, then resume or go to game over; update `quizStats` in `Storage`.
-  - _Requirements: 4.1, 4.3, 4.4, 4.5, 4.6, 6.6_
+  - Create `src/scenes/QuizScene.js` that pauses `GameScene`, opens the modal with a `QuestionBank.next(grade)` question (drawing from both math and science by default), and blocks movement while open.
+  - Create `src/systems/QuizSystem.js` to check the answer by comparing the selected choice string to the record's `answer` value: correct -> resume with no life lost; wrong -> highlight the correct answer + show its `explanation`, `loseLife()`, then resume or go to game over; update `quizStats` in `Storage`.
+  - _Requirements: 4.1, 4.4, 4.5, 4.6, 4.7, 6.6_
 
 - [ ] 14. Implement fruit, LessonBank, and the LessonScene
   - Create `src/entities/Fruit.js` that spawns at an `F` tile on a timer or pellet threshold, drawn from a fruit icon in `05_collectibles_and_math_icons.png`.
@@ -110,8 +111,8 @@ This plan implements Math Man as a Phaser 3 + Vite browser game, ordered so the 
   - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 9.4_
 
 - [ ] 18. (Optional) Add Vitest unit tests for pure logic modules
-  - Configure Vitest and add tests for `ScoreSystem` (life clamp 6..10, game-over at 0), `QuestionBank` (grade mapping, correct answer, no-repeat), `Storage` (fallback + high-score update), and `Maze` helpers (isWall, tile/world conversion, tunnel wrap).
-  - _Requirements: 2.5, 2.6, 4.2, 4.7, 6.4, 6.5_
+  - Configure Vitest and add tests for `ScoreSystem` (life clamp 6..10, game-over at 0), `QuestionBank` (JSON validation/filtering, grade matching, answer-value matching, no-repeat, fallback), `Storage` (fallback + high-score update), and `Maze` helpers (isWall, tile/world conversion, tunnel wrap).
+  - _Requirements: 2.5, 2.6, 4.3, 4.8, 4.9, 6.4, 6.5_
 
 - [ ] 19. Accessibility, fallbacks, and final verification
   - Ensure quiz/lesson modals are keyboard-operable and dismissible, with sufficient contrast; add visible life gain/loss feedback.

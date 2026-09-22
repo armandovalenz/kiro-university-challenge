@@ -55,27 +55,26 @@ The game targets modern browsers (Chrome, Firefox, Safari, Edge), requires no lo
 
 1. WHILE the game is running THE system SHALL move the Einstein ghosts through the maze using a pursuit/patrol behavior.
 2. THE system SHALL render multiple Einstein ghosts in distinct colors (e.g., red, pink, cyan, orange), echoing the classic Pac-Man ghost quartet.
-3. WHEN any Einstein Ghost collides with Math Man THEN the system SHALL pause gameplay and present a math question (see Requirement 4).
+3. WHEN any Einstein Ghost collides with Math Man THEN the system SHALL pause gameplay and present a grade-appropriate math or science question (see Requirement 4).
 4. WHEN Math Man loses a life AND lives remain THEN the system SHALL reset Math Man and the ghosts to their starting positions.
 5. THE system SHALL give each Einstein ghost a recognizable Einstein appearance (e.g., wild-hair motif) while keeping the colors distinct.
 6. THE system MAY vary ghost speed or aggressiveness based on the selected difficulty level (see Requirement 10).
 
-### Requirement 4: Einstein Math Challenge (Educational Core)
+### Requirement 4: Einstein Challenge (Educational Core)
 
-**User Story:** As a student player, I want to answer a math question when the Einstein ghost catches me, so that I can save my life and practice math.
+**User Story:** As a student player, I want to answer a grade-appropriate math or science question when the Einstein ghost catches me, so that I can save my life and practice what I'm learning.
 
 #### Acceptance Criteria
 
-1. WHEN an Einstein Ghost catches Math Man THEN the system SHALL pause the game and display a math question matched to the selected difficulty level (see Requirement 10).
-2. THE system SHALL draw questions from categories appropriate to the selected grade:
-   - 5th grade: multi-digit operations, basic fractions/decimals, simple area/perimeter.
-   - 6th grade: ratios, percentages, integer operations, basic expressions.
-   - 7th grade: proportions, simple linear equations, negative numbers, basic probability/geometry.
-3. WHEN the question is displayed THEN the system SHALL present input for the player's answer (multiple choice or numeric entry).
-4. IF the player answers correctly THEN the system SHALL NOT deduct a life, SHALL show positive feedback, and SHALL resume gameplay.
-5. IF the player answers incorrectly THEN the system SHALL deduct one life, SHALL show the correct answer with a brief explanation, and SHALL resume gameplay (or trigger game-over if lives reach 0).
-6. THE system SHALL prevent ghost/Math Man movement while the question modal is open.
-7. THE system SHALL avoid repeating the same question twice in a row within a single game session.
+1. WHEN an Einstein Ghost catches Math Man THEN the system SHALL pause the game and display a question matched to the selected grade level (see Requirement 10).
+2. THE system SHALL load questions from the bundled question bank at `public/assets/questions/math_man_question_bank_120.json`, which contains grade-tagged (5/6/7) math and science questions across many topics and difficulty tiers (easy/medium/hard).
+3. THE system SHALL select a question whose `grade` matches the selected level; it MAY further filter by `subject` (math/science) and/or `difficulty`.
+4. WHEN the question is displayed THEN the system SHALL present its multiple-choice options for the player to select (numeric entry MAY be used where appropriate).
+5. IF the player selects the correct answer THEN the system SHALL NOT deduct a life, SHALL show positive feedback, and SHALL resume gameplay.
+6. IF the player selects an incorrect answer THEN the system SHALL deduct one life, SHALL show the correct answer with the question's `explanation`, and SHALL resume gameplay (or trigger game-over if lives reach 0).
+7. THE system SHALL prevent ghost/Math Man movement while the question modal is open.
+8. THE system SHALL avoid repeating the same question (by `id`) twice in a row within a single game session, and SHOULD avoid recently-used questions where possible.
+9. IF the question bank fails to load or is malformed THEN the system SHALL fall back to a small built-in question set so the quiz still functions.
 
 ### Requirement 5: Fruits, Extra Lives, and Micro-Lessons
 

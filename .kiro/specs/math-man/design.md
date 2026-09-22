@@ -86,11 +86,13 @@ graph TD
   subgraph Assets["public/assets"]
     Img["images/ (logo, sprite sheets, UI kit)"]
     Aud["audio/ (Pac-Man WAV)"]
+    QJson["questions/ (question bank JSON)"]
   end
 
   SM --> Scenes
   Boot -->|preload| Img
   Boot -->|preload| Aud
+  QBank -->|load| QJson
   Game --> Entities
   Game --> Maze
   Game --> Canvas
@@ -132,6 +134,8 @@ public/
       09_hero_einstein_enemies.png # title/menu hero
       ...                  #   posters/hero originals for marketing
     audio/                 # Pac-Man *.wav music + sfx (+ NOTICE.md; see Audio System)
+    questions/
+      math_man_question_bank_120.json  # 120 grade-tagged math/science questions
 src/
   main.js                  # Phaser.Game config; registers scene list
   config.js                # Constants: tile size, speeds, LIVES_START=6, LIVES_MAX=10, colors, timings
@@ -154,7 +158,7 @@ src/
     Maze.js                # Tilemap build + helpers: isWall, tile<->pixel, tunnel wrap, pellets
   systems/
     QuizSystem.js          # Orchestrates a quiz round; checks answers; updates stats
-    QuestionBank.js        # Generated + curated questions per grade; no-repeat
+    QuestionBank.js        # Loads/validates question bank JSON; grade/subject filter; no-repeat
     LessonBank.js          # Math/science micro-lessons for fruit
     ScoreSystem.js         # Score, lives (6..10), level progression, game-over
     Storage.js             # localStorage wrapper w/ in-memory fallback
@@ -286,8 +290,8 @@ sequenceDiagram
   Gh->>G: overlap -> "mathman-caught"
   G->>AB: sfx("sfx_caught")
   G->>QS: pause GameScene, launch QuizScene(grade)
-  QS->>QB: next(grade, recentIds)
-  QB-->>QS: question (prompt, choices, answerIndex, explanation)
+  QS->>QB: next(grade, {subject, difficulty}, recentIds)
+  QB-->>QS: question (question, choices, answer, explanation)
   QS->>QS: render accessible DOM modal
   Note over QS: player selects an answer (keyboard/mouse)
   QS->>Q: check(answer)
@@ -387,35 +391,41 @@ Entities extend Phaser sprite/GameObject classes so they participate in the disp
 
 ### QuestionBank (framework-agnostic)
 
-Hybrid source: **generated** parametric arithmetic for volume/variety plus a **curated** pool for word problems and geometry.
+Primary source is the **bundled static bank** `public/assets/questions/math_man_question_bank_120.json` — 120 questions, 40 per grade (5/6/7), an even math/science split, tagged by topic and difficulty. `QuestionBank` loads and indexes this JSON; a small **built-in fallback set** is used only if the file fails to load or fails validation (Req 4.9).
+
+Bank record schema (matches the JSON file):
 
 ```js
 {
-  id: string,            // stable/generated id for no-repeat tracking
+  id: string,          // e.g. "MM-G5-MATH-001" — used for no-repeat tracking
   grade: 5 | 6 | 7,
-  category: string,      // "fractions", "percent", "equations", ...
-  prompt: string,
-  choices: string[],     // multiple-choice options
-  answerIndex: number,   // index of the correct choice
-  explanation: string    // shown on wrong answer / feedback
+  subject: "math" | "science",
+  topic: string,       // e.g. "fractions", "cells", "forces", "geometry"
+  difficulty: "easy" | "medium" | "hard",
+  question: string,    // prompt text (note: field is `question`, not `prompt`)
+  choices: string[],   // multiple-choice options (as strings)
+  answer: string,      // the correct choice VALUE (not an index)
+  explanation: string  // shown on wrong answer / feedback
 }
 ```
 
-Grade mapping (Req 4.2):
+Indexing and selection:
 
-- **Grade 5:** multi-digit ×/÷, add/subtract like-denominator fractions, decimals to hundredths, rectangle area/perimeter.
-- **Grade 6:** ratios & unit rates, percentages, integer operations, evaluate simple expressions.
-- **Grade 7:** proportions, one/two-step linear equations, negatives, basic probability, circle area/circumference.
+- On load, questions are grouped by `grade` (and sub-grouped by `subject`/`difficulty`) for fast filtering. Validation drops any record missing required fields or whose `answer` is not one of its `choices`.
+- `QuestionBank.load()` fetches and validates the JSON (async, called in `BootScene`); `QuestionBank.next(grade, { subject, difficulty } = {}, recentIds = [])` returns a matching question whose `id` differs from the immediately previous one and, where possible, is not in `recentIds` (Req 4.3, 4.8).
+- Because `answer` is a value, `QuizSystem` compares the player's selected choice string to `answer` (no index bookkeeping). Choices are presented in their given order (optionally shuffled per attempt, keeping the `answer` value mapping intact).
+- The Einstein quiz defaults to drawing from **both math and science** for the selected grade; `subject`/`difficulty` filters allow narrowing (e.g., math-only, or scaling difficulty with the grade). Difficulty tiers can be mapped to level/grade progression as an enhancement.
 
-`QuestionBank.next(grade, recentIds)` returns a question whose `id` differs from the immediately previous one (Req 4.7).
+The bank's topic coverage (informative): grade 5-7 math (whole-number operations, fractions, decimals, ratios, percentages, integers, expressions/equations, geometry, statistics/probability) and science (cells, matter, forces, energy, ecosystems, earth/space systems, waves, genetics, scientific practice, and more).
 
 ### QuizSystem + QuizScene + QuizModal
 
-- On `mathman-caught`, `GameScene` pauses and launches `QuizScene`, which builds an accessible DOM form via `QuizModal` (Req 3.3, 4.1).
-- **Multiple-choice-first**: options selectable by mouse or keyboard (1-4 / arrows + Enter). Numeric entry is supported by the same modal where a category needs it.
-- Correct → correct-answer SFX, positive feedback, no life lost, resume GameScene (Req 4.4).
-- Wrong → wrong-answer SFX, show correct answer + explanation, `ScoreSystem.loseLife()`; if lives hit 0 → GameOverScene, else resume (Req 4.5).
-- `QuizSystem` records quiz stats (attempts, correct) via `Storage` (Req 6.6).
+- On `mathman-caught`, `GameScene` pauses and launches `QuizScene`, which builds an accessible DOM form via `QuizModal` from the `QuestionBank` record (Req 3.3, 4.1).
+- **Multiple-choice-first**: the `choices` are shown as selectable options (mouse or keyboard 1-4 / arrows + Enter).
+- `QuizSystem.check(selected)` compares the selected choice string to the record's `answer` value.
+- Correct → correct-answer SFX, positive feedback, no life lost, resume GameScene (Req 4.5).
+- Wrong → wrong-answer SFX, highlight the correct `answer` and show the `explanation`, `ScoreSystem.loseLife()`; if lives hit 0 → GameOverScene, else resume (Req 4.6).
+- `QuizSystem` records quiz stats (answered, correct) via `Storage` (Req 6.6).
 
 ### LessonBank + LessonScene + LessonModal
 
@@ -531,7 +541,8 @@ Because each scene owns its input, the same physical key does the right thing pe
 
 - **Storage failures:** caught; fall back to in-memory records; game continues (Req 6.5).
 - **Asset load failure (logo/audio/sprites):** BootScene load-error handler marks the asset missing; the game boots with a text/logo fallback and silent audio for that cue.
-- **Malformed maze/question data:** validated on load; a bad question is skipped and the next drawn so a quiz never dead-ends.
+- **Question bank load/parse failure:** `QuestionBank` validates each record on load (required fields present, `answer` is one of `choices`); invalid records are dropped. If the whole file fails to load/parse, a small built-in fallback set is used so the quiz still functions (Req 4.9).
+- **Malformed maze data:** validated on load; guarded so the game does not crash.
 - **Autoplay blocked:** handled by AudioBus unlock flow (above); never throws.
 - **Overlay open:** GameScene is paused, so stray movement input cannot desync the simulation.
 
@@ -539,7 +550,7 @@ Because each scene owns its input, the same physical key does the right thing pe
 
 Vite pairs natively with **Vitest** for the framework-agnostic logic. Tests are optional and would be added only on request.
 
-- **Unit-testable pure modules:** `QuestionBank` (correct answer, grade mapping, no-repeat), `ScoreSystem` (life clamp 6..10, game-over at 0), `Storage` (fallback + high-score update), `Maze` helpers (isWall, tile/world conversion, tunnel wrap).
+- **Unit-testable pure modules:** `QuestionBank` (JSON load/validation, grade/subject filtering, answer-value matching, no-repeat), `ScoreSystem` (life clamp 6..10, game-over at 0), `Storage` (fallback + high-score update), `Maze` helpers (isWall, tile/world conversion, tunnel wrap).
 - **Manual/integration checks:** scene transitions (splash→menu→play→quiz→resume/game-over), ghost AI sanity, audio unlock + mute, and a cross-browser smoke test on Chrome/Firefox/Safari/Edge.
 
 ## Key Design Decisions & Trade-offs
