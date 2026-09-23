@@ -105,6 +105,13 @@ export default class GameScene extends Phaser.Scene {
       }
     }
 
+    // Duck the music while any overlay is open and restore it on resume. Pausing
+    // this scene (quiz/lesson/pause) fires PAUSE → duck; resuming fires RESUME →
+    // unduck, so all three overlays are covered uniformly with no per-overlay
+    // code (Req 12.7).
+    this.events.on(Phaser.Scenes.Events.PAUSE, this._onScenePause, this);
+    this.events.on(Phaser.Scenes.Events.RESUME, this._onSceneResume, this);
+
     // Clean up the parallel HUD when this scene stops (restart / game over).
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this._onShutdown, this);
   }
@@ -552,9 +559,31 @@ export default class GameScene extends Phaser.Scene {
     this._levelTransition = false;
   }
 
+  // --- Overlay music ducking --------------------------------------------------
+
+  /**
+   * Duck the background music when this scene is paused for an overlay (quiz,
+   * lesson, or pause). Silent no-op when audio is unavailable.
+   */
+  _onScenePause() {
+    if (this.audio && typeof this.audio.duckMusic === 'function') this.audio.duckMusic();
+  }
+
+  /**
+   * Restore the background music when this scene resumes from an overlay.
+   * Silent no-op when audio is unavailable.
+   */
+  _onSceneResume() {
+    if (this.audio && typeof this.audio.unduckMusic === 'function') this.audio.unduckMusic();
+  }
+
   // --- Teardown ---------------------------------------------------------------
 
   _onShutdown() {
+    // Stop listening for pause/resume ducking once this scene stops.
+    this.events.off(Phaser.Scenes.Events.PAUSE, this._onScenePause, this);
+    this.events.off(Phaser.Scenes.Events.RESUME, this._onSceneResume, this);
+
     // Stop the parallel HUD so it does not linger over the next scene.
     if (this.scene.isActive('UIScene')) {
       this.scene.stop('UIScene');

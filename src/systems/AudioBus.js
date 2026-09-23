@@ -14,6 +14,12 @@
 //      it can still be exercised in tests with a stub/null scene (Property 21
 //      mute persistence, Property 22 missing-asset no-op).
 //
+// Audio is mixed on TWO fixed-volume channels under a single global mute:
+//   - music plays at `MUSIC_VOLUME` (0.45),
+//   - one-shot effects play at `SFX_VOLUME` (0.9).
+// The `M` key mutes both channels together (Phaser `sound.mute` is global);
+// there is no per-channel mute.
+//
 // The public surface used by BootScene (`init`, `setMuted`, `isMuted`, `sfx`,
 // `music`, `stopMusic`) is preserved; everything else is additive.
 //
@@ -22,8 +28,6 @@
 //   Property 20 — the event→sound map is total over the minimum event set.
 //   Property 21 — mute persists, restores on init, and never touches gameplay.
 //   Property 22 — a cue whose asset failed to load is a silent no-op.
-
-import { TIMINGS } from '../config.js';
 
 // =============================================================================
 // PURE LAYER — no Phaser. Safe to import in tests without a runtime.
@@ -45,6 +49,7 @@ export const AudioEvent = Object.freeze({
   MENU: 'menu', // menu shown (Req 12.1)
   GAME_START: 'gameStart', // game start / intro jingle (Req 12.2)
   GAME_MUSIC: 'gameMusic', // gameplay running loop (Req 12.1, 12.8)
+  QUIZ_MUSIC: 'quizMusic', // quiz-thinking loop while a question is on screen
   PELLET: 'pellet', // pellet eaten (Req 12.2)
   FRUIT_SPAWN: 'fruitSpawn', // fruit spawned (Req 12.2)
   FRUIT_COLLECT: 'fruitCollect', // fruit collected / bonus (Req 12.2)
@@ -84,12 +89,24 @@ export const MINIMUM_EVENT_SET = Object.freeze(Object.values(AudioEvent));
  * @type {Readonly<Record<string, {type: string, keys: string[], loop?: boolean, mode?: 'alternate'|'sequence'}>>}
  */
 export const EVENT_SOUND = Object.freeze({
-  [AudioEvent.TITLE]: { type: AudioType.MUSIC, keys: ['music_title'], loop: false },
-  [AudioEvent.MENU]: { type: AudioType.MUSIC, keys: ['music_menu'], loop: false },
+  // TITLE / MENU / GAME_MUSIC all route to the SAME looped score track so the
+  // intro, menu, and gameplay share one continuous piece of music (see the
+  // "same track already playing" guard in `_startMusic`, which keeps it
+  // seamless across the Splash → Menu → Game transitions).
+  [AudioEvent.TITLE]: { type: AudioType.MUSIC, keys: ['music_score'], loop: true },
+  [AudioEvent.MENU]: { type: AudioType.MUSIC, keys: ['music_score'], loop: true },
   [AudioEvent.GAME_START]: { type: AudioType.SFX, keys: ['sfx_intro'] },
   [AudioEvent.GAME_MUSIC]: {
+    // Gameplay background music: score.mp3, looped.
     type: AudioType.MUSIC,
-    keys: ['music_game_intro', 'music_game'],
+    keys: ['music_score'],
+    loop: true,
+  },
+  [AudioEvent.QUIZ_MUSIC]: {
+    // Quiz-thinking music: jeopardy.mp3, looped. Replaces the score while a
+    // question is on screen and is exempt from overlay ducking (full volume).
+    type: AudioType.MUSIC,
+    keys: ['music_jeopardy'],
     loop: true,
   },
   [AudioEvent.PELLET]: {
@@ -130,7 +147,35 @@ export function resolveSound(event) {
 
 // =============================================================================
 // PLAYBACK LAYER — the AudioBus singleton (touches Phaser only via `scene`).
+//
+// Two fixed-volume channels under a shared global mute: music at `MUSIC_VOLUME`
+// and one-shot effects at `SFX_VOLUME`. These are independent volumes, but a
+// single `sound.mute` (the `M` key) silences both together.
 // =============================================================================
+
+/** Fixed music-channel volume. */
+const MUSIC_VOLUME = 0.45;
+/** Fixed sfx-channel volume. */
+const SFX_VOLUME = 0.9;
+/** Fraction of `MUSIC_VOLUME` the music ducks to while an overlay is open. */
+const DUCK_FACTOR = 0.1;
+/** Duck / unduck fade duration (ms). */
+const DUCK_FADE_MS = 450;
+
+/**
+ * Robustly set a Phaser sound's volume, tolerating stub sounds and older APIs.
+ * @param {any} sound
+ * @param {number} v
+ */
+function setVolume(sound, v) {
+  if (!sound) return;
+  try {
+    if (typeof sound.setVolume === 'function') sound.setVolume(v);
+    else sound.volume = v;
+  } catch {
+    /* ignore */
+  }
+}
 
 export const AudioBus = {
   /** @type {Phaser.Scene | null} the scene providing `sound`/`cache`/`input`. */
@@ -139,6 +184,16 @@ export const AudioBus = {
   _storage: null,
   /** @type {Phaser.Sound.BaseSound | null} currently playing music track. */
   _music: null,
+  /** @type {string | null} the audio key of the current music track. */
+  _musicKey: null,
+  /** @type {boolean} whether music is currently ducked for an open overlay. */
+  _ducked: false,
+  /**
+   * @type {boolean} whether the current music track is exempt from overlay
+   * ducking (the quiz-thinking track plays at full music volume even while the
+   * quiz overlay is "ducking" the score).
+   */
+  _noDuckMusic: false,
   /** @type {boolean} */
   _muted: false,
   /** @type {Record<string, number>} per-event index for `alternate` SFX. */
@@ -159,6 +214,9 @@ export const AudioBus = {
     this._scene = scene || null;
     this._storage = storage;
     this._music = null;
+    this._musicKey = null;
+    this._ducked = false;
+    this._noDuckMusic = false;
     this._alt = Object.create(null);
     this._pending = null;
     this._unlockArmed = false;
@@ -268,7 +326,7 @@ export const AudioBus = {
     if (this._muted || !this._hasScene()) return;
     if (!this._hasAudio(key)) return; // missing asset → silent (Property 22)
     try {
-      this._scene.sound.play(key);
+      this._scene.sound.play(key, { volume: SFX_VOLUME });
     } catch {
       /* silent no-op on playback error */
     }
@@ -296,6 +354,63 @@ export const AudioBus = {
         /* ignore */
       }
       this._music = null;
+      this._musicKey = null;
+      this._noDuckMusic = false;
+    }
+  },
+
+  // --- Music ducking (overlays) ----------------------------------------------
+
+  /**
+   * Duck the music to a low background level while an overlay (quiz, lesson,
+   * pause) is open (Req 12.7). Independent of mute; a no-op with no scene or no
+   * current track, but the ducked state is remembered so a track (re)started
+   * later starts ducked.
+   */
+  duckMusic() {
+    this._setDucked(true);
+  },
+
+  /** Restore the music to full channel volume when the overlay closes. */
+  unduckMusic() {
+    this._setDucked(false);
+  },
+
+  /** @private @returns {number} the target music volume for the current duck state. */
+  _duckLevel() {
+    // A track flagged `_noDuckMusic` (the quiz-thinking loop) always plays at
+    // full music volume, ignoring the overlay duck state.
+    return this._ducked && !this._noDuckMusic ? MUSIC_VOLUME * DUCK_FACTOR : MUSIC_VOLUME;
+  },
+
+  /**
+   * @private Remember the duck state and, if music is playing, smoothly fade the
+   * current track to the matching level. Reuses `_killTweens` so rapid
+   * open/close cycles do not stack tweens. Safe when there is no scene or no
+   * current music (the state is simply remembered).
+   * @param {boolean} ducked
+   */
+  _setDucked(ducked) {
+    this._ducked = !!ducked;
+    if (!this._music || !this._hasScene()) return;
+
+    const target = this._duckLevel();
+    this._killTweens(this._music);
+
+    const music = this._music;
+    // Establish the final volume DETERMINISTICALLY now — do not rely on the
+    // fade tween's interpolation to land it (streaming MP3s do not reliably
+    // honor a tweened `volume`). The tween below is then only a cosmetic ramp.
+    setVolume(music, target);
+
+    const tweens = this._scene && this._scene.tweens;
+    if (tweens && typeof tweens.add === 'function') {
+      tweens.add({
+        targets: music,
+        volume: target,
+        duration: DUCK_FADE_MS,
+        onComplete: () => setVolume(music, target),
+      });
     }
   },
 
@@ -405,57 +520,82 @@ export const AudioBus = {
   },
 
   /**
-   * @private Start a music track, crossfading out any previous one via a volume
-   * tween (Req 12.7). Falls back to a hard cut when tweens are unavailable.
+   * @private Switch music so that EXACTLY ONE track is ever audible.
+   *
+   * On a real track change the PREVIOUS track is hard-stopped IMMEDIATELY and
+   * synchronously (kill its tweens, then `stop()`/`destroy()`), then the NEW
+   * track is created and faded IN from silence up to the current duck level.
+   * We never rely on a fade-out tween's deferred `onComplete` to stop the old
+   * track — that was the source of the music-stacking bug: during rapid
+   * transitions (quiz open → answer → RESUME) the fade-out tween was
+   * interrupted/orphaned and the previous track kept playing forever, letting
+   * several music instances overlap. Hard-stopping up front makes overlap
+   * impossible under any timing.
+   *
+   * Re-triggering the SAME key (e.g. the shared score track across
+   * Splash → Menu → Game, or an idempotent GAME_MUSIC re-play) is seamless: it
+   * does not recreate the sound, it just re-asserts the current volume.
    * @param {string} key
    * @param {boolean} loop
    */
   _startMusic(key, loop) {
     const scene = this._scene;
-    let next;
-    try {
-      next = scene.sound.add(key, { loop, volume: 0 });
-      next.play();
-    } catch {
-      return; // could not start → leave existing music alone
+
+    // Same track already playing → keep it seamless (don't recreate the sound).
+    // Re-triggering the shared score track (Splash → Menu → Game) must NOT
+    // restart it. Just make sure it is audible at the current duck level.
+    if (this._music && this._musicKey === key) {
+      setVolume(this._music, this._duckLevel());
+      return;
     }
 
+    // REAL switch to a different key: hard-stop the current track NOW, before
+    // creating the new one. Synchronous — no deferred onComplete — so no old
+    // track can survive into the next switch.
     const prev = this._music;
-    const duration = TIMINGS.musicCrossfade;
-    const tweens = scene.tweens;
+    if (prev) {
+      this._killTweens(prev);
+      try {
+        prev.stop();
+        prev.destroy();
+      } catch {
+        /* ignore */
+      }
+    }
+    // Nothing is playing while we spin up the new track.
+    this._music = null;
 
-    if (tweens && typeof tweens.add === 'function') {
-      tweens.add({ targets: next, volume: 1, duration });
-      if (prev) {
-        tweens.add({
-          targets: prev,
-          volume: 0,
-          duration,
-          onComplete: () => {
-            try {
-              prev.stop();
-              prev.destroy();
-            } catch {
-              /* ignore */
-            }
-          },
-        });
-      }
-    } else {
-      // No tween manager (e.g. a stub scene): hard cut.
-      if (typeof next.setVolume === 'function') next.setVolume(1);
-      else if ('volume' in next) next.volume = 1;
-      if (prev) {
-        try {
-          prev.stop();
-          prev.destroy();
-        } catch {
-          /* ignore */
-        }
-      }
+    // Returning to the gameplay/score track means we are back to normal game
+    // music — the overlay that ducked (lesson/pause) is being replaced. Clear
+    // the duck state so the score deterministically plays at full MUSIC_VOLUME,
+    // regardless of any in-flight duck/unduck tween racing GameScene's RESUME.
+    // Only the score track resets the duck; other tracks keep default behavior.
+    if (key === 'music_score') {
+      this._ducked = false;
+    }
+    // The quiz-thinking track is exempt from overlay ducking; every other track
+    // ducks normally. Determine this BEFORE computing the target so `_duckLevel`
+    // is correct for the new track.
+    this._noDuckMusic = key === 'music_jeopardy';
+
+    // Create the new track already AT its target volume — deterministic, no
+    // from-silence fade-in (that fade-in was what left the streaming MP3 at a
+    // wrong level). The previous track is already hard-stopped above.
+    const target = this._duckLevel();
+    let next;
+    try {
+      next = scene.sound.add(key, { loop, volume: target });
+      next.play();
+    } catch {
+      // Could not start the new track. The previous one is already stopped, so
+      // this simply results in silence; the next music event will recover.
+      return;
     }
 
     this._music = next;
+    this._musicKey = key;
+    // Re-assert the target volume deterministically after play().
+    setVolume(next, target);
   },
 
   /** @private Stop any crossfade tweens still targeting a sound. */
@@ -495,7 +635,7 @@ export const AudioBus = {
       key = keys[0];
     }
     try {
-      this._scene.sound.play(key);
+      this._scene.sound.play(key, { volume: SFX_VOLUME });
     } catch {
       /* silent no-op */
     }
@@ -520,6 +660,7 @@ export const AudioBus = {
         playNext();
         return;
       }
+      setVolume(snd, SFX_VOLUME);
       if (snd && typeof snd.once === 'function') {
         snd.once('complete', () => {
           try {

@@ -16,6 +16,7 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, IMAGE_ASSETS, TIMINGS } from '../config.js';
 import { MISSING_ASSETS_KEY } from './BootScene.js';
+import { AudioEvent } from '../systems/AudioBus.js';
 
 export default class SplashScene extends Phaser.Scene {
   constructor() {
@@ -96,6 +97,14 @@ export default class SplashScene extends Phaser.Scene {
     // Or advance immediately on any key / pointer input (Req 7.2).
     this.input.keyboard.once('keydown', () => this._advance());
     this.input.once('pointerdown', () => this._advance());
+
+    // Start the shared intro music (the looped score track). The AudioBus
+    // defers playback until the autoplay unlock (the first key/click), which is
+    // the same gesture that advances this scene, so the track begins at that
+    // first interaction and then continues seamlessly (thanks to the
+    // same-track guard in `_startMusic`) into Menu and Game.
+    const audio = this.registry.get('audio');
+    if (audio && typeof audio.play === 'function') audio.play(AudioEvent.TITLE);
   }
 
   /**

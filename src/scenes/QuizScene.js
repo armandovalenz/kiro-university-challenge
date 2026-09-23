@@ -72,6 +72,14 @@ export default class QuizScene extends Phaser.Scene {
     // gameplay never stalls (defensive; mirrors LessonScene).
     if (!opened) {
       this._finish({ correct: true });
+      return;
+    }
+
+    // Question is on screen: replace the (already-ducked) score with the
+    // quiz-thinking loop at full music volume. `_startMusic` crossfades the
+    // score out and brings jeopardy in exempt from the overlay duck.
+    if (this.audio && typeof this.audio.play === 'function') {
+      this.audio.play(AudioEvent.QUIZ_MUSIC);
     }
   }
 
@@ -84,7 +92,10 @@ export default class QuizScene extends Phaser.Scene {
   _onSubmit(choice) {
     const result = this.quizSystem.resolve(this._question, choice); // records stats (Req 6.6)
 
-    // Audio cue: correct vs wrong (Req 4.5, 4.6). Silent no-op without audio.
+    // Question solved: keep the jeopardy quiz loop playing through the result
+    // view and just play the correct/wrong cue over it. The score crossfades
+    // back in only when the player closes the dialog (see `_finish`). Silent
+    // no-op without audio.
     if (this.audio && typeof this.audio.play === 'function') {
       this.audio.play(result.correct ? AudioEvent.CORRECT : AudioEvent.WRONG);
     }
@@ -107,6 +118,16 @@ export default class QuizScene extends Phaser.Scene {
   _finish(result) {
     if (this._resolved) return;
     this._resolved = true;
+
+    // Dialog closing: crossfade the jeopardy quiz loop back to the gameplay
+    // score now that the player has continued past the result view. This is
+    // the intended point where the score resumes, and it also covers the
+    // no-DOM / no-question early-finish paths where `_onSubmit` never ran.
+    // Idempotent — the `_musicKey` same-key guard makes this a no-op when the
+    // score is already the current track.
+    if (this.audio && typeof this.audio.play === 'function') {
+      this.audio.play(AudioEvent.GAME_MUSIC);
+    }
 
     if (this.modal) {
       this.modal.close();

@@ -49,6 +49,8 @@ const AUDIO_ASSETS = [
   { key: 'sfx_intro', file: 'start.wav' },
   { key: 'music_game_intro', file: 'siren0_firstloop.wav' },
   { key: 'music_game', file: 'siren0.wav' },
+  { key: 'music_score', file: 'score.mp3' },
+  { key: 'music_jeopardy', file: 'jeopardy.mp3' },
   { key: 'sfx_pellet_0', file: 'eat_dot_0.wav' },
   { key: 'sfx_pellet_1', file: 'eat_dot_1.wav' },
   { key: 'sfx_fruit_spawn', file: 'credit.wav' },
