@@ -7,7 +7,7 @@
 - **Vanilla ES modules** (no framework beyond Phaser). Pin `phaser` and `vite` to exact versions in `package.json`.
 - **DOM overlays** (HTML/CSS) for the accessible quiz and lesson modals, layered above the canvas.
 - **localStorage** for persistence (namespaced key `mathman.v1`), with an in-memory fallback.
-- **Vitest** for optional unit tests of framework-agnostic logic.
+- **Vitest** for tests of framework-agnostic logic, with **`fast-check`** for property-based tests. Property-based tests are mandatory — see `.kiro/steering/testing.md`.
 
 ## Common commands
 
@@ -15,7 +15,7 @@
 - Dev server (do NOT run in the agent shell; it is long-running): `npm run dev`
 - Production build: `npm run build`  → outputs static files to `dist/`
 - Preview build: `npm run preview`
-- Tests (optional): `npm run test` (use `--run` for a single non-watch run)
+- Tests (property-based tests are mandatory, see `.kiro/steering/testing.md`): `npm run test` (use `--run` for a single non-watch run)
 
 > Long-running processes (`npm run dev`, watchers) must be started by the user in their own terminal, not via blocking agent commands.
 

@@ -36,11 +36,11 @@ Rendering, menus, and gameplay are handled by Phaser Scenes. Text-heavy, accessi
 | Audio | Phaser Sound Manager (Web Audio) | Preloaded/decoded assets, loop + global mute built in. |
 | Accessible modals | DOM overlays (HTML) | Keyboard-navigable, high-contrast quiz/lesson UI over the canvas. |
 | Persistence | `localStorage` (+ in-memory fallback) | No login; resilient local records. |
-| Unit tests (optional) | Vitest | Runs against pure logic modules; pairs natively with Vite. |
+| Tests | Vitest + `fast-check` | Runs against pure logic modules; property-based tests are mandatory (`.kiro/steering/testing.md`). |
 
 Phaser is loaded as an npm dependency and pinned to an exact version in `package.json`.
 
-## System Architecture
+## Architecture
 
 High-level component view: the Phaser game owns the scenes; scenes read/write the framework-agnostic systems; systems talk to the browser (localStorage, Web Audio) and the DOM overlays sit above the canvas.
 
@@ -117,11 +117,27 @@ graph TD
   Boot --> Store
 ```
 
+## Components and Interfaces
+
+The runtime is organized into three layers, each detailed in the sections that follow:
+
+- **Scenes** (`src/scenes/`) drive state flow — Boot, Splash, Menu, Game, UI, Quiz, Lesson, Pause, GameOver (see Scene Architecture).
+- **Entities** (`src/entities/`) are Phaser sprites — MathMan, Ghost, Fruit (see Entities).
+- **Systems** (`src/systems/`) are framework-agnostic logic — ScoreSystem, QuizSystem, QuestionBank, LessonBank, Storage, AudioBus (see Educational Systems, Score/Lives/Levels, Storage, and Audio System). Their public interfaces are given inline in those sections (e.g., the AudioBus API and Storage shape).
+
+## Data Models
+
+The core data shapes shared across modules (each detailed where it is introduced):
+
+- **Maze tile codes** — `#` wall, `.` pellet, ` ` path, `o` power pellet, `M` Math Man spawn, `G` ghost spawn, `F` fruit spawn, `-` tunnel (see Maze Model).
+- **Question record** — `{ id, grade, subject, topic, difficulty, question, choices[], answer, explanation }`; answers match by value, not index (see QuestionBank).
+- **Persisted storage (`mathman.v1`)** — `{ highScore, lastDifficulty, audioMuted, quizStats: { answered, correct } }` (see Storage).
+
 ## Project Structure
 
 ```
 index.html                 # Vite entry; hosts #game container + DOM overlay root
-package.json               # phaser (pinned), vite, (optional) vitest
+package.json               # phaser (pinned), vite, vitest + fast-check (mandatory PBT)
 vite.config.js
 public/
   assets/
@@ -548,10 +564,20 @@ Because each scene owns its input, the same physical key does the right thing pe
 
 ## Testing Strategy
 
-Vite pairs natively with **Vitest** for the framework-agnostic logic. Tests are optional and would be added only on request.
+Vite pairs natively with **Vitest** for the framework-agnostic logic. Property-based tests are **mandatory** (see `.kiro/steering/testing.md` and the Property-based testing subsection below); additional example-based unit tests are discretionary.
 
 - **Unit-testable pure modules:** `QuestionBank` (JSON load/validation, grade/subject filtering, answer-value matching, no-repeat), `ScoreSystem` (life clamp 6..10, game-over at 0), `Storage` (fallback + high-score update), `Maze` helpers (isWall, tile/world conversion, tunnel wrap).
 - **Manual/integration checks:** scene transitions (splash→menu→play→quiz→resume/game-over), ghost AI sanity, audio unlock + mute, and a cross-browser smoke test on Chrome/Firefox/Safari/Edge.
+
+### Property-based testing
+
+The testable invariants in the **Correctness Properties** section are validated with **property-based testing (PBT)** rather than only example-based cases. Instead of asserting one concrete input/output pair, each property states a universal rule and the tool generates hundreds of randomized inputs (including empty values, boundaries, and unusual characters) that try to violate it; on failure it *shrinks* the counterexample to the smallest reproducing input.
+
+- **Tooling:** [`fast-check`](https://github.com/dubzzz/fast-check) as the PBT generator, run through Vitest (`fast-check` integrates directly with Vitest's `test`/`expect`). It is added as an optional `devDependency` alongside Vitest.
+- **Source of properties:** each Core Property (`Property 1`–`Property 24`) in Correctness Properties maps to a `fast-check` `test.prop`/`fc.assert(fc.property(...))` case over generated inputs, and carries its `Validates: Requirements x.y` link in the test name/comment so the requirement → property → test trace is preserved.
+- **Scope:** PBT targets the framework-agnostic modules (`ScoreSystem`, `QuestionBank`, `LessonBank`, `Storage`, `Maze` helpers, and the `AudioBus` event→sound map), which take plain data and need no Phaser runtime.
+- **Mandatory:** per `.kiro/steering/testing.md`, property tests are required — every Core Property must have a passing `fast-check` test before its owning task is complete. The example-based criteria remain covered by the manual/integration checks above.
+- **On failure:** treat a shrunk counterexample as a signal to fix the implementation, tighten the property, or refine the requirement — not automatically the test.
 
 ## Key Design Decisions & Trade-offs
 
@@ -561,4 +587,160 @@ Vite pairs natively with **Vitest** for the framework-agnostic logic. Tests are 
 4. **Framework-agnostic logic modules.** QuestionBank/LessonBank/ScoreSystem/Storage/Maze-helpers avoid Phaser imports so they stay testable and portable.
 5. **Hybrid question source.** Generated arithmetic for endless non-repeating variety; curated items for quality word/geometry wording.
 6. **All ghosts are colored Einsteins with distinct AI.** Matches the request while preserving classic chase variety.
-7. **MP3 via Phaser Sound Manager with a mute master.** Broad compatibility, preloaded low-latency playback, and simple global mute persisted locally.
+7. **WAV (optionally MP3) via Phaser Sound Manager with a mute master.** Broad compatibility, preloaded low-latency playback, and simple global mute persisted locally.
+
+## Correctness Properties
+
+This section derives verifiable correctness statements from the EARS acceptance criteria in `requirements.md`. Each criterion is classified as either a **testable property** (a universal invariant expressible as "for any inputs where preconditions hold, the expected behavior holds") or **example-based** (verified by scenario/manual/visual checks because it concerns rendering, scene flow, external browser behavior, or non-deterministic output).
+
+The testable properties map directly onto the framework-agnostic modules called out in the Testing Strategy (`ScoreSystem`, `QuestionBank`, `LessonBank`, `Storage`, `Maze` helpers, `AudioBus` mapping), so they can be exercised with Vitest without Phaser.
+
+### Reflection
+
+After analyzing all acceptance criteria, several properties can be consolidated:
+- Properties for lives arithmetic (Req 2.2 decrement, 2.4 increment, 2.5/2.6 cap at 10, 5.2 fruit life) all describe one bounded-counter invariant — we'll combine them into a single lives-bounds property.
+- Wall-blocking (Req 1.3) and legal forward movement (Req 1.2) are two halves of the same movement rule — we'll combine them.
+- Correct-answer (Req 4.5) and wrong-answer (Req 4.6) handling are the two branches of one answer-checking contract — we'll combine them.
+- High-score persistence (Req 6.2/6.3) and update-when-greater (Req 6.4) describe one monotonic persisted maximum — we'll combine them.
+- Default grade (Req 10.2) and persisted grade (Req 10.5) are one difficulty-persistence property — we'll combine them.
+- Mute persistence (Req 12.4/9.4) and mute-has-no-gameplay-effect (Req 12.5) describe one mute contract — we'll combine them.
+
+The remaining criteria are either independent properties (below) or example-based (see the Example-based criteria table).
+
+### Core Properties
+
+### Property 1: Lives start at six
+*For any* newly started game, the initial life count is exactly 6.
+**Validates: Requirements 2.1**
+
+### Property 2: Lives stay within bounds
+*For any* sequence of lose-life / gain-life operations from a valid state, the life count stays within 0–10: losing a life decrements by exactly one while lives remain, and gaining a life increments by exactly one but never past the cap of 10.
+**Validates: Requirements 2.2, 2.4, 2.5, 2.6, 5.2**
+
+### Property 3: Game over exactly at zero lives
+*For any* game state, the game-over condition is true if and only if the life count is 0.
+**Validates: Requirements 2.3, 4.6**
+
+### Property 4: Restart resets the run but keeps difficulty
+*For any* finished game played at difficulty `d`, restarting sets score to 0, lives to 6, and level to its initial value while preserving difficulty `d`.
+**Validates: Requirements 7.7**
+
+### Property 5: Movement respects walls
+*For any* mover centered on a tile with a queued direction, it advances toward the target tile when that tile is not a wall and stays in place when it is — so a mover can never enter a wall.
+**Validates: Requirements 1.2, 1.3**
+
+### Property 6: Tile and world coordinates round-trip
+*For any* valid tile, converting it to world coordinates and back yields the same tile, keeping wall and movement checks consistent.
+**Validates: Requirements 1.2, 1.3**
+
+### Property 7: Eating a pellet removes it and scores
+*For any* pellet tile occupied by Math Man, eating removes exactly that pellet (the pellet count drops by one) and increases the score by the pellet's value.
+**Validates: Requirements 1.4**
+
+### Property 8: Clearing all pellets advances the level
+*For any* maze state where the pellet count reaches 0, the level increments and the pellet layer is rebuilt.
+**Validates: Requirements 1.5**
+
+### Property 9: Selected question matches the grade and filters
+*For any* selected grade in {5, 6, 7}, the next question has that grade, and also matches the subject/difficulty filters whenever they are supplied.
+**Validates: Requirements 4.1, 4.3, 10.3**
+
+### Property 10: Loaded questions are well-formed
+*For any* question retained in the active bank after loading, all required fields are present and the answer value is one of its choices (invalid records are dropped).
+**Validates: Requirements 4.2**
+
+### Property 11: Answer checking and life cost are consistent
+*For any* question and selected choice, the check passes if and only if the choice equals the answer value; a correct answer deducts no life, while a wrong answer deducts exactly one life and surfaces the explanation.
+**Validates: Requirements 4.5, 4.6**
+
+### Property 12: No immediate question repeat
+*For any* selection sequence from a grade with at least two eligible questions, the next question is never the same id twice in a row, and avoids recently-used ids whenever an alternative exists.
+**Validates: Requirements 4.8**
+
+### Property 13: The question bank always yields a usable set
+*For any* load where the question JSON is missing or malformed, the active question set is non-empty because the built-in fallback set is used.
+**Validates: Requirements 4.9**
+
+### Property 14: Lessons vary between showings
+*For any* sequence of fruit collections where at least two lessons exist, consecutive lessons differ whenever an unused lesson is available.
+**Validates: Requirements 5.5**
+
+### Property 15: High score is a persisted, monotonic maximum
+*For any* stored high score and finishing score, after the game ends the stored high score equals the maximum of the two, never decreases, and is readable on the next load.
+**Validates: Requirements 6.2, 6.3, 6.4**
+
+### Property 16: Storage degrades to in-memory records
+*For any* environment where local storage is unavailable or throws, loading returns defaults and subsequent saves and loads operate on in-memory records without throwing.
+**Validates: Requirements 6.5**
+
+### Property 17: Quiz stats track answers
+*For any* answered question, the answered count increases by one, and the correct count increases by one only when the answer was correct.
+**Validates: Requirements 6.6**
+
+### Property 18: Difficulty defaults and persists
+*For any* first visit with no stored difficulty, the effective grade is the default (5); and *for any* selected grade, the next load returns that grade as the last difficulty.
+**Validates: Requirements 10.2, 10.5**
+
+### Property 19: A single global high score
+*For any* sequence of games played across different grades, exactly one global high score is maintained, equal to the maximum score achieved regardless of grade.
+**Validates: Requirements 10.6**
+
+### Property 20: Every game event maps to a sound
+*For any* event in the minimum event set, the audio bus resolves a defined sound key (the event-to-sound map is total over that list).
+**Validates: Requirements 12.2**
+
+### Property 21: Mute persists and never affects gameplay
+*For any* mute toggle, the reported mute state and the persisted mute flag both match it (and are restored on the next init), and toggling mute leaves score, lives, level, and simulation timing unchanged.
+**Validates: Requirements 9.4, 12.4, 12.5**
+
+### Property 22: Missing audio is a silent no-op
+*For any* cue whose audio asset failed to load, playing that sound or music does nothing and does not throw.
+**Validates: Requirements 12.6**
+
+### Property 23: Ghosts never step into walls
+*For any* ghost centered on a tile, the chosen direction targets a non-wall, non-reversing tile.
+**Validates: Requirements 3.1**
+
+### Property 24: Difficulty scaling is monotonic (optional)
+*For any* two grades where the lower grade is easier, with difficulty scaling enabled, configured ghost speed and fruit cadence do not decrease as the grade increases. Optional because Requirements 3.6 and 10.4 use "MAY".
+**Validates: Requirements 3.6, 10.4**
+
+### Example-based criteria
+
+These are not expressed as universal properties; each line notes why and how it is instead verified (visual inspection, scene/integration test, or environment smoke test).
+
+| Requirement | Why example-based (one line) |
+|-------------|------------------------------|
+| Req 1.1 | Initial maze rendering (Math Man, ghosts, pellets on screen) — a visual/render assertion, not an input-space invariant. |
+| Req 1.6 | HUD showing live score/lives — DOM/scene render check, verified by inspection or snapshot. |
+| Req 3.1 (pursuit quality) | "Pursuit/patrol" is emergent AI behavior; verified by scenario tests. (The legal-move invariant is captured as Property 23.) |
+| Req 3.2 | Ghosts rendered in distinct colors — visual assertion. |
+| Req 3.3 | Collision pauses gameplay and opens the quiz — Phaser scene-pause + DOM flow, verified by integration test. |
+| Req 3.4 | Resetting Math Man/ghost positions after a life loss — Phaser entity placement, integration test. |
+| Req 3.5 | Einstein motif appearance — visual assertion. |
+| Req 4.4 | Presenting multiple-choice options — DOM UI rendering. |
+| Req 4.7 | Freezing movement while the modal is open — scene-pause behavior, integration test. |
+| Req 5.1 | Periodic/conditional fruit spawn — timer/scene scheduling, scenario test. |
+| Req 5.3 | Displaying a lesson on fruit collection — scene/DOM UI. |
+| Req 5.4 | Dismissing the lesson via keyboard and resuming — DOM interaction test. |
+| Req 6.1 | "No login" — an architectural constraint; nothing to execute as a property. |
+| Req 7.1 | Splash screen with logo — visual/scene render. |
+| Req 7.2 | Splash → menu after delay or key/click — scene timing/transition test. |
+| Req 7.3 | Menu shows play, grade selector, high score — UI render check. |
+| Req 7.4 | Start → playing transition — scene transition test. |
+| Req 7.5 | Pause key halts movement — scene-pause integration test. |
+| Req 7.6 | Game-over screen contents (final, high score, restart/menu) — UI render check. |
+| Req 8.1–8.5 | Browser compatibility, no backend, WebGL/Canvas, keyboard operability — environment constraints, verified by cross-browser smoke tests. |
+| Req 9.1 | Visible feedback on life change — visual assertion. |
+| Req 9.2 | Sufficient text contrast — visual/design review. |
+| Req 9.3 | Modals readable and keyboard-dismissible — accessibility/manual check. |
+| Req 10.1 | Grade selection control in the menu — UI interaction check. |
+| Req 11.1–11.6 | Logo/branding/app-icon/asset documentation — visual and asset/documentation checks. |
+| Req 12.1 | State-appropriate background music — audio playback scenario. |
+| Req 12.3 | MP3 (optional WAV) support — audio format/browser capability. |
+| Req 12.6 (autoplay) | Autoplay-blocked resume after first interaction — browser autoplay-policy integration. |
+| Req 12.7 | Web Audio low-latency pre-decoded playback — architectural/engine concern. |
+| Req 12.8 | Looping/tempo-shifting music — optional audio enhancement. |
+| Req 13.1–13.4 | Sprite/art rendering (mascot, collectibles, UI kit, ghosts) — visual assertions. |
+| Req 13.5 | Fallback to drawn shape/text on asset load failure — rendering fallback path, integration/visual check. |
+| Req 13.6 | Optimized/resized source art — build/asset-pipeline concern. |

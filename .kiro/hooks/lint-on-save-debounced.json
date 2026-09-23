@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Lint on Save (src, 15s debounce)",
+      "trigger": "PostFileSave",
+      "action": {
+        "type": "command",
+        "command": "d=\"${TMPDIR:-/tmp}/mathman-lint\"; mkdir -p \"$d\"; tok=\"$$-$RANDOM-$(date +%s)\"; printf '%s' \"$tok\" > \"$d/token\"; sleep 15; [ \"$(cat \"$d/token\" 2>/dev/null)\" = \"$tok\" ] && npm run lint"
+      },
+      "description": "Runs `npm run lint` after a JS/TS file under src/ is saved, but only once no further save has occurred for 15 seconds (debounced via a token file).",
+      "matcher": "/src/.*\\.(js|mjs|jsx|ts|tsx)$",
+      "enabled": true
+    }
+  ]
+}

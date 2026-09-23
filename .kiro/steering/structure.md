@@ -2,7 +2,7 @@
 
 ```
 index.html                 # Vite entry; #game container + DOM overlay root; favicon from 03_app_icon.png
-package.json               # phaser (pinned), vite, (optional) vitest
+package.json               # phaser (pinned), vite, vitest + fast-check (mandatory PBT)
 vite.config.js
 public/
   assets/

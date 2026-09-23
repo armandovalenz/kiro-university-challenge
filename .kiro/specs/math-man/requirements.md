@@ -164,19 +164,6 @@ The game targets modern browsers (Chrome, Firefox, Safari, Edge), requires no lo
 5. THE system SHALL use the app icon (`03_app_icon.png`) as the source for the browser favicon and any PWA icon.
 6. THE provided image assets and their intended uses SHALL be documented in `public/assets/images/ASSETS.md`.
 
-### Requirement 13: Sprites and In-Game Art
-
-**User Story:** As a player, I want the characters and items drawn with real art rather than plain shapes, so that the game looks polished.
-
-#### Acceptance Criteria
-
-1. THE system SHALL render Math Man using frames from the mascot sprite sheet (`04_mascot_sprite_sheet.png`) for movement/pose animation.
-2. THE system SHALL render pellets, fruit, and life icons using the collectibles/math icon art (`05_collectibles_and_math_icons.png`).
-3. THE system SHALL style the HUD, buttons, and quiz/lesson panels using the UI kit art (`06_ui_kit.png`) where practical.
-4. THE Einstein ghosts SHALL be rendered with distinct colors and an Einstein motif, consistent with the provided concept art (`08_poster_einstein_enemies.png`, `09_hero_einstein_enemies.png`).
-5. IF an image asset fails to load THEN the system SHALL fall back to a simple drawn shape or text so gameplay continues (see Requirement 9 and error handling).
-6. THE system SHOULD use optimized/resized versions of the large source PNGs to keep load times reasonable.
-
 ### Requirement 12: Music and Sound Effects
 
 **User Story:** As a player, I want arcade-style background music and sound effects for game events, so that the game feels lively and responsive like classic Pac-Man.
@@ -199,9 +186,22 @@ The game targets modern browsers (Chrome, Firefox, Safari, Edge), requires no lo
    - new high score,
    - menu navigation / selection,
    - pause / unpause.
-3. THE system SHALL support audio assets in MP3 format (WAV MAY be supported as an optional alternative for short effects).
+3. THE system SHALL support audio assets in WAV format (and MAY additionally use MP3-encoded assets to reduce file size).
 4. WHEN the player toggles mute THEN the system SHALL silence all music and sound effects and SHALL persist the mute state in `localStorage`.
 5. WHEN audio is muted THEN gameplay SHALL continue unaffected.
 6. IF an audio asset fails to load or the browser blocks autoplay THEN the system SHALL continue running without errors and SHALL start/resume audio after the first user interaction.
 7. THE system SHALL manage audio via the Web Audio API (directly or through the chosen engine/library) for low-latency playback of pre-decoded sound effects.
 8. THE gameplay background music MAY loop and MAY change tempo/intensity with difficulty or level (Pac-Man-style siren behavior) as an enhancement.
+
+### Requirement 13: Sprites and In-Game Art
+
+**User Story:** As a player, I want the characters and items drawn with real art rather than plain shapes, so that the game looks polished.
+
+#### Acceptance Criteria
+
+1. THE system SHALL render Math Man using frames from the mascot sprite sheet (`04_mascot_sprite_sheet.png`) for movement/pose animation.
+2. THE system SHALL render pellets, fruit, and life icons using the collectibles/math icon art (`05_collectibles_and_math_icons.png`).
+3. THE system SHALL style the HUD, buttons, and quiz/lesson panels using the UI kit art (`06_ui_kit.png`) where practical.
+4. THE Einstein ghosts SHALL be rendered with distinct colors and an Einstein motif, consistent with the provided concept art (`08_poster_einstein_enemies.png`, `09_hero_einstein_enemies.png`).
+5. IF an image asset fails to load THEN the system SHALL fall back to a simple drawn shape or text so gameplay continues (see Requirement 9 and error handling).
+6. THE system SHOULD use optimized/resized versions of the large source PNGs to keep load times reasonable.
