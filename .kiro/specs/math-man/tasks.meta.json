@@ -1,0 +1,333 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Scaffold the Phaser + Vite project": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139788786
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139798121
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790140027447
+      }
+    ],
+    "2. Implement the Storage module with in-memory fallback": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139788846
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790140043941
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790140819197
+      }
+    ],
+    "3. Implement the ScoreSystem module": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139788885
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790140052701
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790140523935
+      }
+    ],
+    "4. Build the BootScene and asset preload pipeline": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139788912
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790140053699
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790140819595
+      }
+    ],
+    "5. Build the SplashScene with the Math Man logo": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139788942
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790140863218
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790141144004
+      }
+    ],
+    "6. Build the MenuScene with grade selection and high score": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139788970
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790141149354
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790141270667
+      }
+    ],
+    "7. Implement the Maze model and tilemap": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139789001
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790140055009
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790140525894
+      }
+    ],
+    "8. Implement Math Man with grid-locked movement and input": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139789027
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790140864592
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790141144068
+      }
+    ],
+    "9. Wire pellet collection, scoring, and the HUD (UIScene)": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139789052
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790141276210
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790141548037
+      }
+    ],
+    "10. Implement Einstein ghosts and AI": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139789076
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790141551566
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790141812883
+      }
+    ],
+    "11. Implement ghost/Math Man collision and reset": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139789107
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790141816432
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790142018817
+      }
+    ],
+    "12. Implement the QuestionBank (load the bundled JSON bank)": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139789143
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790140056058
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790140820405
+      }
+    ],
+    "13. Build the QuizScene, QuizModal, and QuizSystem": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139789169
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790142383462
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790142634597
+      }
+    ],
+    "14. Implement fruit, LessonBank, and the LessonScene": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139789193
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790142043734
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790142382008
+      }
+    ],
+    "15. Implement level progression and level-clear handling": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139789218
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790142385414
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790142635886
+      }
+    ],
+    "16. Build the PauseScene and GameOverScene": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139789243
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790142636836
+      },
+      {
+        "executionId": "cecb53a4-2f1e-4546-a085-3e6a1c9cfe8b",
+        "chatSessionId": "sess_7d14799c-62dc-4e1e-871d-69624458131c",
+        "timestamp": 1790174528502
+      },
+      {
+        "executionId": "cecb53a4-2f1e-4546-a085-3e6a1c9cfe8b",
+        "chatSessionId": "sess_7d14799c-62dc-4e1e-871d-69624458131c",
+        "timestamp": 1790174679682
+      }
+    ],
+    "17. Implement the AudioBus and wire all event sounds": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139789268
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790140865726
+      },
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790141145269
+      }
+    ],
+    "18. Add property-based tests for pure logic modules (mandatory)": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139789292
+      },
+      {
+        "executionId": "527a8dc7-84e7-49b4-9969-c9d63b8e31fb",
+        "chatSessionId": "sess_3862455e-fcfc-4db4-8059-ddb8528761fa",
+        "timestamp": 1790174702700
+      },
+      {
+        "executionId": "527a8dc7-84e7-49b4-9969-c9d63b8e31fb",
+        "chatSessionId": "sess_3862455e-fcfc-4db4-8059-ddb8528761fa",
+        "timestamp": 1790175487279
+      }
+    ],
+    "19. Accessibility, fallbacks, and final verification": [
+      {
+        "executionId": "24db8824-eb5e-41d2-a40a-983f878e3057",
+        "chatSessionId": "sess_4bde84e5-9aad-4417-a6a1-f2d21e4129d7",
+        "timestamp": 1790139789317
+      },
+      {
+        "executionId": "527a8dc7-84e7-49b4-9969-c9d63b8e31fb",
+        "chatSessionId": "sess_3862455e-fcfc-4db4-8059-ddb8528761fa",
+        "timestamp": 1790175492648
+      },
+      {
+        "executionId": "527a8dc7-84e7-49b4-9969-c9d63b8e31fb",
+        "chatSessionId": "sess_3862455e-fcfc-4db4-8059-ddb8528761fa",
+        "timestamp": 1790175787670
+      }
+    ]
+  }
+}

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Math Man — an educational Pac-Man-style maze arcade game for grades 5-7." />
+    <!-- Favicon / PWA icon (Req 11.5). Uses the runtime-optimized 256px copy;
+         the full-resolution 03_app_icon.png remains the PWA/source icon. -->
+    <link rel="icon" type="image/png" sizes="256x256" href="/assets/images/optimized/03_app_icon.png" />
+    <title>Math Man</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: #000;
+        color: #fff;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        overflow: hidden;
+      }
+
+      /* Centering wrapper so the FIT-scaled canvas sits in the middle of the viewport. */
+      #app {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      /* Phaser mounts its canvas inside #game. */
+      #game {
+        position: relative;
+      }
+
+      /* Root for accessible DOM overlays (quiz + lesson modals) layered above the canvas. */
+      #overlay-root {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      /* Individual overlays opt back into pointer events when shown. */
+      #overlay-root > * {
+        pointer-events: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div id="game"></div>
+      <div id="overlay-root" aria-live="polite"></div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

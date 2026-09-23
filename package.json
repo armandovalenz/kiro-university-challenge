@@ -1,0 +1,22 @@
+{
+  "name": "math-man",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Math Man — an educational Pac-Man-style maze arcade game (Phaser 3 + Vite).",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "phaser": "3.90.0"
+  },
+  "devDependencies": {
+    "vite": "8.3.0",
+    "vitest": "4.1.11",
+    "fast-check": "4.10.2"
+  }
+}
