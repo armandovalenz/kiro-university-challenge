@@ -29,11 +29,12 @@ import QuestionBank from '../systems/QuestionBank.js';
 export const MISSING_ASSETS_KEY = 'missingAssets';
 
 /**
- * Placeholder frame size for the sprite sheets. The exact frame geometry for
- * `04_mascot_sprite_sheet.png` and `05_collectibles_and_math_icons.png` is
- * established when wiring animations in the entity tasks (8, 9, 14); loading
- * them here as spritesheets keeps that a drop-in refinement rather than a
- * re-load. A wrong frame size only mis-slices frames, it does not error.
+ * Placeholder frame size for sprite sheets whose real frame geometry is not yet
+ * wired. The collectibles sheet (`05_collectibles_and_math_icons.png`) still
+ * uses this until its frame map is defined (entity tasks 8/14); a wrong frame
+ * size only mis-slices frames, it does not error. The MASCOT sheet now loads
+ * with its true geometry (IMAGE_ASSETS.mascotSheetFrame) so MathMan can render
+ * the real art.
  */
 const SHEET_FRAME = { frameWidth: TILE_SIZE, frameHeight: TILE_SIZE };
 
@@ -92,7 +93,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.spritesheet(
       IMAGE_ASSETS.mascotSheet.key,
       IMAGE_ASSETS.mascotSheet.path,
-      SHEET_FRAME,
+      IMAGE_ASSETS.mascotSheetFrame,
     );
     this.load.spritesheet(
       IMAGE_ASSETS.collectibles.key,

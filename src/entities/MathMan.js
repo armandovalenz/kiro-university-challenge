@@ -17,7 +17,7 @@
 // each frame. This module contains only the entity and its movement logic.
 
 import Phaser from 'phaser';
-import { SPEEDS, TILE_SIZE, IMAGE_ASSETS } from '../config.js';
+import { SPEEDS, TILE_SIZE, IMAGE_ASSETS, MASCOT_FRAMES } from '../config.js';
 import { DIRECTIONS, nextCenterAhead } from '../maze/mazeLogic.js';
 
 /**
@@ -36,6 +36,9 @@ const TEX = {
 /** Animation key for the fallback chomp cycle. */
 const ANIM_CHOMP = 'mathman-chomp';
 
+/** Animation key for the real mascot walk cycle (running poses from the sheet). */
+const ANIM_WALK = 'mathman-walk';
+
 /**
  * Facing → rotation/flip for the drawn wedge (mouth points right at 0 rad).
  * Using flipX for left keeps the mouth upright; up/down rotate a quarter turn.
@@ -51,14 +54,16 @@ export default class MathMan extends Phaser.Physics.Arcade.Sprite {
   /**
    * Whether a real frame map for `04_mascot_sprite_sheet.png` has been wired.
    *
-   * The sheet is currently preloaded with only a PLACEHOLDER frame size and no
-   * animation frames, so its frame 0 is the near-empty top-left corner (which
-   * renders Math Man invisible). While this is `false`, {@link _isSheetMissing}
-   * forces the drawn-wedge fallback (matching Maze/Ghost/Fruit). Set it to
-   * `true` only after defining the sheet's real frame slicing + chomp frames.
+   * The sheet now loads with its TRUE frame geometry (362×543, a 4×2 grid of
+   * poses — see IMAGE_ASSETS.mascotSheetFrame / MASCOT_FRAMES) and MathMan
+   * slices named frames (idle + a two-pose walk cycle) from it, scaling each
+   * frame down to TILE_SIZE at draw time with antialiasing on (no quality baked
+   * away). When this is `true`, {@link _isSheetMissing} only falls back to the
+   * drawn wedge if the sheet actually failed to load; flip it to `false` to
+   * force the wedge fallback for every case.
    * @type {boolean}
    */
-  static MASCOT_FRAMES_READY = false;
+  static MASCOT_FRAMES_READY = true;
 
   /**
    * @param {Phaser.Scene} scene owning scene (GameScene)
@@ -74,7 +79,9 @@ export default class MathMan extends Phaser.Physics.Arcade.Sprite {
     if (usingFallback) MathMan._ensureFallbackTextures(scene);
 
     const textureKey = usingFallback ? TEX.closed : IMAGE_ASSETS.mascotSheet.key;
-    super(scene, x, y, textureKey);
+    // For the real sheet, start on the idle pose (frame 0) rather than the
+    // sheet's default frame so Math Man is immediately recognizable.
+    super(scene, x, y, textureKey, usingFallback ? undefined : MASCOT_FRAMES.idle);
 
     scene.add.existing(this);
     if (scene.physics && scene.physics.add) {
@@ -104,9 +111,39 @@ export default class MathMan extends Phaser.Physics.Arcade.Sprite {
     // Fit the physics body a little inside the tile for fair overlap checks.
     this.setOrigin(0.5, 0.5);
     this.setDepth(10);
+
+    // Scale the real mascot art down to tile size WITHOUT losing quality: the
+    // source frame (362×543) is downsampled by the renderer at draw time with
+    // antialiasing on (Phaser's default — `pixelArt`/`roundPixels` are not set),
+    // so we keep the crisp high-res source and never bake a lossy small texture.
+    // Preserve the frame's aspect ratio (character is taller than wide) so it is
+    // not squashed, sizing it to fit within a tile. The wedge fallback already
+    // renders at TILE_SIZE, so it is left untouched.
+    if (!usingFallback) {
+      const frameW = this.frame ? this.frame.realWidth : IMAGE_ASSETS.mascotSheetFrame.frameWidth;
+      const frameH = this.frame ? this.frame.realHeight : IMAGE_ASSETS.mascotSheetFrame.frameHeight;
+      // Fit to a tile-sized box, slightly enlarged so the character reads well
+      // against the maze while still clearing corridor walls.
+      const fit = (TILE_SIZE * 1.35) / Math.max(frameW, frameH);
+      this.setScale(fit);
+    }
     if (this.body && this.body.setCircle) {
-      const r = TILE_SIZE * 0.4;
-      this.body.setCircle(r, TILE_SIZE / 2 - r, TILE_SIZE / 2 - r);
+      // Arcade body offsets/radius are in SOURCE-FRAME pixels and get scaled by
+      // the sprite's scale. For the fallback wedge (scale 1, TILE_SIZE frame)
+      // this is the original tile-space math. For the real mascot art we work
+      // in the frame's own pixel space and center the circle on the frame so
+      // that, once scaled, the effective overlap radius is ~0.4·TILE_SIZE.
+      if (this._usingFallback) {
+        const r = TILE_SIZE * 0.4;
+        this.body.setCircle(r, TILE_SIZE / 2 - r, TILE_SIZE / 2 - r);
+      } else {
+        const fw = this.frame ? this.frame.realWidth : IMAGE_ASSETS.mascotSheetFrame.frameWidth;
+        const fh = this.frame ? this.frame.realHeight : IMAGE_ASSETS.mascotSheetFrame.frameHeight;
+        const scale = this.scaleX || 1;
+        // Desired on-screen radius (world px) → back into frame-space px.
+        const r = (TILE_SIZE * 0.4) / scale;
+        this.body.setCircle(r, fw / 2 - r, fh / 2 - r);
+      }
     }
     if (this.body) {
       // Movement is manual/grid-locked; the body exists only for overlap
@@ -302,27 +339,53 @@ export default class MathMan extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  /** Build the chomp animation (fallback wedge) once, if not already present. */
+  /**
+   * Build the movement animation once, if not already present. With the real
+   * mascot sheet this is a walk cycle over the two running poses (frames from
+   * MASCOT_FRAMES.walk); with the drawn fallback it is the open/closed chomp.
+   */
   _initAnimation() {
-    if (!this._usingFallback) return;
     const anims = this.scene.anims;
-    if (anims.exists(ANIM_CHOMP)) return;
+    if (this._usingFallback) {
+      if (anims.exists(ANIM_CHOMP)) return;
+      anims.create({
+        key: ANIM_CHOMP,
+        frames: [{ key: TEX.open }, { key: TEX.closed }],
+        frameRate: 10,
+        repeat: -1,
+      });
+      return;
+    }
+    // Real mascot art: cycle the running poses while moving.
+    if (anims.exists(ANIM_WALK)) return;
     anims.create({
-      key: ANIM_CHOMP,
-      frames: [{ key: TEX.open }, { key: TEX.closed }],
-      frameRate: 10,
+      key: ANIM_WALK,
+      frames: anims.generateFrameNumbers(IMAGE_ASSETS.mascotSheet.key, {
+        frames: MASCOT_FRAMES.walk,
+      }),
+      frameRate: 8,
       repeat: -1,
     });
   }
 
-  /** Play the chomp cycle while moving; hold a frame while idle/blocked. */
+  /**
+   * Play the movement cycle while moving; hold the resting pose while
+   * idle/blocked. Works for both the real sheet (walk cycle → idle frame) and
+   * the drawn fallback (chomp → closed wedge).
+   */
   _updateAnimation() {
-    if (!this._usingFallback) return;
+    const restKey = this._usingFallback ? TEX.closed : null;
+    const animKey = this._usingFallback ? ANIM_CHOMP : ANIM_WALK;
     if (this.moving) {
-      if (!this.anims.isPlaying) this.anims.play(ANIM_CHOMP, true);
+      if (!this.anims.isPlaying) this.anims.play(animKey, true);
     } else if (this.anims.isPlaying) {
       this.anims.stop();
-      this.setTexture(TEX.closed);
+      if (this._usingFallback) {
+        this.setTexture(restKey);
+      } else {
+        // Return to the idle pose frame (same texture, just the resting frame).
+        this.setFrame(MASCOT_FRAMES.idle);
+      }
     }
   }
 

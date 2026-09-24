@@ -198,6 +198,13 @@ export const AudioBus = {
   _muted: false,
   /** @type {Record<string, number>} per-event index for `alternate` SFX. */
   _alt: Object.create(null),
+  /**
+   * @type {Set<any>} currently-playing one-shot SFX sound instances. Tracked so
+   * we can enforce "one sound at a time" — a new SFX stops any still-playing
+   * ones (see `_playSfxEntry` / `stopAllSfx`). Each entry removes itself on
+   * `complete`.
+   */
+  _activeSfx: new Set(),
   /** @type {(() => void) | null} deferred playback awaiting the autoplay unlock. */
   _pending: null,
   /** @type {boolean} whether an unlock listener is currently armed. */
@@ -218,6 +225,7 @@ export const AudioBus = {
     this._ducked = false;
     this._noDuckMusic = false;
     this._alt = Object.create(null);
+    this._activeSfx = new Set();
     this._pending = null;
     this._unlockArmed = false;
 
@@ -325,11 +333,9 @@ export const AudioBus = {
   sfx(key) {
     if (this._muted || !this._hasScene()) return;
     if (!this._hasAudio(key)) return; // missing asset → silent (Property 22)
-    try {
-      this._scene.sound.play(key, { volume: SFX_VOLUME });
-    } catch {
-      /* silent no-op on playback error */
-    }
+    // One sound at a time: stop any still-playing effect before this one.
+    this.stopAllSfx();
+    this._playTrackedSfx(key);
   },
 
   /**
@@ -341,6 +347,24 @@ export const AudioBus = {
   music(key, { loop = true } = {}) {
     if (!this._hasScene() || !this._hasAudio(key)) return; // missing → silent
     this._deferUntilUnlocked(() => this._startMusic(key, !!loop));
+  },
+
+  /**
+   * Stop every one-shot SFX currently playing. Used to enforce "one sound at a
+   * time" — a fresh cue silences any lingering effects first. Safe with no
+   * scene and idempotent (the set is cleared as instances are stopped).
+   */
+  stopAllSfx() {
+    if (!this._activeSfx || !this._activeSfx.size) return;
+    for (const snd of Array.from(this._activeSfx)) {
+      try {
+        snd.stop();
+        snd.destroy();
+      } catch {
+        /* ignore */
+      }
+    }
+    this._activeSfx.clear();
   },
 
   /** Stop and release the current music track (and any crossfade tweens). */
@@ -621,6 +645,10 @@ export const AudioBus = {
     const keys = entry.keys.filter((k) => this._hasAudio(k));
     if (!keys.length) return; // all missing → silent (Property 22)
 
+    // Enforce "one sound at a time": silence any effect still playing before we
+    // start the next cue, so effects never pile up on top of each other.
+    this.stopAllSfx();
+
     if (entry.mode === 'sequence') {
       this._playSequence(keys);
       return;
@@ -634,10 +662,48 @@ export const AudioBus = {
     } else {
       key = keys[0];
     }
+    this._playTrackedSfx(key);
+  },
+
+  /**
+   * @private Create, play, and TRACK a single one-shot SFX so it can be stopped
+   * by `stopAllSfx`. The instance removes itself from the tracking set (and
+   * destroys itself) when it finishes. Built via `sound.add` (returns an
+   * instance) rather than `sound.play` (returns a boolean) so we hold a handle
+   * to stop. Silent no-op on any error.
+   * @param {string} key an already-verified, loaded audio key.
+   */
+  _playTrackedSfx(key) {
+    const scene = this._scene;
+    let snd;
     try {
-      this._scene.sound.play(key, { volume: SFX_VOLUME });
+      snd = scene.sound.add(key);
     } catch {
-      /* silent no-op */
+      // Fall back to fire-and-forget play if `add` is unavailable; it cannot be
+      // tracked/stopped, but the cue still sounds.
+      try {
+        scene.sound.play(key, { volume: SFX_VOLUME });
+      } catch {
+        /* silent */
+      }
+      return;
+    }
+    setVolume(snd, SFX_VOLUME);
+    if (snd && typeof snd.once === 'function') {
+      snd.once('complete', () => {
+        this._activeSfx.delete(snd);
+        try {
+          snd.destroy();
+        } catch {
+          /* ignore */
+        }
+      });
+    }
+    this._activeSfx.add(snd);
+    try {
+      snd.play();
+    } catch {
+      this._activeSfx.delete(snd);
     }
   },
 
@@ -661,8 +727,11 @@ export const AudioBus = {
         return;
       }
       setVolume(snd, SFX_VOLUME);
+      // Track each clip so stopAllSfx can silence an in-flight sequence too.
+      this._activeSfx.add(snd);
       if (snd && typeof snd.once === 'function') {
         snd.once('complete', () => {
+          this._activeSfx.delete(snd);
           try {
             snd.destroy();
           } catch {
@@ -674,6 +743,7 @@ export const AudioBus = {
       try {
         snd.play();
       } catch {
+        this._activeSfx.delete(snd);
         playNext();
       }
     };

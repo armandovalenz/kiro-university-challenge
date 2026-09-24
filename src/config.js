@@ -77,6 +77,20 @@ export const GHOST_PERSONALITIES = [
   { key: 'orange', color: GHOST_COLORS.orange, personality: 'scatter' },
 ];
 
+// --- Menu / blueprint background ---------------------------------------------
+// A drawn "blueprint" backdrop (deep navy base + lighter blue grid lines) used
+// by MenuScene instead of the dimmed hero photo, for a clean, readable,
+// on-theme look. Colors are 0xRRGGBB so Phaser Graphics/rectangles can use them
+// directly.
+export const BLUEPRINT = {
+  base: 0x0a1f4d, // deep blueprint navy
+  baseTop: 0x061634, // slightly darker top for a subtle vertical gradient
+  grid: 0x2b6fd6, // lighter blue grid lines
+  gridBold: 0x4f93ff, // brighter line every few cells
+  cell: 24, // fine grid cell size (px) — matches TILE_SIZE
+  boldEvery: 4, // draw a brighter line every N cells
+};
+
 // --- Persistence --------------------------------------------------------------
 
 /** Namespaced localStorage key for all persisted records. */
@@ -109,10 +123,28 @@ export const IMAGE_ASSETS = {
   logo: { key: 'logo', path: 'assets/images/optimized/02_logo.png' },
   appIcon: { key: 'app_icon', path: 'assets/images/03_app_icon.png' },
   mascotSheet: { key: 'mascot_sheet', path: 'assets/images/04_mascot_sprite_sheet.png' },
+  // Frame geometry for the mascot sheet. `04_mascot_sprite_sheet.png` is a
+  // 1448×1086 image laid out as a 4-column × 2-row grid of full-body poses, so
+  // each frame is exactly 362×543 px. Frames are numbered left→right, top→bottom
+  // (Phaser default): 0 idle, 1 run-A, 2 run-B, 3 leap, 4 walk-left-pose,
+  // 5 cheer, 6 think, 7 power-up. The originals stay high-res; MathMan scales a
+  // frame down to TILE_SIZE at draw time with antialiasing on, so no quality is
+  // baked away. See public/assets/images/ASSETS.md.
+  mascotSheetFrame: { frameWidth: 362, frameHeight: 543 },
   collectibles: { key: 'collectibles', path: 'assets/images/05_collectibles_and_math_icons.png' },
   uiKit: { key: 'ui_kit', path: 'assets/images/optimized/06_ui_kit.png' },
   einsteinPoster: { key: 'einstein_poster', path: 'assets/images/optimized/08_poster_einstein_enemies.png' },
   hero: { key: 'hero', path: 'assets/images/optimized/09_hero_einstein_enemies.png' },
+};
+
+/**
+ * Named frames within the mascot sheet (see IMAGE_ASSETS.mascotSheetFrame).
+ * `idle` shows when Math Man is stopped; `walk` cycles the two running poses
+ * while moving. The character art faces RIGHT, so left is a horizontal flip.
+ */
+export const MASCOT_FRAMES = {
+  idle: 0,
+  walk: [1, 2],
 };
 
 /** Path to the bundled question bank (Req 4.2). */

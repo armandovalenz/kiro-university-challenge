@@ -92,12 +92,17 @@ export default class QuizScene extends Phaser.Scene {
   _onSubmit(choice) {
     const result = this.quizSystem.resolve(this._question, choice); // records stats (Req 6.6)
 
-    // Question solved: keep the jeopardy quiz loop playing through the result
-    // view and just play the correct/wrong cue over it. The score crossfades
-    // back in only when the player closes the dialog (see `_finish`). Silent
-    // no-op without audio.
-    if (this.audio && typeof this.audio.play === 'function') {
-      this.audio.play(result.correct ? AudioEvent.CORRECT : AudioEvent.WRONG);
+    // Question solved: play ONLY the correct/wrong cue — no other sound should
+    // overlap it. Stop the looping jeopardy quiz music and silence any lingering
+    // effect (e.g. the "caught" cue) first, so the outcome cue is heard cleanly
+    // (one sound at a time). The gameplay score crossfades back in when the
+    // player closes the dialog (see `_finish`). Silent no-op without audio.
+    if (this.audio) {
+      if (typeof this.audio.stopMusic === 'function') this.audio.stopMusic();
+      if (typeof this.audio.stopAllSfx === 'function') this.audio.stopAllSfx();
+      if (typeof this.audio.play === 'function') {
+        this.audio.play(result.correct ? AudioEvent.CORRECT : AudioEvent.WRONG);
+      }
     }
 
     // Reveal outcome (highlight correct answer + explanation on wrong), then

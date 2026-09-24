@@ -9,10 +9,10 @@
 //   2. Plays the new-high-score cue when the run set a record (Req 12.2). The
 //      game-over cue itself was already played by GameScene._onGameOver.
 //   3. Displays the final score and the (possibly updated) high score (Req 7.6).
-//   4. Offers Restart and Return-to-Menu. Restart begins a fresh GameScene while
-//      preserving the selected difficulty (Req 7.7): a new GameScene builds a
-//      fresh ScoreSystem (score 0, lives 6, initial level — Property 4) and is
-//      handed the persisted grade so questions still match the chosen level.
+//   4. Offers Play Again and Return-to-Menu. Play Again returns to the SPLASH
+//      screen (Req 7.7) so the player re-enters through the normal splash → menu
+//      flow; the selected difficulty stays persisted in Storage. Menu jumps
+//      straight to the start menu.
 
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, DEFAULT_GRADE, GRADES } from '../config.js';
@@ -171,7 +171,7 @@ export default class GameOverScene extends Phaser.Scene {
       });
     }
 
-    this._restartButton = this._makeButton(cx, GAME_HEIGHT * 0.74, '▶  RESTART', '#003366', () =>
+    this._restartButton = this._makeButton(cx, GAME_HEIGHT * 0.74, '▶  PLAY AGAIN', '#003366', () =>
       this._restart(),
     );
     this._menuButton = this._makeButton(cx, GAME_HEIGHT * 0.84, 'MENU', '#1b1b3a', () =>
@@ -179,7 +179,7 @@ export default class GameOverScene extends Phaser.Scene {
     );
 
     this.add
-      .text(cx, GAME_HEIGHT - 24, 'Enter/R: restart · Esc: menu · M: mute', {
+      .text(cx, GAME_HEIGHT - 24, 'Enter/R: play again · Esc: menu · M: mute', {
         fontFamily: 'monospace',
         fontSize: '13px',
         color: '#ffffff',
@@ -236,9 +236,11 @@ export default class GameOverScene extends Phaser.Scene {
   // --- Transitions -----------------------------------------------------------
 
   /**
-   * Restart the game while preserving difficulty (Req 7.7). A fresh GameScene
-   * rebuilds its own ScoreSystem (score 0, lives 6, initial level — Property 4);
-   * the persisted grade is passed so questions keep matching the chosen level.
+   * Restart back to the SPLASH screen (Req 7.7). Rather than dropping straight
+   * into a fresh GameScene, we return to the branded splash → menu flow so the
+   * player re-enters the game the same way they first did (and can re-pick a
+   * grade at the menu). The persisted difficulty is still remembered by Storage,
+   * so it is preserved even though we do not thread it through here.
    */
   _restart() {
     if (this._done) return;
@@ -246,7 +248,7 @@ export default class GameOverScene extends Phaser.Scene {
     if (this.audio && typeof this.audio.play === 'function') {
       this.audio.play(AudioEvent.MENU_SELECT);
     }
-    this.scene.start('GameScene', { grade: this._grade });
+    this.scene.start('SplashScene');
   }
 
   /** Return to the start menu (Req 7.6). */

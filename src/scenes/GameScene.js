@@ -365,14 +365,80 @@ export default class GameScene extends Phaser.Scene {
    */
   _onGameOver() {
     this._caught = false;
-    if (this.audio && typeof this.audio.play === 'function') {
-      this.audio.play(AudioEvent.GAME_OVER);
+
+    // The game-over path is reached from resumeAfterQuiz(), which runs inside
+    // the QuizScene's resolve callback while that overlay is still active on top
+    // of this (paused) scene. Stop the quiz overlay FIRST so its DOM modal and
+    // scene do not linger over the GameOverScene we are about to start; also
+    // stop the parallel HUD. Guard each stop so it is safe if the scene is
+    // already gone.
+    if (this.scene.isActive('QuizScene')) {
+      this.scene.stop('QuizScene');
     }
-    if (this._isSceneRegistered('GameOverScene')) {
+    if (this.scene.isActive('LessonScene')) {
+      this.scene.stop('LessonScene');
+    }
+    if (this.scene.isActive('UIScene')) {
       this.scene.stop('UIScene');
-      this.scene.start('GameOverScene', this.scoreSystem.snapshot());
     }
-    // else: leave paused; Task 16 wires the GameOverScene transition.
+
+    // Clear any overlay music duck so the game-over cue is not stuck at the
+    // ducked (near-silent) level. GAME_OVER is a MUSIC event, so playing it
+    // replaces the quiz/score track with exactly one track (AudioBus guarantees
+    // a single music track).
+    if (this.audio) {
+      if (typeof this.audio.unduckMusic === 'function') this.audio.unduckMusic();
+      if (typeof this.audio.play === 'function') this.audio.play(AudioEvent.GAME_OVER);
+    }
+
+    if (!this._isSceneRegistered('GameOverScene')) return;
+
+    // Capture the final state NOW, before any deferred frame can mutate it.
+    const snapshot = this.scoreSystem.snapshot();
+
+    // WHY DEFER: this runs synchronously inside QuizScene._finish's resolve
+    // callback, while (a) THIS scene is still PAUSED (paused in
+    // _onMathManCaught) and (b) QuizScene is mid-`_finish` and will issue its
+    // OWN `this.scene.stop()` the instant this callback returns. All of
+    // scene.stop/resume/start are queued on the Scene Manager and drained on the
+    // next step; issuing "resume GameScene" + "start GameScene→GameOverScene"
+    // in the same drain as QuizScene's self-stop is an unreliable churn on the
+    // paused-then-resumed slot — the start op does not reliably boot
+    // GameOverScene, so the GAME OVER screen never appeared.
+    //
+    // FIX: let the current call stack (and QuizScene's self-stop) fully unwind,
+    // then run the transition on the NEXT tick from the game-level Scene
+    // Manager — which is always live — instead of this paused scene's proxy.
+    // `game.events.once('poststep')` fires once after the manager has drained
+    // the pending stop/resume ops, so GameScene is settled when we start
+    // GameOverScene.
+    const manager = this.scene.manager;
+    const game = this.game || (this.sys && this.sys.game);
+
+    const startGameOver = () => {
+      // Stop GameScene explicitly (fires SHUTDOWN → HUD/timer teardown via
+      // _onShutdown) and boot the game-over screen. Both go through the
+      // game-level manager so neither depends on GameScene's own paused plugin.
+      try {
+        if (manager && typeof manager.stop === 'function') manager.stop('GameScene');
+        if (manager && typeof manager.start === 'function') {
+          manager.start('GameOverScene', snapshot);
+        } else {
+          this.scene.start('GameOverScene', snapshot);
+        }
+      } catch {
+        // Last-ditch fallback: start via the scene proxy.
+        this.scene.start('GameOverScene', snapshot);
+      }
+    };
+
+    if (game && game.events && typeof game.events.once === 'function') {
+      game.events.once(Phaser.Core.Events.POST_STEP, startGameOver);
+    } else {
+      // No game event bus (headless/tests): start directly.
+      if (this.scene.isPaused()) this.scene.resume();
+      this.scene.start('GameOverScene', snapshot);
+    }
   }
 
   /**

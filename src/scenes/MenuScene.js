@@ -1,9 +1,10 @@
 // MenuScene — the start menu (Task 6).
 //
 // Responsibilities:
-//   - Show the Math Man logo (`02_logo.png`) over the hero background
-//     (`09_hero_einstein_enemies.png`), a Play button, a 5/6/7 grade selector,
-//     and the current high score from Storage (Req 7.3, 10.1, 11.2, 13.3).
+//   - Show the Math Man logo (`02_logo.png`) over a drawn blueprint background
+//     (deep blue + technical grid; see `_buildBackground`), a Play button, a
+//     5/6/7 grade selector, and the current high score from Storage (Req 7.3,
+//     10.1, 11.2, 13.3).
 //   - Default the grade selection to the persisted `lastDifficulty` (or the
 //     DEFAULT_GRADE), and persist changes via `storage.setDifficulty` (Req 10.2,
 //     10.5).
@@ -23,6 +24,7 @@ import {
   IMAGE_ASSETS,
   GRADES,
   DEFAULT_GRADE,
+  BLUEPRINT,
 } from '../config.js';
 import { MISSING_ASSETS_KEY } from './BootScene.js';
 import { AudioEvent } from '../systems/AudioBus.js';
@@ -88,24 +90,50 @@ export default class MenuScene extends Phaser.Scene {
   // --- Layout builders -------------------------------------------------------
 
   /**
-   * Draw the hero background image if available, else a subtle drawn gradient
-   * so the menu still has depth (Req 11.2, 13.5).
+   * Draw a "blueprint" background: a deep blue base with a lighter-blue technical
+   * grid drawn on top (brighter lines every few cells). This replaces the dimmed
+   * hero photo with a clean, on-theme, high-contrast backdrop that keeps the
+   * foreground text/buttons readable (Req 11.2, 9.2). Purely drawn, so it needs
+   * no art asset and can never fail to load (Req 13.5).
    */
   _buildBackground() {
-    if (this._assetAvailable(IMAGE_ASSETS.hero.key)) {
-      const bg = this.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, IMAGE_ASSETS.hero.key);
-      // Cover the play field regardless of the source image size.
-      const scale = Math.max(GAME_WIDTH / bg.width, GAME_HEIGHT / bg.height);
-      bg.setScale(scale);
-      // Dim it so foreground text/buttons stay readable (Req 9.2 contrast).
-      bg.setAlpha(0.5);
-      this.add
-        .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000010)
-        .setAlpha(0.35);
-    } else {
-      // Fallback: a plain dark navy field (Req 13.5).
-      this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x0a0a1a);
+    // Base fill (a subtle two-tone: darker at the very top, blueprint navy below).
+    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, BLUEPRINT.base);
+    this.add
+      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT * 0.25, GAME_WIDTH, GAME_HEIGHT * 0.5, BLUEPRINT.baseTop)
+      .setOrigin(0.5)
+      .setAlpha(0.5);
+
+    // Grid lines drawn with a single Graphics object (cheap; one draw call).
+    const g = this.add.graphics();
+    const { cell, boldEvery, grid, gridBold } = BLUEPRINT;
+
+    // Vertical lines.
+    let col = 0;
+    for (let x = 0; x <= GAME_WIDTH; x += cell, col += 1) {
+      const bold = col % boldEvery === 0;
+      g.lineStyle(bold ? 1.5 : 1, bold ? gridBold : grid, bold ? 0.5 : 0.28);
+      g.beginPath();
+      g.moveTo(x, 0);
+      g.lineTo(x, GAME_HEIGHT);
+      g.strokePath();
     }
+
+    // Horizontal lines.
+    let row = 0;
+    for (let y = 0; y <= GAME_HEIGHT; y += cell, row += 1) {
+      const bold = row % boldEvery === 0;
+      g.lineStyle(bold ? 1.5 : 1, bold ? gridBold : grid, bold ? 0.5 : 0.28);
+      g.beginPath();
+      g.moveTo(0, y);
+      g.lineTo(GAME_WIDTH, y);
+      g.strokePath();
+    }
+
+    // A soft vignette so the edges recede and the centered content pops.
+    this.add
+      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000010)
+      .setAlpha(0.15);
   }
 
   /**
