@@ -110,7 +110,9 @@ src/
 .kiro/
   specs/math-man/          # requirements.md, design.md, tasks.md
   steering/                # product.md, tech.md, structure.md (project guidance)
-  skills/game-engine/      # imported game-engine skill (Phaser/maze references)
+  skills/game-engine/      # thin pointer → powers/game-engine (content moved there)
+powers/
+  game-engine/             # game-engine Kiro Power (full SKILL.md + assets + references)
 ```
 
 `QuestionBank`, `LessonBank`, `ScoreSystem`, `Storage`, and the pure helpers in `Maze` are framework-agnostic (no Phaser imports) so they stay unit-testable.

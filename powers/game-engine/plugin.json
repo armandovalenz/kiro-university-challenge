@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "game-engine",
+  "version": "1.0.0",
+  "description": "Expert guidance and starter templates for building web-based games and game engines with HTML5 Canvas, WebGL, and JavaScript. Use when creating games, implementing game loops, physics, collision detection, sprites, tilemaps, audio, controls, or 2D/3D rendering with frameworks like Phaser, Three.js, Babylon.js, and A-Frame.",
+  "author": {
+    "name": "Armando Valenz"
+  },
+  "keywords": [
+    "game-engine",
+    "game-development",
+    "html5-canvas",
+    "webgl",
+    "phaser",
+    "three-js",
+    "2d-games",
+    "3d-games"
+  ],
+  "license": "MIT"
+}

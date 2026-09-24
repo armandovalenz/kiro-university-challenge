@@ -1,0 +1,28 @@
+{
+  "name": "math-man-infra",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CDK app that deploys the Math Man static build to S3 + CloudFront (no pipeline).",
+  "license": "MIT",
+  "bin": {
+    "math-man-infra": "bin/math-man-infra.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy",
+    "destroy": "cdk destroy",
+    "diff": "cdk diff"
+  },
+  "devDependencies": {
+    "aws-cdk": "2.174.1",
+    "ts-node": "10.9.2",
+    "typescript": "5.7.3",
+    "@types/node": "22.10.5"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.174.1",
+    "constructs": "10.4.2",
+    "source-map-support": "0.5.21"
+  }
+}

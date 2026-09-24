@@ -21,7 +21,9 @@ src/
 .kiro/
   specs/math-man/          # requirements.md, design.md, tasks.md
   steering/                # product.md, tech.md, structure.md
-  skills/game-engine/      # imported game-engine skill (Phaser/maze references)
+  skills/game-engine/      # thin pointer → powers/game-engine (content moved there)
+powers/
+  game-engine/             # game-engine Kiro Power (full SKILL.md + assets + references)
 ```
 
 ## Placement rules
