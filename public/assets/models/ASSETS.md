@@ -12,7 +12,7 @@ as **`.glb`** (glTF 2.0 binary) so Three.js can load them directly via
 
 | File | Source | Prompt / Asset ID | License | Attribution | Notes |
 |------|--------|-------------------|---------|-------------|-------|
-| _(none yet)_ | | | | | |
+| `ghost_red.glb` | Hand-built in Blender via Blender MCP (primitives: UV sphere body sculpted into a dome + scalloped skirt, plus sphere eyes/pupils) | N/A — procedurally modeled, not from an external library | Project-original asset (creator-made geometry); no third-party license applies | None required | 406 verts, 3 material slots (red body, white eyes, black pupils). Solid color materials only, no textures. Low-poly, ~24.8 KB GLB. Represents one Einstein-ghost color (red); duplicate + recolor material for pink/cyan/orange variants per `config.js` ghost colors. |
 
 ## Licensing rules (see `.kiro/skills/fps3d-assets/SKILL.md`)
 

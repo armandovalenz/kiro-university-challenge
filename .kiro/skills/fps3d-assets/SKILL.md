@@ -4,7 +4,7 @@ description: >
   Asset-generation pipeline for the Math Man first-person 3D browser mode.
   Use when generating or integrating 3D models, textures/images, or audio for
   the game via the Blender MCP (models -> GLB for Three.js, plus CC0 Poly Haven /
-  Poly Pizza) and the Draw Things MCP (local Stable Diffusion textures/images on
+  Poly Pizza) and the Draw Things HTTP API (local Stable Diffusion textures/images on
   macOS). Covers export settings, texture sizing, licensing/attribution rules,
   where files must land, and the audio-replacement note.
 ---
@@ -43,15 +43,22 @@ replacement for maze-driven geometry or shared logic.
 - After import, verify scale (normalize to game units), origin, and that the
   GLB opens in a Three.js `GLTFLoader` smoke test before committing.
 
-## Textures / images — Draw Things MCP (local, macOS)
+## Textures / images — Draw Things HTTP API (local, macOS)
 
 - Runs 100% locally on Apple Silicon via the Draw Things app + Stable Diffusion.
-  No cloud, no key. Enable the Draw Things API server (port 7860) first.
+  No cloud, no key. This is NOT an MCP server — it is the app's HTTP API on port
+  7860, driven with `curl`. Enable Settings -> API Server (HTTP, localhost:7860)
+  in the Draw Things app first.
+- **Flow:** health-check `GET http://127.0.0.1:7860/`, read the loaded checkpoint
+  via `GET /sdapi/v1/options` (never guess/switch models over the API), then
+  `POST /sdapi/v1/txt2img` (or `/img2img`) with JSON: `prompt`, `negative_prompt`,
+  `width`/`height` (power-of-two), `steps`, `guidance_scale` (NOT cfg_scale),
+  `seed` (-1 = random). The response is base64 image data — decode and save it.
 - **Power-of-two sizes** for GPU textures (256, 512, 1024). Default 512 is fine
   for walls/floors; go 1024 only for hero/close-up surfaces.
 - Use `.webp` or compressed `.png` to keep the web bundle small.
-- Generated images land in `DRAWTHINGS_OUTPUT_DIR`; move the keepers into
-  `public/assets/images/**` and log them in `ASSETS.md`.
+- Save generated images under `public/assets/images/_generated`; move the keepers
+  into `public/assets/images/**` and log them in `ASSETS.md`.
 - Purely AI-generated images may have limited copyright protection in some
   jurisdictions — note this (as the project already does for its ChatGPT art).
 
