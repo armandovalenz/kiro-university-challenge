@@ -17,6 +17,7 @@ Built with **Phaser 3** and **Vite**, it runs entirely in the browser with no ba
 - **Arcade audio** — background music and sound effects for every game event, with a persistent mute toggle.
 - **Local high scores** — a single global high score persisted in `localStorage`, with an in-memory fallback.
 - **Accessible modals** — quiz and lesson dialogs are DOM overlays that are keyboard-navigable and high-contrast.
+- **First-person 3D mode (in progress)** — an optional Three.js WebGL layer that lets you walk the *same* maze in first person, reusing all shared game logic, with a graceful fallback to the 2D view when WebGL is unavailable.
 
 ## Tech Stack
 
@@ -30,7 +31,8 @@ Built with **Phaser 3** and **Vite**, it runs entirely in the browser with no ba
 | Audio | Phaser Sound Manager (Web Audio API) |
 | Accessible modals | DOM overlays (HTML/CSS) |
 | Persistence | `localStorage` (+ in-memory fallback) |
-| Unit tests (optional) | Vitest |
+| First-person 3D layer | Three.js (WebGL) — optional FP3D mode, in progress |
+| Tests | Vitest + `fast-check` (property-based tests are mandatory) |
 
 ## Getting Started
 
@@ -63,10 +65,13 @@ npm run preview    # serve the production build locally
 
 The build produces plain static files that deploy to any static host — no server required.
 
-### Tests (optional)
+### Tests
+
+Framework-agnostic logic is covered by Vitest with **`fast-check`** property-based tests, which are a required part of the definition of done (see [`.kiro/steering/testing.md`](.kiro/steering/testing.md)).
 
 ```bash
-npm run test
+npm run test            # watch mode
+npm run test -- --run   # single non-watch run
 ```
 
 ## Controls
@@ -92,7 +97,7 @@ npm run test
 
 ```
 index.html                 # Vite entry; hosts the #game container + DOM overlay root
-package.json               # phaser (pinned), vite, (optional) vitest
+package.json               # phaser (pinned), vite, vitest + fast-check (mandatory PBT)
 vite.config.js
 public/
   assets/
@@ -103,19 +108,26 @@ src/
   main.js                  # Phaser.Game config; registers the scene list
   config.js                # Constants: tile size, speeds, LIVES_START=6, LIVES_MAX=10, colors, asset keys
   scenes/                  # Boot, Splash, Menu, Game, UI, Quiz, Lesson, Pause, GameOver
-  entities/                # MathMan, Ghost, Fruit
-  maze/                    # mazeData, Maze (tilemap + helpers)
+  entities/                # MathMan, Ghost, Fruit (+ framework-agnostic ghostAI helpers)
+  maze/                    # mazeData, mazeLogic (pure helpers), Maze (tilemap)
   systems/                 # QuizSystem, QuestionBank, LessonBank, ScoreSystem, Storage, AudioBus
   ui/                      # QuizModal, LessonModal (DOM overlays)
 .kiro/
-  specs/math-man/          # requirements.md, design.md, tasks.md
-  steering/                # product.md, tech.md, structure.md (project guidance)
-  skills/game-engine/      # thin pointer → powers/game-engine (content moved there)
+  specs/
+    math-man/              # requirements.md, design.md, tasks.md (base 2D game)
+    first-person-3d-mode/  # requirements.md, design.md, tasks.md (FP3D first-person mode)
+  steering/                # product.md, tech.md, structure.md, testing.md (project guidance)
+  agents/                  # fps3d-architect, fps3d-asset-forge (FP3D specialist sub-agents)
+  hooks/                   # lint-on-save-debounced (disabled by default)
+  skills/
+    game-engine/           # thin pointer → powers/game-engine (content moved there)
+    fps3d-webgl/           # Three.js first-person playbook for FP3D mode
+    fps3d-assets/          # asset-generation pipeline (Blender MCP + Draw Things)
 powers/
   game-engine/             # game-engine Kiro Power (full SKILL.md + assets + references)
 ```
 
-`QuestionBank`, `LessonBank`, `ScoreSystem`, `Storage`, and the pure helpers in `Maze` are framework-agnostic (no Phaser imports) so they stay unit-testable.
+`QuestionBank`, `LessonBank`, `ScoreSystem`, `Storage`, the pure helpers in `mazeLogic`/`Maze`, and the `ghostAI` helpers are framework-agnostic (no Phaser or Three.js imports) so they stay unit-testable.
 
 ## Browser Support
 
@@ -123,13 +135,20 @@ Runs in current versions of Chrome, Firefox, Safari, and Edge. If `localStorage`
 
 ## Documentation
 
-Detailed design and requirements live under [`.kiro/specs/math-man/`](.kiro/specs/math-man/):
+Detailed design and requirements live under [`.kiro/specs/`](.kiro/specs/):
 
-- [`requirements.md`](.kiro/specs/math-man/requirements.md) — user stories and acceptance criteria
-- [`design.md`](.kiro/specs/math-man/design.md) — architecture, system & event-flow diagrams, and module design
-- [`tasks.md`](.kiro/specs/math-man/tasks.md) — the incremental implementation plan
+- **Base 2D game** — [`math-man/`](.kiro/specs/math-man/): [`requirements.md`](.kiro/specs/math-man/requirements.md) (user stories + acceptance criteria), [`design.md`](.kiro/specs/math-man/design.md) (architecture, diagrams, module design), and [`tasks.md`](.kiro/specs/math-man/tasks.md) (implementation plan).
+- **First-person 3D mode** — [`first-person-3d-mode/`](.kiro/specs/first-person-3d-mode/): the FP3D first-person rendering + input layer over the same maze and shared logic.
 
-Project conventions are captured as Kiro steering in [`.kiro/steering/`](.kiro/steering/) (`product.md`, `tech.md`, `structure.md`).
+Project conventions are captured as Kiro steering in [`.kiro/steering/`](.kiro/steering/): `product.md`, `tech.md`, `structure.md`, and `testing.md` (mandatory property-based testing policy).
+
+### Kiro agents, skills & hooks
+
+The workspace ships Kiro automation to support the FP3D mode:
+
+- **Agents** ([`.kiro/agents/`](.kiro/agents/)) — `fps3d-architect` (designs/builds FP3D mode on the Phaser 3 + Vite + Three.js stack, reusing shared logic) and `fps3d-asset-forge` (sandboxed producer of web-ready GLB models via Blender MCP and textures via the local Draw Things HTTP API; writes only under `public/assets/**`).
+- **Skills** ([`.kiro/skills/`](.kiro/skills/)) — `fps3d-webgl` (Three.js first-person patterns), `fps3d-assets` (asset pipeline), and `game-engine` (pointer into the `powers/game-engine` Power).
+- **Hooks** ([`.kiro/hooks/`](.kiro/hooks/)) — `lint-on-save-debounced` runs `npm run lint` after a debounced save of a `src/**` file (disabled by default).
 
 ### Question bank
 
@@ -170,7 +189,7 @@ The game's visual assets (logo, app icon, mascot sprite sheet, collectibles, UI 
 
 ### Other
 
-- Built with [Phaser 3](https://phaser.io/) and [Vite](https://vitejs.dev/).
+- Built with [Phaser 3](https://phaser.io/) and [Vite](https://vitejs.dev/); the optional first-person 3D mode uses [Three.js](https://threejs.org/).
 - Inspired by Namco's Pac-Man. Pac-Man is a trademark of its respective owner; this project is an educational, non-commercial homage and is not affiliated with or endorsed by Namco / Bandai Namco.
 
 ## License
