@@ -14,8 +14,9 @@
 // build/run never throws.
 
 import Phaser from 'phaser';
-import { GAME_WIDTH, GAME_HEIGHT, IMAGE_ASSETS, TIMINGS } from '../config.js';
+import { GAME_WIDTH, GAME_HEIGHT, IMAGE_ASSETS, TIMINGS, HALLOWEEN } from '../config.js';
 import { MISSING_ASSETS_KEY } from './BootScene.js';
+import { addHalloweenDungeon, isReducedMotion } from './fx/HalloweenFX.js';
 import { AudioEvent } from '../systems/AudioBus.js';
 
 export default class SplashScene extends Phaser.Scene {
@@ -30,6 +31,17 @@ export default class SplashScene extends Phaser.Scene {
 
     const cx = GAME_WIDTH / 2;
     const cy = GAME_HEIGHT / 2;
+
+    // Halloween dungeon dressing: brick wall, two flaming torches flanking the
+    // logo, embers, fog and bats (drawn under the logo/text).
+    if (HALLOWEEN.enabled) {
+      addHalloweenDungeon(this, {
+        torches: [
+          { x: 52, y: cy - 30, scale: 1.2 },
+          { x: GAME_WIDTH - 52, y: cy - 30, scale: 1.2 },
+        ],
+      });
+    }
 
     // Decide logo vs. text-title fallback based on the missing-assets set the
     // BootScene stashed in the registry (Req 13.5).
@@ -46,7 +58,8 @@ export default class SplashScene extends Phaser.Scene {
 
       // Scale the logo down if it is larger than the play field so it always
       // fits without breaking layout (Req 11.3).
-      const maxW = GAME_WIDTH * 0.8;
+      // Narrower when the Halloween torches flank the logo, so they don't overlap.
+      const maxW = GAME_WIDTH * (HALLOWEEN.enabled ? 0.68 : 0.8);
       const maxH = GAME_HEIGHT * 0.6;
       const scale = Math.min(1, maxW / logo.width, maxH / logo.height);
       logo.setScale(scale);
@@ -80,6 +93,26 @@ export default class SplashScene extends Phaser.Scene {
       ease: 'Back.Out',
       duration: 600,
     });
+
+    // Seasonal banner under the logo, with a slow candle-like pulse.
+    if (HALLOWEEN.enabled) {
+      const banner = this.add
+        .text(cx, GAME_HEIGHT - 110, '🎃  HAPPY HALLOWEEN  🎃', {
+          fontFamily: 'monospace',
+          fontSize: '26px',
+          fontStyle: 'bold',
+          color: '#ff8a1a',
+          stroke: '#2a0600',
+          strokeThickness: 6,
+        })
+        .setOrigin(0.5);
+      if (!isReducedMotion()) {
+        this.tweens.add({
+          targets: banner, alpha: { from: 1, to: 0.65 },
+          duration: 900, yoyo: true, repeat: -1, ease: 'Sine.InOut',
+        });
+      }
+    }
 
     // Hint text so the player knows they can skip.
     this.add

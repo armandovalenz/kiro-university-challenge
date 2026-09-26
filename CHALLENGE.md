@@ -53,7 +53,7 @@ It follows the Lesson 3 schema exactly (`version`, `hooks[]`, `trigger`, `matche
 
 Property-based testing is a **mandatory** part of the definition of done here (enforced by [`.kiro/steering/testing.md`](.kiro/steering/testing.md)), and it is wired through the full spec workflow exactly as the lesson describes:
 
-- **Properties extracted from requirements** — each spec's `design.md` has a "Correctness Properties" section: `math-man` defines **Properties 1–24** and `first-person-3d-mode` defines **Properties 1–7**, each stated as a universal rule with a `Validates: Requirements x.y` trace back to its EARS acceptance criteria.
+- **Properties extracted from requirements** — each spec's `design.md` has a "Correctness Properties" section: `math-man` defines **Properties 1–29** and `first-person-3d-mode` defines **Properties 1–7**, each stated as a universal rule with a `Validates: Requirements x.y` trace back to its EARS acceptance criteria.
 - **Properties → tests** — every Core Property has a matching `fast-check` property test whose name carries its `Validates: Requirements` link, preserving requirement → property → test traceability. Test files cover `ScoreSystem`, `QuestionBank`, `QuizSystem`, `LessonBank`, `Storage`, `AudioBus`, `mazeLogic`, `ghostAI`, ghost movement, and the FP3D logic (`fp3dLogic`, `lineOfSight`, scoring reuse).
 - **Tooling** — tests run under **Vitest** with **`fast-check`** (a `devDependency`), each property at ≥100 generated cases. Run non-interactively with `npm run test -- --run`.
 - **Scope discipline** — PBT targets framework-agnostic logic; purely visual, scene-flow, DOM/ARIA, and WebGL-wiring behaviors stay example-based, as the lesson recommends.

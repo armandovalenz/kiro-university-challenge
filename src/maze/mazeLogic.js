@@ -323,3 +323,127 @@ export function nextCenterAhead(grid, x, y, direction) {
     y: targetRow * size + half,
   };
 }
+
+// --- Catch resolution (Property 25) -------------------------------------------
+
+/**
+ * Where Math Man and the ghosts stand after a catch → quiz is resolved and lives
+ * remain. A correct answer "saves your life": Math Man stays on his current
+ * tile and only the ghosts return to their spawn tiles. A wrong answer costs a
+ * life and resets everyone to their spawns (Req 3.4, 4.5). Pure: inputs are
+ * never mutated; returned tiles are fresh copies.
+ * @param {object} args
+ * @param {boolean} args.correct whether the question was answered correctly
+ * @param {{col:number,row:number}} args.player Math Man's tile at the catch
+ * @param {{col:number,row:number}} args.playerSpawn Math Man's spawn tile
+ * @param {Array<{col:number,row:number}>} args.ghostSpawns each ghost's spawn tile
+ * @returns {{ player: {col:number,row:number}, ghosts: Array<{col:number,row:number}> }}
+ */
+export function resolveCatchPositions({ correct, player, playerSpawn, ghostSpawns }) {
+  const keep = correct ? player : playerSpawn;
+  return {
+    player: { col: keep.col, row: keep.row },
+    ghosts: (ghostSpawns || []).map(({ col, row }) => ({ col, row })),
+  };
+}
+
+// --- Random fruit placement (Property 26) -------------------------------------
+
+/** Original tile codes that mark a playable corridor tile. */
+const FRUIT_ELIGIBLE_CODES = new Set([
+  TILE.PELLET,
+  TILE.POWER_PELLET,
+  TILE.FRUIT_SPAWN,
+  TILE.MATH_MAN_SPAWN,
+]);
+
+/**
+ * Every tile a fruit may appear on: the maze's playable corridors, i.e. tiles
+ * whose ORIGINAL code is a pellet, power pellet, fruit spawn, or Math Man spawn.
+ * This excludes walls, the ghost house (its interior/door are plain path and
+ * `G` tiles) and the tunnel/wrap row, all without hardcoding coordinates.
+ * Whether a pellet is still there doesn't matter — only the layout does.
+ * @param {MazeGrid} grid
+ * @returns {Array<{col:number,row:number}>}
+ */
+export function fruitCandidateTiles(grid) {
+  const out = [];
+  for (let row = 0; row < grid.rows; row++) {
+    for (let col = 0; col < grid.cols; col++) {
+      if (FRUIT_ELIGIBLE_CODES.has(grid.codeAt(col, row))) out.push({ col, row });
+    }
+  }
+  return out;
+}
+
+/**
+ * Pick a random fruit tile anywhere in the maze's corridors (Req 5.1). Tiles
+ * closer than `minDistance` (Manhattan) to any `avoid` tile — typically Math
+ * Man and the ghosts — are skipped so a fruit never pops up underfoot. If that
+ * leaves nothing, any candidate is used; with no candidates at all it falls
+ * back to the layout's first `F` tile, else null.
+ * @param {MazeGrid} grid
+ * @param {() => number} rand RNG returning [0, 1)
+ * @param {object} [opts]
+ * @param {Array<{col:number,row:number}>} [opts.avoid]
+ * @param {number} [opts.minDistance=0]
+ * @param {number|null} [opts.quadrant=null] restrict to one quadrant (0–3, see
+ *   {@link tileQuadrant}); returns null if that quadrant has no candidates
+ * @returns {{col:number,row:number} | null}
+ */
+export function pickFruitTile(grid, rand, { avoid = [], minDistance = 0, quadrant = null } = {}) {
+  let all = fruitCandidateTiles(grid);
+  if (quadrant !== null && quadrant !== undefined) {
+    // Restricted to one quadrant: never leak into another, even if it's empty.
+    all = all.filter((t) => tileQuadrant(grid, t) === quadrant);
+    if (all.length === 0) return null;
+  }
+  if (all.length === 0) {
+    const f = grid.fruitSpawns && grid.fruitSpawns[0];
+    return f ? { col: f.col, row: f.row } : null;
+  }
+  const far = all.filter((t) => avoid.every((a) => (
+    Math.abs(a.col - t.col) + Math.abs(a.row - t.row) >= minDistance
+  )));
+  const pool = far.length > 0 ? far : all;
+  const r = Math.min(Math.max(rand(), 0), 1 - Number.EPSILON);
+  const pick = pool[Math.floor(r * pool.length)];
+  return { col: pick.col, row: pick.row };
+}
+
+// --- One fruit per quadrant (Property 27) -------------------------------------
+
+/** Number of simultaneous fruits: one per maze quadrant. */
+export const FRUIT_QUADRANTS = 4;
+
+/**
+ * Which quadrant a tile is in: 0 = top-left, 1 = top-right, 2 = bottom-left,
+ * 3 = bottom-right. The maze is split at its horizontal and vertical centre
+ * lines (`cols / 2`, `rows / 2`).
+ * @param {MazeGrid} grid
+ * @param {{col:number,row:number}} tile
+ * @returns {0|1|2|3}
+ */
+export function tileQuadrant(grid, { col, row }) {
+  const east = col >= grid.cols / 2 ? 1 : 0;
+  const south = row >= grid.rows / 2 ? 2 : 0;
+  return /** @type {0|1|2|3} */ (east + south);
+}
+
+/**
+ * Pick one random fruit tile in EACH quadrant (Req 5.1, 5.7), so four fruits
+ * are spread across the whole maze. Entry `q` is the pick for quadrant `q`, or
+ * null when that quadrant has no corridor tiles. `avoid`/`minDistance` work as
+ * in {@link pickFruitTile}.
+ * @param {MazeGrid} grid
+ * @param {() => number} rand
+ * @param {{ avoid?: Array<{col:number,row:number}>, minDistance?: number }} [opts]
+ * @returns {Array<{col:number,row:number} | null>}
+ */
+export function pickQuadrantFruitTiles(grid, rand, { avoid = [], minDistance = 0 } = {}) {
+  const out = [];
+  for (let q = 0; q < FRUIT_QUADRANTS; q++) {
+    out.push(pickFruitTile(grid, rand, { avoid, minDistance, quadrant: q }));
+  }
+  return out;
+}

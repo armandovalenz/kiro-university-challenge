@@ -24,12 +24,16 @@
 // resolve a catch.
 
 import Phaser from 'phaser';
-import { SPEEDS, DEFAULT_GRADE, GRADES, GHOST_PERSONALITIES, TIMINGS } from '../config.js';
+import {
+  SPEEDS, DEFAULT_GRADE, GRADES, GHOST_PERSONALITIES, TIMINGS, FRUIT_MIN_DISTANCE, PRESSURE,
+} from '../config.js';
+import { nearestGhostPathDistance, pressureTargetRate, approachRate } from '../systems/pressure.js';
 import Maze from '../maze/Maze.js';
 import MathMan from '../entities/MathMan.js';
 import Ghost from '../entities/Ghost.js';
 import Fruit from '../entities/Fruit.js';
 import { ghostSpeedForGrade } from '../entities/ghostAI.js';
+import { fruitCandidateTiles, pickQuadrantFruitTiles, FRUIT_QUADRANTS } from '../maze/mazeLogic.js';
 import ScoreSystem from '../systems/ScoreSystem.js';
 import LessonBank from '../systems/LessonBank.js';
 import { AudioEvent } from '../systems/AudioBus.js';
@@ -84,8 +88,9 @@ export default class GameScene extends Phaser.Scene {
     this.ghosts = this.add.group();
     this._spawnGhosts();
 
-    // Fruit (Task 14) spawns at an `F` tile; its overlap grants a life + lesson.
-    this.fruit = null;
+    // Fruit (Task 14): one slot per maze quadrant (Property 27), each holding
+    // `{ fruit, overlap, timeout }` or null. Overlap grants a life + lesson.
+    this.fruits = new Array(FRUIT_QUADRANTS).fill(null);
     // Per-run bank of tagged micro-lessons; keeps the "vary between showings"
     // history across fruit collections (Req 5.5 / Property 14).
     this.lessonBank = new LessonBank();
@@ -112,10 +117,15 @@ export default class GameScene extends Phaser.Scene {
       if (typeof this.audio.bindMuteKey === 'function') {
         this.audio.bindMuteKey(this);
       }
+      // A fresh run starts at normal tempo.
+      if (typeof this.audio.setMusicRate === 'function') this.audio.setMusicRate(1);
       if (typeof this.audio.play === 'function') {
         this.audio.play(AudioEvent.GAME_MUSIC);
       }
     }
+    this._musicRate = 1;
+    this._targetRate = 1;
+    this._pressureCheckAt = 0;
 
     // Duck the music while any overlay is open and restore it on resume. Pausing
     // this scene (quiz/lesson/pause) fires PAUSE → duck; resuming fires RESUME →
@@ -145,6 +155,37 @@ export default class GameScene extends Phaser.Scene {
     // Level-clear detection + transition is Task 15's responsibility; the hook
     // below is a safe no-op until then so clearing pellets never breaks.
     this._checkLevelClear();
+    this._updatePressure(time, delta);
+  }
+
+  /**
+   * Pressure tempo (Req 12.9 / Properties 28–29): every `PRESSURE.checkMs`,
+   * measure the walking distance from Math Man to the nearest ghost and derive
+   * a target playback rate for the score; every frame, ramp the actual rate
+   * toward it so the music speeds up (and slows back down) gradually. Runs only
+   * while the scene updates, so it holds still under overlays.
+   * @param {number} time scene clock (ms)
+   * @param {number} delta frame time (ms)
+   */
+  _updatePressure(time, delta) {
+    if (!this.audio || typeof this.audio.setMusicRate !== 'function') return;
+    const grid = this.maze && this.maze.grid;
+    if (!grid || !this.mathMan) return;
+
+    if (time >= this._pressureCheckAt) {
+      this._pressureCheckAt = time + PRESSURE.checkMs;
+      const from = grid.worldToTile(this.mathMan.x, this.mathMan.y);
+      const ghosts = (this.ghosts && this.ghosts.getChildren ? this.ghosts.getChildren() : [])
+        .map((g) => grid.worldToTile(g.x, g.y));
+      const d = nearestGhostPathDistance(grid, from, ghosts, PRESSURE.startTiles);
+      this._targetRate = pressureTargetRate(d, PRESSURE);
+    }
+
+    const next = approachRate(this._musicRate, this._targetRate, delta, PRESSURE);
+    if (next !== this._musicRate) {
+      this._musicRate = next;
+      this.audio.setMusicRate(next);
+    }
   }
 
   // --- Input ------------------------------------------------------------------
@@ -350,10 +391,25 @@ export default class GameScene extends Phaser.Scene {
       return;
     }
 
-    // Lives remain → reset entities to spawns (Req 3.4) and unfreeze.
-    this.resetPositions();
+    // Lives remain (Property 25 / resolveCatchPositions): a correct answer saves
+    // the life, so Math Man stays where he was caught and only the ghosts go
+    // home (Req 4.5). A wrong answer resets everyone to their spawns (Req 3.4).
+    if (correct) {
+      this.resetGhosts();
+    } else {
+      this.resetPositions();
+    }
     this._caught = false;
     if (this.scene.isPaused()) this.scene.resume();
+  }
+
+  /** Send every ghost back to its spawn tile (Math Man is left in place). */
+  resetGhosts() {
+    if (!this.ghosts) return;
+    const ghosts = this.ghosts.getChildren ? this.ghosts.getChildren() : [];
+    for (const ghost of ghosts) {
+      ghost.resetPosition?.();
+    }
   }
 
   /**
@@ -362,12 +418,7 @@ export default class GameScene extends Phaser.Scene {
    */
   resetPositions() {
     this.mathMan?.resetPosition?.();
-    if (this.ghosts) {
-      const ghosts = this.ghosts.getChildren ? this.ghosts.getChildren() : [];
-      for (const ghost of ghosts) {
-        ghost.resetPosition?.();
-      }
-    }
+    this.resetGhosts();
   }
 
   /**
@@ -468,17 +519,16 @@ export default class GameScene extends Phaser.Scene {
   // --- Fruit → extra life → lesson (Task 14) ---------------------------------
 
   /**
-   * Schedule periodic fruit spawns while the level is in progress (Req 5.1).
-   * A looping timer spawns a fruit every `TIMINGS.fruitSpawnInterval` ms; when
-   * this scene is paused (quiz/lesson/pause overlay) Phaser also pauses its
-   * timers, so no fruit appears while gameplay is frozen. `_spawnFruit` is a
-   * no-op while a fruit is already present, so at most one fruit exists at a
-   * time.
+   * Fruit schedule (Req 5.1, 5.7). A first wave of four fruits (one in each
+   * maze quadrant) appears at level start, then a looping timer refills any
+   * empty quadrant every `TIMINGS.fruitSpawnInterval` ms. When this scene is
+   * paused (quiz/lesson/pause overlay) Phaser also pauses its timers, so no
+   * fruit appears or expires while gameplay is frozen.
    */
   _setupFruitSpawn() {
-    if (!this.maze) return;
-    const spawns = this.maze.fruitSpawnsWorld() || [];
-    if (!spawns.length) return; // no `F` tiles in this layout → no fruit
+    if (!this.maze || !this.maze.grid) return;
+    if (!fruitCandidateTiles(this.maze.grid).length) return; // no corridors → no fruit
+    this._spawnFruit(); // first wave: four fruits, one per quadrant
     this._fruitTimer = this.time.addEvent({
       delay: TIMINGS.fruitSpawnInterval,
       loop: true,
@@ -488,38 +538,47 @@ export default class GameScene extends Phaser.Scene {
   }
 
   /**
-   * Spawn a single fruit at one of the maze's `F` tiles and wire the Math Man
-   * overlap that collects it (Req 5.1). Plays the "fruit spawned" cue. The
-   * fruit auto-despawns after `TIMINGS.fruitLifetime` ms if left uncollected.
+   * Fill every empty quadrant slot with a fruit on a random corridor tile in
+   * that quadrant (Property 27), away from Math Man and the ghosts, and wire
+   * the overlap that collects it. Plays the "fruit spawned" cue once per wave.
+   * Each fruit auto-despawns after `TIMINGS.fruitLifetime` ms if uncollected.
    */
   _spawnFruit() {
-    if (this.fruit || !this.maze) return; // one fruit at a time
-    const spawns = this.maze.fruitSpawnsWorld() || [];
-    if (!spawns.length) return;
+    if (!this.maze || !this.maze.grid || !this.fruits) return;
+    if (this.fruits.every(Boolean)) return; // all four quadrants occupied
+    const grid = this.maze.grid;
 
-    // Pick a spawn tile (first tile; layouts define a single fruit point).
-    const idx = Math.floor(Math.random() * spawns.length);
-    const { x, y } = spawns[idx];
-    const fruit = new Fruit(this, x, y);
-    this.fruit = fruit;
+    const avoid = [];
+    if (this.mathMan) avoid.push(grid.worldToTile(this.mathMan.x, this.mathMan.y));
+    const ghosts = this.ghosts && this.ghosts.getChildren ? this.ghosts.getChildren() : [];
+    for (const g of ghosts) avoid.push(grid.worldToTile(g.x, g.y));
+    const picks = pickQuadrantFruitTiles(grid, Math.random, { avoid, minDistance: FRUIT_MIN_DISTANCE });
 
-    // Overlap → collect. Math Man and Fruit both carry Arcade bodies.
-    this._fruitOverlap = this.physics.add.overlap(
-      this.mathMan,
-      fruit,
-      this._onFruitCollected,
-      null,
-      this,
-    );
+    let spawned = false;
+    picks.forEach((tile, slot) => {
+      if (!tile || this.fruits[slot]) return;
+      const { x, y } = grid.tileToWorld(tile.col, tile.row);
+      const fruit = new Fruit(this, x, y, { col: tile.col, row: tile.row });
 
-    if (this.audio && typeof this.audio.play === 'function') {
+      // Overlap → collect. Math Man and Fruit both carry Arcade bodies.
+      const overlap = this.physics.add.overlap(
+        this.mathMan,
+        fruit,
+        this._onFruitCollected,
+        null,
+        this,
+      );
+      // Remove the fruit if it is not collected within its lifetime.
+      const timeout = this.time.delayedCall(TIMINGS.fruitLifetime, () => {
+        if (this.fruits[slot] && this.fruits[slot].fruit === fruit) this._clearFruit(slot);
+      });
+      this.fruits[slot] = { fruit, overlap, timeout };
+      spawned = true;
+    });
+
+    if (spawned && this.audio && typeof this.audio.play === 'function') {
       this.audio.play(AudioEvent.FRUIT_SPAWN);
     }
-
-    // Remove the fruit if it is not collected within its lifetime.
-    this._fruitTimeout = this.time.delayedCall(TIMINGS.fruitLifetime, () => {
-      this._clearFruit();
-    });
   }
 
   /**
@@ -540,8 +599,10 @@ export default class GameScene extends Phaser.Scene {
       this.audio.play(AudioEvent.EXTRA_LIFE);
     }
 
-    // Remove the fruit + its timers so it cannot be collected twice.
-    this._clearFruit();
+    // Remove this fruit + its timers so it cannot be collected twice.
+    const slot = this.fruits ? this.fruits.findIndex((s) => s && s.fruit === fruit) : -1;
+    if (slot >= 0) this._clearFruit(slot);
+    else fruit.collect?.();
 
     // Freeze gameplay and show the micro-lesson (Req 5.3). Selecting from the
     // per-run LessonBank varies the content between showings (Req 5.5).
@@ -567,22 +628,23 @@ export default class GameScene extends Phaser.Scene {
   }
 
   /**
-   * Remove the active fruit and cancel its collection overlap / lifetime timer.
-   * Safe to call when no fruit is present.
+   * Remove the fruit in `slot` and cancel its collection overlap / lifetime
+   * timer. Safe to call when that slot is empty.
+   * @param {number} slot quadrant index
    */
-  _clearFruit() {
-    if (this._fruitTimeout) {
-      this._fruitTimeout.remove(false);
-      this._fruitTimeout = null;
-    }
-    if (this._fruitOverlap) {
-      this.physics.world.removeCollider(this._fruitOverlap);
-      this._fruitOverlap = null;
-    }
-    if (this.fruit) {
-      this.fruit.collect();
-      this.fruit = null;
-    }
+  _clearFruit(slot) {
+    const s = this.fruits && this.fruits[slot];
+    if (!s) return;
+    if (s.timeout) s.timeout.remove(false);
+    if (s.overlap) this.physics.world.removeCollider(s.overlap);
+    if (s.fruit) s.fruit.collect();
+    this.fruits[slot] = null;
+  }
+
+  /** Remove every active fruit (level teardown / shutdown). */
+  _clearAllFruit() {
+    if (!this.fruits) return;
+    for (let q = 0; q < this.fruits.length; q++) this._clearFruit(q);
   }
 
   // --- Level progression hook (Task 15) --------------------------------------
@@ -671,7 +733,9 @@ export default class GameScene extends Phaser.Scene {
       this._fruitTimer.remove(false);
       this._fruitTimer = null;
     }
-    this._clearFruit();
+    this._clearAllFruit();
     this.maze?.destroy?.();
+    // Back to normal tempo for whatever comes next (menu / game over).
+    if (this.audio && typeof this.audio.setMusicRate === 'function') this.audio.setMusicRate(1);
   }
 }

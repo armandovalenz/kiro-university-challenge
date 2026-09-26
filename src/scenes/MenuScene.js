@@ -26,8 +26,10 @@ import {
   DEFAULT_GRADE,
   DEFAULT_RENDER_MODE,
   BLUEPRINT,
+  HALLOWEEN,
 } from '../config.js';
 import { MISSING_ASSETS_KEY } from './BootScene.js';
+import { addHalloweenDungeon } from './fx/HalloweenFX.js';
 import { AudioEvent } from '../systems/AudioBus.js';
 
 export default class MenuScene extends Phaser.Scene {
@@ -123,6 +125,19 @@ export default class MenuScene extends Phaser.Scene {
    * no art asset and can never fail to load (Req 13.5).
    */
   _buildBackground() {
+    // Seasonal Halloween dungeon (HALLOWEEN.enabled): brick wall, a flaming
+    // torch on each side of the menu, embers, fog and bats. Drawn at negative
+    // depths so the menu chips stay on top. Otherwise use the blueprint.
+    if (HALLOWEEN.enabled) {
+      addHalloweenDungeon(this, {
+        torches: [
+          { x: 50, y: GAME_HEIGHT * 0.44 },
+          { x: GAME_WIDTH - 50, y: GAME_HEIGHT * 0.44 },
+        ],
+      });
+      return;
+    }
+
     // Base fill (a subtle two-tone: darker at the very top, blueprint navy below).
     this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, BLUEPRINT.base);
     this.add
@@ -292,7 +307,7 @@ export default class MenuScene extends Phaser.Scene {
         fontSize: '36px',
         fontStyle: 'bold',
         color: '#ffff00',
-        backgroundColor: '#003366',
+        backgroundColor: HALLOWEEN.enabled ? '#6a1f00' : '#003366', // pumpkin in October
         padding: { x: 36, y: 16 },
       })
       .setOrigin(0.5)

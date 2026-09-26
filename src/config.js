@@ -39,7 +39,7 @@ export const SPEEDS = {
 
 export const POINTS = {
   pellet: 10,
-  powerPellet: 50,
+  powerPellet: 100, // big pellets pay x2 (was 50)
   fruit: 100,
 };
 
@@ -50,6 +50,31 @@ export const TIMINGS = {
   fruitSpawnInterval: 20000, // Base fruit spawn cadence (Req 5.1).
   fruitLifetime: 9000, // How long an uncollected fruit lingers.
   musicCrossfade: 400, // AudioBus crossfade duration.
+};
+
+/**
+ * Fruit appears on a random corridor tile at least this many tiles (Manhattan)
+ * from Math Man and every ghost, so it never pops up underfoot (Req 5.1).
+ */
+export const FRUIT_MIN_DISTANCE = 4;
+
+/**
+ * Pressure tempo (Req 12.9): the score music speeds up (and rises in pitch)
+ * as the nearest ghost comes within `startTiles` WALKING tiles of Math Man,
+ * reaching `maxRate` when it's on top of him. The change is ramped by at most
+ * `rampUpPerSec` / `rampDownPerSec` rate units per second, so it's gradual.
+ * Distance is re-checked every `checkMs`.
+ */
+export const PRESSURE = {
+  startTiles: 6,
+  maxRate: 1.2,
+  // Rate = 1 + 0.2 · closeness^3 → subtle far away, dramatic up close:
+  //   6+ tiles 1.00 · 4 tiles 1.01 · 3 tiles 1.03 · 2 tiles 1.06 ·
+  //   1 tile 1.12 · touching 1.20
+  curve: 3,
+  rampUpPerSec: 0.35, // fast enough for the last-second spike to land
+  rampDownPerSec: 0.06, // eases back slowly once the ghost is gone
+  checkMs: 150,
 };
 
 // --- Grades / difficulty ------------------------------------------------------
@@ -89,6 +114,32 @@ export const BLUEPRINT = {
   gridBold: 0x4f93ff, // brighter line every few cells
   cell: 24, // fine grid cell size (px) — matches TILE_SIZE
   boldEvery: 4, // draw a brighter line every N cells
+};
+
+// Seasonal Halloween "dungeon" dressing for the Splash (intro) and Menu scenes:
+// a dark stone-brick wall, flaming wall torches with flickering light pools,
+// rising embers, drifting fog, a few bats and a vignette. Everything is drawn
+// or generated at runtime (no new assets). Set `enabled: false` to return the
+// menu to the blueprint backdrop. Honors prefers-reduced-motion (static
+// flames, no bats, no drifting).
+export const HALLOWEEN = {
+  enabled: true,
+  stone: 0x2b2630, // brick face
+  stoneVariance: 0.22, // ± brightness per brick
+  mortar: 0x0d0b10,
+  brickW: 48,
+  brickH: 24,
+  darkness: 0.45, // black overlay over the bricks (0 = lit, 1 = black)
+  lightColor: 0xff8a2a, // warm torch light pool
+  lightRadius: 190,
+  lightAlpha: 0.55,
+  flickerAmount: 0.2, // ± light flicker (held steady under reduced motion)
+  flameColors: [0xfff4b0, 0xffb040, 0xff5a10, 0x3a0a00], // core → tip
+  emberColor: 0xff7a1a,
+  fogAlpha: 0.22,
+  fogSpeed: 0.12, // px per ms
+  bats: 4,
+  vignetteAlpha: 0.85,
 };
 
 // --- Persistence --------------------------------------------------------------

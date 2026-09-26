@@ -50,7 +50,7 @@ const AUDIO_ASSETS = [
   { key: 'sfx_intro', file: 'start.wav' },
   { key: 'music_game_intro', file: 'siren0_firstloop.wav' },
   { key: 'music_game', file: 'siren0.wav' },
-  { key: 'music_score', file: 'score.mp3' },
+  { key: 'music_score', file: 'score2_castlevania.mp3' },
   { key: 'music_jeopardy', file: 'jeopardy.mp3' },
   { key: 'sfx_pellet_0', file: 'eat_dot_0.wav' },
   { key: 'sfx_pellet_1', file: 'eat_dot_1.wav' },
@@ -63,6 +63,9 @@ const AUDIO_ASSETS = [
   { key: 'sfx_death_0', file: 'death_0.wav' },
   { key: 'sfx_death_1', file: 'death_1.wav' },
   { key: 'sfx_level_clear', file: 'intermission.wav' },
+  // Win (level clear / correct answer) music. The file name contains spaces,
+  // so names are URL-encoded when loaded (see preload).
+  { key: 'music_stage_clear', file: '12. Stage Clear.mp3' },
   { key: 'music_gameover', file: 'death_1.wav' },
   { key: 'sfx_highscore', file: 'extend.wav' },
   { key: 'sfx_select', file: 'credit.wav' },
@@ -103,7 +106,7 @@ export default class BootScene extends Phaser.Scene {
 
     // --- Audio ----------------------------------------------------------------
     for (const { key, file } of AUDIO_ASSETS) {
-      this.load.audio(key, `${AUDIO_BASE_PATH}${file}`);
+      this.load.audio(key, `${AUDIO_BASE_PATH}${encodeURIComponent(file)}`);
     }
 
     // Simple loading text so the boot step is visible on slower connections.

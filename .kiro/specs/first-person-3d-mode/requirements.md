@@ -37,7 +37,7 @@ A key constraint: the tech steering pins the stack to **Phaser 3 + Vite + vanill
 1. WHEN FP3D_Mode is initialized, THE FP3D_Renderer SHALL construct its 3D scene from the Maze_Data object returned by the existing `getLevelLayout` function, and SHALL leave the tile-code layout array byte-for-byte identical to the value returned by `getLevelLayout`.
 2. WHERE a Tile holds a wall code, THE FP3D_Renderer SHALL render one solid 3D wall segment whose horizontal footprint equals that Tile's TILE_SIZE-by-TILE_SIZE grid cell.
 3. WHERE a Tile holds a path, pellet, power-pellet, spawn, fruit, or tunnel code, THE FP3D_Renderer SHALL render that Tile as a traversable floor cell that contains no wall segment.
-4. WHEN FP3D_Mode is initialized, THE FP3D_Renderer SHALL place Math_Man, each of the 4 Ghosts, and the fruit at the grid coordinates of their respective spawn Tiles defined in Maze_Data.
+4. WHEN FP3D_Mode is initialized, THE FP3D_Renderer SHALL place Math_Man and each of the 4 Ghosts at the grid coordinates of their respective spawn Tiles defined in Maze_Data, and SHALL place 4 fruits, one on a random playable corridor Tile in each maze quadrant, chosen by the shared Maze_Data fruit-placement helper (math-man Requirement 5.1, 5.6, 5.7).
 5. THE FP3D_Mode SHALL derive all wall, pellet, coordinate, and tunnel decisions from the framework-agnostic Maze_Data helpers, and SHALL NOT read from any maze definition other than the one returned by `getLevelLayout`.
 6. IF Maze_Data fails validation on load, THEN THE FP3D_Mode SHALL switch to the existing 2D Render_Mode and SHALL display a user-visible notice indicating that 3D mode is unavailable, while preserving the unmodified Maze_Data layout.
 
@@ -65,7 +65,7 @@ A key constraint: the tech steering pins the stack to **Phaser 3 + Vite + vanill
 2. WHILE a power-pellet remains at a Tile, THE FP3D_Renderer SHALL render a power-pellet marker that differs from a standard pellet marker in at least one observable attribute (larger size, distinct color, or distinct shape).
 3. WHEN the Player enters a Tile containing a pellet or power-pellet, THE FP3D_Mode SHALL remove that pellet marker from the scene.
 4. WHEN the Player enters a Tile containing a pellet or power-pellet, THE FP3D_Mode SHALL award the item's points through the existing Score_System exactly once for that pellet.
-5. WHILE a fruit is present, THE FP3D_Renderer SHALL render a fruit marker at the fruit spawn Tile.
+5. WHILE a fruit is present, THE FP3D_Renderer SHALL render a fruit marker at that fruit's current Tile, for each of the up to 4 fruits.
 6. THE FP3D_Renderer SHALL render each of the four Ghosts as a distinct entity, and no two Ghosts SHALL use the same identifying color.
 7. WHILE a Ghost is within the Player's field of view AND no wall Tile lies on the straight line between the Player Tile and the Ghost Tile, THE FP3D_Renderer SHALL display that Ghost to the Player.
 8. WHILE a wall Tile lies on the straight line between the Player Tile and the Ghost Tile, OR the Ghost is outside the Player's field of view, THE FP3D_Renderer SHALL NOT display that Ghost.
@@ -78,7 +78,7 @@ A key constraint: the tech steering pins the stack to **Phaser 3 + Vite + vanill
 
 1. WHEN a Ghost occupies the same Tile as the Player in FP3D_Mode, THE FP3D_Mode SHALL pause first-person movement within 100 milliseconds and open the existing Quiz_System question flow for the current Grade.
 2. WHILE the Quiz_System question flow is open, THE FP3D_Controller SHALL ignore all movement and turn inputs such that Player position and facing direction remain unchanged.
-3. WHEN the Player answers a quiz question correctly, THE FP3D_Mode SHALL close the question flow, resume first-person movement, and preserve the current lives count unchanged.
+3. WHEN the Player answers a quiz question correctly, THE FP3D_Mode SHALL close the question flow, keep the Player on the Tile and facing where the capture happened, return every Ghost to its spawn Tile, resume first-person movement, and preserve the current lives count unchanged.
 4. IF the Player answers a quiz question incorrectly, THEN THE FP3D_Mode SHALL reduce the lives count by 1 through the existing Score_System, display the question explanation, and resume first-person movement only after the explanation is dismissed.
 5. THE Quiz_System question flow SHALL present the identical question content, choices, and accessible markup used by the 2D Render_Mode for the selected Grade.
 6. IF reducing lives through the Score_System causes the lives count to reach 0, THEN THE FP3D_Mode SHALL end the game session through the existing Score_System flow instead of resuming first-person movement.

@@ -574,7 +574,7 @@ Vite pairs natively with **Vitest** for the framework-agnostic logic. Property-b
 The testable invariants in the **Correctness Properties** section are validated with **property-based testing (PBT)** rather than only example-based cases. Instead of asserting one concrete input/output pair, each property states a universal rule and the tool generates hundreds of randomized inputs (including empty values, boundaries, and unusual characters) that try to violate it; on failure it *shrinks* the counterexample to the smallest reproducing input.
 
 - **Tooling:** [`fast-check`](https://github.com/dubzzz/fast-check) as the PBT generator, run through Vitest (`fast-check` integrates directly with Vitest's `test`/`expect`). It is added as an optional `devDependency` alongside Vitest.
-- **Source of properties:** each Core Property (`Property 1`–`Property 24`) in Correctness Properties maps to a `fast-check` `test.prop`/`fc.assert(fc.property(...))` case over generated inputs, and carries its `Validates: Requirements x.y` link in the test name/comment so the requirement → property → test trace is preserved.
+- **Source of properties:** each Core Property (`Property 1`–`Property 29`) in Correctness Properties maps to a `fast-check` `test.prop`/`fc.assert(fc.property(...))` case over generated inputs, and carries its `Validates: Requirements x.y` link in the test name/comment so the requirement → property → test trace is preserved.
 - **Scope:** PBT targets the framework-agnostic modules (`ScoreSystem`, `QuestionBank`, `LessonBank`, `Storage`, `Maze` helpers, and the `AudioBus` event→sound map), which take plain data and need no Phaser runtime.
 - **Mandatory:** per `.kiro/steering/testing.md`, property tests are required — every Core Property must have a passing `fast-check` test before its owning task is complete. The example-based criteria remain covered by the manual/integration checks above.
 - **On failure:** treat a shrunk counterexample as a signal to fix the implementation, tighten the property, or refine the requirement — not automatically the test.
@@ -704,6 +704,26 @@ The remaining criteria are either independent properties (below) or example-base
 ### Property 24: Difficulty scaling is monotonic (optional)
 *For any* two grades where the lower grade is easier, with difficulty scaling enabled, configured ghost speed and fruit cadence do not decrease as the grade increases. Optional because Requirements 3.6 and 10.4 use "MAY".
 **Validates: Requirements 3.6, 10.4**
+
+### Property 25: A saved life keeps Math Man in place; ghosts return to spawn
+*For any* catch resolved with lives remaining, `resolveCatchPositions` returns Math Man's catch tile when the answer is correct and his spawn tile when it is wrong, returns every ghost's spawn tile in both cases, and never mutates its inputs.
+**Validates: Requirements 3.4, 4.5**
+
+### Property 26: Fruit appears on a random playable corridor tile
+*For any* RNG value and avoid set, `pickFruitTile` returns a tile from `fruitCandidateTiles` (enterable, original code pellet/power pellet/`F`/`M`, never the ghost house or tunnel row), and whenever some candidate is at least `minDistance` from every avoided tile, the pick is such a tile.
+**Validates: Requirements 5.1, 5.6**
+
+### Property 27: Four fruits, one in each quadrant
+*For any* RNG value and avoid set, `pickQuadrantFruitTiles` returns exactly 4 picks where pick `q` is a fruit candidate tile with `tileQuadrant` equal to `q` (so the 4 tiles are distinct and spread over the maze), and each pick honours the avoid distance whenever its quadrant has such a tile.
+**Validates: Requirements 5.1, 5.6, 5.7**
+
+### Property 28: Pressure uses walking distance to the nearest ghost
+*For any* open tile, ghost set and search radius, `nearestGhostPathDistance` is 0 when a ghost shares the tile, 1 for a ghost one legal move away, otherwise a value in `[1, maxSteps]` or `Infinity`; adding ghosts never increases it, a larger radius never changes a found distance, and it is never shorter than the wrap-aware Manhattan distance (walls only lengthen paths).
+**Validates: Requirements 12.9**
+
+### Property 29: Score music speeds up gradually as a ghost closes in
+*For any* distance and config, `pressureTargetRate` is 1 at or beyond `startTiles`, `maxRate` at distance 0, always within `[1, maxRate]`, never slower for a closer ghost, and with `curve >= 1` never faster than the linear ramp at the same distance; and *for any* current/target rate and frame time, `approachRate` moves toward the target without overshooting and by at most `rampUpPerSec` (or `rampDownPerSec`) × seconds, landing exactly on the target when it is within that step.
+**Validates: Requirements 12.9**
 
 ### Example-based criteria
 

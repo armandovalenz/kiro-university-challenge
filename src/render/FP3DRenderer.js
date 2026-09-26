@@ -34,6 +34,9 @@ import { coverCropRect } from '../systems/fp3d/imageCrop.js';
 import {
   wallFaces, seededRandom, pickSpacedFaces, wallKey,
 } from '../systems/fp3d/wallDecor.js';
+import {
+  makeFlameSeeds, flameParticle, flameColor, flicker,
+} from '../systems/fp3d/flame.js';
 
 /**
  * Thrown at construction time when a WebGL rendering context cannot be
@@ -180,7 +183,32 @@ const PORTRAIT = {
   /** Vertical crop focus when a photo is taller than the opening (0 = keep top). */
   pictureFocusY: 0.3,
   /** Self-illumination so faces stay readable in the dim corridors. */
-  pictureGlow: 0.25,
+  pictureGlow: 0.12,
+};
+
+/**
+ * Dungeon lighting. The maze is lit mostly by the torches: the global fill is
+ * a faint cold moonlight, exponential fog swallows distant corridors, and a
+ * small warm "lantern" follows the player so nearby walls never go fully black.
+ * Pellets, fruit and ghosts are emissive, so gameplay stays readable.
+ */
+const DUNGEON = {
+  background: 0x030205,
+  fogColor: 0x040306,
+  /** FogExp2 density per world unit (~60% fogged at 6 tiles, ~95% at 10). */
+  fogDensity: 0.0066,
+  hemiSky: 0x2a3550,
+  hemiGround: 0x080604,
+  hemiIntensity: 0.16,
+  ambientColor: 0x3a2c24,
+  ambientIntensity: 0.05,
+  /** Faint overhead key, kept only so pellets/fruit still drop soft shadows. */
+  keyIntensity: 0.1,
+  /** Player lantern (set lanternIntensity to 0 to remove). */
+  lanternColor: 0xffb070,
+  lanternIntensity: 3.5,
+  lanternDistanceTiles: 3,
+  lanternDecay: 1,
 };
 
 /**
@@ -218,15 +246,36 @@ const TORCH = {
    * A constant light count keeps shader cost flat however many torches the
    * maze has (no per-torch lights, no shader recompiles while walking).
    */
-  maxLights: 4,
+  maxLights: 6,
   lightColor: 0xff9a3c,
   /** Physically-based intensity; with decay 1 the fall-off is ~1/d. */
-  lightIntensity: 14,
+  lightIntensity: 22,
   /** Cut-off distance in tiles. */
-  lightDistanceTiles: 5,
+  lightDistanceTiles: 6,
   lightDecay: 1,
   /** How often (ms) the pool is reassigned to the nearest torches. */
   lightReassignMs: 200,
+  /** Light/glow flicker amount (±fraction). Held steady under reduced motion. */
+  flickerAmount: 0.18,
+
+  // --- Flame effect (additive particles above each torch head) -------------
+  /** Particles per torch. All torches share ONE THREE.Points draw call. */
+  flameParticles: 14,
+  /** Flame base, raw model units below `flameRaw` (particles rise from here). */
+  flameBaseDropRaw: 0.1,
+  /** Flame rise / base radius / sway, as fractions of one tile. */
+  flameHeightFrac: 0.24,
+  flameRadiusFrac: 0.035,
+  flameSwayFrac: 0.03,
+  /** Particle sprite size (world units ≈ fraction of a tile). */
+  flameSizeFrac: 0.17,
+  /** Soft halo sprite around each flame (one point per torch). */
+  glowSizeFrac: 0.95,
+  glowColor: 0xff7a26,
+  glowStrength: 0.55,
+  /** Fixed time used for the static flame shape under reduced motion. */
+  reducedMotionFlameT: 0.37,
+  flameSeed: 0x2c1b3a5d,
 };
 
 /** Ghost body size / eye height as fractions of `TILE_SIZE`. */
@@ -280,10 +329,10 @@ export class FP3DRenderer {
     this._pelletMarkers = new Map();
     /** Per-pellet float/halo animation anchors keyed by "col,row". @type {Map<string, object>} */
     this._pelletAnims = new Map();
-    /** Fruit marker group (single), or null when no fruit is present. */
-    this._fruitMarker = null;
-    /** Fruit float/halo animation anchors, or null when no fruit is present. */
-    this._fruitAnim = null;
+    /** Fruit marker groups keyed by slot (one per maze quadrant). @type {Map<number, THREE.Group>} */
+    this._fruitMarkers = new Map();
+    /** Fruit float/halo animation anchors keyed by slot. */
+    this._fruitAnims = new Map();
     /** Ghost meshes keyed by ghost `key`. @type {Map<string, THREE.Mesh>} */
     this._ghostMeshes = new Map();
 
@@ -372,11 +421,23 @@ export class FP3DRenderer {
     this.camera = new THREE.PerspectiveCamera(FP3D.fovDegrees, aspect, near, far);
     this.camera.rotation.order = 'YXZ'; // yaw (Y) then pitch (X) — first-person friendly
 
-    // Lighting: a bright hemisphere fill (sky/ground tint) plus a directional
-    // key so wall faces and corners read clearly with strong contrast.
-    const hemi = new THREE.HemisphereLight(0xbfd4ff, 0x202030, 1.0);
-    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
-    const dir = new THREE.DirectionalLight(0xffffff, 0.95);
+    // Dungeon lighting (see DUNGEON): a faint cold fill, dark fog that swallows
+    // distant corridors, and a warm lantern that follows the player. The
+    // torches' pooled point lights do most of the lighting.
+    this.scene.background = new THREE.Color(DUNGEON.background);
+    this.scene.fog = new THREE.FogExp2(DUNGEON.fogColor, DUNGEON.fogDensity);
+    const hemi = new THREE.HemisphereLight(DUNGEON.hemiSky, DUNGEON.hemiGround, DUNGEON.hemiIntensity);
+    const ambient = new THREE.AmbientLight(DUNGEON.ambientColor, DUNGEON.ambientIntensity);
+    const dir = new THREE.DirectionalLight(0xffffff, DUNGEON.keyIntensity);
+    if (DUNGEON.lanternIntensity > 0) {
+      this._lantern = new THREE.PointLight(
+        DUNGEON.lanternColor, DUNGEON.lanternIntensity,
+        grid.tileSize * DUNGEON.lanternDistanceTiles, DUNGEON.lanternDecay,
+      );
+      this._lantern.name = 'player-lantern';
+      this._lantern.castShadow = false;
+      this.scene.add(this._lantern);
+    }
     // Position the key light high and slightly off-center, aimed at the maze
     // center, so pellet/fruit shadows fall onto the floor beneath them.
     dir.position.set(worldW * 0.5, far, worldD * 0.35);
@@ -732,10 +793,160 @@ export class FP3DRenderer {
       const flameWorld = group.localToWorld(
         new THREE.Vector3(-f.x, f.y, -f.z + TORCH.authoredBackZ),
       );
-      this._torches.push({ group, flameWorld });
+      const flameBase = group.localToWorld(
+        new THREE.Vector3(-f.x, f.y - TORCH.flameBaseDropRaw, -f.z + TORCH.authoredBackZ),
+      );
+      this._torches.push({ group, flameWorld, flameBase, flickerOffset: this._torches.length * 1.618 });
 
       this._loadTorchModel(group);
     }
+
+    this._buildTorchFlames(tile);
+  }
+
+  /**
+   * One additive `THREE.Points` holding every torch's flame particles, plus a
+   * second holding one soft halo per torch. Two draw calls in total however
+   * many torches there are. Positions/colours come from the pure, property-
+   * tested `flame.js` helpers and are rewritten each frame by
+   * `_stepTorchFlames`. Depth-tested (walls hide flames) but not depth-written.
+   * @param {number} tile
+   */
+  _buildTorchFlames(tile) {
+    const torches = this._torches;
+    if (!torches || torches.length === 0) return;
+    const sprite = this._flameSpriteTexture();
+
+    const per = TORCH.flameParticles;
+    const count = torches.length * per;
+    const flameGeo = this._trackGeometry(new THREE.BufferGeometry());
+    flameGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+    flameGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(count * 3), 3));
+    const flameMat = this._trackMaterial(new THREE.PointsMaterial({
+      size: tile * TORCH.flameSizeFrac,
+      map: sprite,
+      vertexColors: true,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
+      toneMapped: false,
+    }));
+    const flames = new THREE.Points(flameGeo, flameMat);
+    flames.name = 'torch-flames';
+    flames.frustumCulled = false; // positions change every frame
+    flames.renderOrder = 2;
+
+    const glowGeo = this._trackGeometry(new THREE.BufferGeometry());
+    const glowPos = new Float32Array(torches.length * 3);
+    torches.forEach((t, i) => {
+      glowPos[i * 3] = t.flameWorld.x;
+      glowPos[i * 3 + 1] = t.flameWorld.y;
+      glowPos[i * 3 + 2] = t.flameWorld.z;
+    });
+    glowGeo.setAttribute('position', new THREE.BufferAttribute(glowPos, 3));
+    glowGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(torches.length * 3), 3));
+    const glowMat = this._trackMaterial(new THREE.PointsMaterial({
+      size: tile * TORCH.glowSizeFrac,
+      map: sprite,
+      vertexColors: true,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
+      toneMapped: false,
+    }));
+    const glow = new THREE.Points(glowGeo, glowMat);
+    glow.name = 'torch-glow';
+    glow.frustumCulled = false;
+    glow.renderOrder = 1;
+
+    this.scene.add(glow, flames);
+    this._meshes.push(glow, flames); // freed with the maze by _disposeMaze
+
+    this._flameFx = {
+      flames,
+      glow,
+      seeds: makeFlameSeeds(count, seededRandom(TORCH.flameSeed)),
+      shape: {
+        height: tile * TORCH.flameHeightFrac,
+        radius: tile * TORCH.flameRadiusFrac,
+        sway: tile * TORCH.flameSwayFrac,
+      },
+      glowColor: new THREE.Color(TORCH.glowColor),
+    };
+    this._stepTorchFlames(0, true); // fill the buffers before the first frame
+  }
+
+  /**
+   * Soft radial-gradient sprite shared by the flame and glow points. Built
+   * once on a canvas and cached until `dispose()`.
+   * @returns {THREE.Texture | null}
+   */
+  _flameSpriteTexture() {
+    if (this._flameSprite !== undefined) return this._flameSprite;
+    this._flameSprite = null;
+    if (typeof document === 'undefined') return null;
+    const size = 64;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(0.25, 'rgba(255,255,255,0.75)');
+    g.addColorStop(0.6, 'rgba(255,255,255,0.18)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+    const tex = new THREE.CanvasTexture(canvas);
+    if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+    this._flameSprite = tex;
+    return tex;
+  }
+
+  /**
+   * Advance the flame particles and halo flicker. Under reduced motion the
+   * flame holds one fixed shape and the halo stays steady (Req 7.4).
+   * @param {number} now current time in ms
+   * @param {boolean} [force] update even if reduced motion already drew a frame
+   */
+  _stepTorchFlames(now, force = false) {
+    const fx = this._flameFx;
+    if (!fx || !this._torches) return;
+    const reduced = this.reducedMotion;
+    if (reduced && fx.frozen && !force) return;
+    const tSec = reduced ? TORCH.reducedMotionFlameT : now / 1000;
+
+    const per = TORCH.flameParticles;
+    const pos = fx.flames.geometry.attributes.position.array;
+    const col = fx.flames.geometry.attributes.color.array;
+    const glowCol = fx.glow.geometry.attributes.color.array;
+
+    this._torches.forEach((t, i) => {
+      const b = t.flameBase;
+      for (let k = 0; k < per; k++) {
+        const idx = i * per + k;
+        const p = flameParticle(fx.seeds[idx], tSec, fx.shape);
+        pos[idx * 3] = b.x + p.x;
+        pos[idx * 3 + 1] = b.y + p.y;
+        pos[idx * 3 + 2] = b.z + p.z;
+        const c = flameColor(p.life);
+        col[idx * 3] = c.r;
+        col[idx * 3 + 1] = c.g;
+        col[idx * 3 + 2] = c.b;
+      }
+      const f = flicker(tSec, t.flickerOffset, TORCH.flickerAmount, reduced) * TORCH.glowStrength;
+      glowCol[i * 3] = fx.glowColor.r * f;
+      glowCol[i * 3 + 1] = fx.glowColor.g * f;
+      glowCol[i * 3 + 2] = fx.glowColor.b * f;
+    });
+
+    fx.flames.geometry.attributes.position.needsUpdate = true;
+    fx.flames.geometry.attributes.color.needsUpdate = true;
+    fx.glow.geometry.attributes.color.needsUpdate = true;
+    fx.frozen = reduced;
   }
 
   /**
@@ -794,7 +1005,20 @@ export class FP3DRenderer {
    * @param {number} now current time in ms
    */
   _stepTorchLights(now) {
+    if (this._lantern && this.camera) this._lantern.position.copy(this.camera.position);
     if (!TORCH.lights || !this._torches || this._torches.length === 0 || !this.camera) return;
+
+    // Flicker every frame (cheap: intensity only; no shader change).
+    if (this._torchLights) {
+      const tSec = now / 1000;
+      for (const light of this._torchLights) {
+        const t = light.userData.torch;
+        light.intensity = t
+          ? TORCH.lightIntensity * flicker(tSec, t.flickerOffset, TORCH.flickerAmount, this.reducedMotion)
+          : 0;
+      }
+    }
+
     if (this._torchLightsAt && now - this._torchLightsAt < TORCH.lightReassignMs) return;
     this._torchLightsAt = now;
 
@@ -820,8 +1044,10 @@ export class FP3DRenderer {
       const hit = nearest[i];
       if (hit) {
         light.position.copy(hit.t.flameWorld);
+        light.userData.torch = hit.t;
         light.intensity = TORCH.lightIntensity;
       } else {
+        light.userData.torch = null;
         light.intensity = 0;
       }
     });
@@ -1342,16 +1568,19 @@ export class FP3DRenderer {
   }
 
   /**
-   * Show or hide the fruit marker at its spawn tile (Req 3.5). Only one fruit
-   * marker exists at a time; passing `present: false` removes it.
+   * Show or hide a fruit marker at a tile (Req 3.5). Several fruits can be on
+   * screen at once (one per maze quadrant), each in its own `slot`; setting a
+   * slot replaces that slot's marker, and `present: false` removes it.
    * @param {number} col tile column
    * @param {number} row tile row
    * @param {boolean} present whether the fruit should be shown
+   * @param {number} [slot=0] which fruit (quadrant index)
    */
-  setFruit(col, row, present) {
-    if (this._fruitMarker) {
-      this._removeMarker(this._fruitMarker);
-      this._fruitMarker = null;
+  setFruit(col, row, present, slot = 0) {
+    const old = this._fruitMarkers.get(slot);
+    if (old) {
+      this._removeMarker(old);
+      this._fruitMarkers.delete(slot);
     }
     if (!present) return;
 
@@ -1403,20 +1632,20 @@ export class FP3DRenderer {
     this.scene.add(group);
     // Track the group so dispose()/removeMarker frees the child geo/materials,
     // and record the animation anchors for `_stepFruit`.
-    this._fruitMarker = group;
-    this._fruitAnim = {
+    this._fruitMarkers.set(slot, group);
+    this._fruitAnims.set(slot, {
       group,
       halo,
       baseY,
-      phase: Math.random() * Math.PI * 2, // desync bob if fruit re-spawns
-    };
+      phase: Math.random() * Math.PI * 2, // desync bob between fruits/re-spawns
+    });
 
     // Load a fruit GLB (rotating cherry → banana → orange per spawn) and swap it
     // in for the placeholder sphere when ready; on failure/timeout the sphere
     // stays (Req 8.2). The sphere + halo keep floating/bobbing/glowing either way.
     const kind = FRUIT_MODEL_ORDER[(this._fruitSpawnIndex || 0) % FRUIT_MODEL_ORDER.length];
     this._fruitSpawnIndex = (this._fruitSpawnIndex || 0) + 1;
-    this._loadFruitModel(kind, group, radius);
+    this._loadFruitModel(kind, group, radius, slot);
   }
 
   /**
@@ -1428,8 +1657,9 @@ export class FP3DRenderer {
    * @param {'cherry'|'banana'|'orange'} kind which fruit model to load
    * @param {THREE.Group} group the fruit group to populate
    * @param {number} radius the placeholder sphere radius (target model size)
+   * @param {number} [slot=0] the fruit slot the group belongs to
    */
-  _loadFruitModel(kind, group, radius) {
+  _loadFruitModel(kind, group, radius, slot = 0) {
     const url = FRUIT_MODEL_URLS[kind];
     if (!url) return;
     if (!this._fruitGltfPromises) this._fruitGltfPromises = new Map();
@@ -1462,7 +1692,7 @@ export class FP3DRenderer {
     this._fruitGltfPromises.get(kind).then((gltf) => {
       // Guard: model failed, or this fruit was removed/replaced meanwhile.
       if (!gltf || !gltf.scene) return;
-      if (this._fruitMarker !== group || !group.parent) return;
+      if (this._fruitMarkers.get(slot) !== group || !group.parent) return;
 
       const model = gltf.scene.clone(true);
       model.traverse((obj) => { if (obj.isMesh) obj.castShadow = true; });
@@ -1507,7 +1737,9 @@ export class FP3DRenderer {
     if (typeof node.traverse === 'function') node.traverse(dispose);
     else dispose(node);
     // Clear fruit animation state when the fruit marker is the node removed.
-    if (this._fruitAnim && this._fruitAnim.group === node) this._fruitAnim = null;
+    for (const [slot, anim] of this._fruitAnims) {
+      if (anim.group === node) this._fruitAnims.delete(slot);
+    }
   }
 
   // --- Ghosts ----------------------------------------------------------------
@@ -1839,6 +2071,7 @@ export class FP3DRenderer {
 
     this._stepFruit(now);
     this._stepTorchLights(now);
+    this._stepTorchFlames(now);
     this._stepPellets(now);
     this._stepGhosts(now);
   }
@@ -1938,7 +2171,11 @@ export class FP3DRenderer {
    * @param {number} now current time in ms
    */
   _stepFruit(now) {
-    const fa = this._fruitAnim;
+    for (const fa of this._fruitAnims.values()) this._stepOneFruit(fa, now);
+  }
+
+  /** Animate one fruit (see {@link _stepFruit}). */
+  _stepOneFruit(fa, now) {
     if (!fa || !fa.group) return;
 
     if (this.reducedMotion) {
@@ -2026,10 +2263,9 @@ export class FP3DRenderer {
     for (const mesh of this._pelletMarkers.values()) this._removeMarker(mesh);
     this._pelletMarkers.clear();
     if (this._pelletAnims) this._pelletAnims.clear();
-    if (this._fruitMarker) {
-      this._removeMarker(this._fruitMarker);
-      this._fruitMarker = null;
-    }
+    for (const group of this._fruitMarkers.values()) this._removeMarker(group);
+    this._fruitMarkers.clear();
+    this._fruitAnims.clear();
     for (const mesh of this._ghostMeshes.values()) this._removeMarker(mesh);
     this._ghostMeshes.clear();
     this._moveAnim = null;
@@ -2075,6 +2311,7 @@ export class FP3DRenderer {
     this._materials.clear();
     this._walls = null;
     this._floor = null;
+    this._flameFx = null; // its Points were in _meshes and are freed above
   }
 
   /**
@@ -2096,6 +2333,10 @@ export class FP3DRenderer {
         try { tex.dispose(); } catch { /* ignore */ }
       }
       this._textures.clear();
+    }
+    if (this._flameSprite) {
+      try { this._flameSprite.dispose(); } catch { /* ignore */ }
+      this._flameSprite = undefined;
     }
     if (this.renderer) {
       try { this.renderer.dispose(); } catch { /* ignore */ }

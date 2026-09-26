@@ -30,3 +30,17 @@ Replace every file in this directory with original audio you own, or audio
 under a license that permits your intended use (e.g., CC0 / CC-BY). The game's
 `AudioBus` references sounds by stable keys, so replacing the files does not
 require code changes.
+
+## Other non-Namco files (same demo-only terms)
+
+- `score2_castlevania.mp3`: gameplay background music (`music_score` key).
+  It is a *Castlevania* track, © Konami. It was added by the project creator
+  and its source URL isn't recorded yet. It is demo / non-commercial only and
+  not covered by the MIT License. Replace it before any public release.
+- `12. Stage Clear.mp3` (win / level-clear and correct-answer music,
+  `music_stage_clear`) was added by the project creator with no recorded
+  source. `13. Game Complete.mp3` and `18 Pressure.mp3` are present but not
+  wired in. The same demo-only terms apply.
+- `score.mp3` and `jeopardy.mp3` also come from third parties and have no
+  recorded source. The same demo-only terms apply. `score.mp3` is no longer
+  wired in.

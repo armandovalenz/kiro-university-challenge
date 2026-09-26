@@ -32,8 +32,13 @@
 
 import Phaser from 'phaser';
 
-import { DEFAULT_GRADE, GRADES, GHOST_PERSONALITIES, FP3D } from '../config.js';
-import { MazeGrid } from '../maze/mazeLogic.js';
+import {
+  DEFAULT_GRADE, GRADES, GHOST_PERSONALITIES, FP3D, TIMINGS, FRUIT_MIN_DISTANCE, PRESSURE,
+} from '../config.js';
+import { nearestGhostPathDistance, pressureTargetRate, approachRate } from '../systems/pressure.js';
+import {
+  MazeGrid, resolveCatchPositions, pickFruitTile, pickQuadrantFruitTiles,
+} from '../maze/mazeLogic.js';
 import { getLevelLayout, TILE } from '../maze/mazeData.js';
 import {
   CARDINALS,
@@ -176,7 +181,7 @@ export default class FP3DScene extends Phaser.Scene {
       traversal: null, // { active, from, to, ms, elapsed } while a step is in flight
       buffer: new InputBuffer(), // 0 or 1 pending intent (Req 2.7)
       ghosts: this._buildGhostStates(), // 4 entries with { key, color, personality, col, row }
-      fruit: this._buildFruitState(), // { col, row, present }
+      fruits: this._buildFruitStates(), // 4 slots (one per quadrant): { slot, col, row, present, timerMs }
       frozen: false, // true while an overlay is open (Task 15 sets it)
       reducedMotion: this._reducedMotion,
     };
@@ -212,8 +217,8 @@ export default class FP3DScene extends Phaser.Scene {
     // (Req 3.1/3.2); fruit shown at its spawn (Req 3.5); ghosts placed (Req 1.4).
     this.renderer.setCamera(this.state.player.col, this.state.player.row, this.state.player.facing);
     this._seedPelletMarkers();
-    if (this.state.fruit) {
-      this.renderer.setFruit(this.state.fruit.col, this.state.fruit.row, this.state.fruit.present);
+    for (const f of this.state.fruits) {
+      this.renderer.setFruit(f.col, f.row, f.present, f.slot);
     }
     this._renderGhosts();
 
@@ -241,6 +246,11 @@ export default class FP3DScene extends Phaser.Scene {
     // FP3D cues route through the same AudioBus, so mute silences all FP3D audio.
     if (this.audio) {
       if (typeof this.audio.bindMuteKey === 'function') this.audio.bindMuteKey(this);
+      // A fresh run starts at normal tempo (the scene object is reused).
+      if (typeof this.audio.setMusicRate === 'function') this.audio.setMusicRate(1);
+      this._musicRate = 1;
+      this._targetRate = 1;
+      this._pressureCheckAt = 0;
       if (typeof this.audio.play === 'function') this.audio.play(AudioEvent.GAME_MUSIC);
     }
 
@@ -303,7 +313,9 @@ export default class FP3DScene extends Phaser.Scene {
 
     this._pollInput();
     this._stepMovement(delta);
+    this._stepFruitCadence(delta);
     this._advanceGhosts();
+    this._updatePressure(time, delta);
     this._renderGhosts();
     this._updateHud();
 
@@ -362,16 +374,94 @@ export default class FP3DScene extends Phaser.Scene {
   }
 
   /**
-   * Build the single fruit runtime state from the maze's first fruit spawn tile
-   * (Req 1.4). Present from the start so it renders in the seeded scene; the
-   * full fruit spawn cadence + lesson freeze is Task 15's concern.
-   * @returns {{col:number,row:number,present:boolean}|null}
+   * Build the four fruit slots, one per maze quadrant (Property 27), each on a
+   * random corridor tile in its quadrant away from the player spawn. All four
+   * are present from the start (Req 1.4, 5.7).
+   * `timerMs` counts unfrozen play time: while present it runs toward
+   * `TIMINGS.fruitLifetime` (then the fruit vanishes); while absent toward
+   * `TIMINGS.fruitSpawnInterval` (then a new fruit appears in that quadrant).
+   * @returns {Array<{slot:number,col:number,row:number,present:boolean,timerMs:number}>}
    */
-  _buildFruitState() {
-    const fruits = this.grid.fruitSpawns || [];
-    if (!fruits.length) return null;
-    const { col, row } = fruits[0];
-    return { col, row, present: true };
+  _buildFruitStates() {
+    const spawn = this.grid.mathManSpawn;
+    const picks = pickQuadrantFruitTiles(this.grid, Math.random, {
+      avoid: spawn ? [spawn] : [],
+      minDistance: FRUIT_MIN_DISTANCE,
+    });
+    return picks.map((tile, slot) => (tile
+      ? { slot, col: tile.col, row: tile.row, present: true, timerMs: 0 }
+      : { slot, col: 0, row: 0, present: false, timerMs: 0 }));
+  }
+
+  /**
+   * Fruit cadence, mirroring GameScene's timers but driven by unfrozen frame
+   * time (so it pauses with overlays). Per quadrant slot: an uncollected fruit
+   * disappears after `fruitLifetime`, and an empty slot refills after
+   * `fruitSpawnInterval` with a random corridor tile in that same quadrant,
+   * away from the player and ghosts.
+   * @param {number} delta frame time in ms
+   */
+  _stepFruitCadence(delta) {
+    const st = this.state;
+    if (!st || !st.fruits) return;
+    let spawned = false;
+    for (const fruit of st.fruits) {
+      fruit.timerMs += delta || 0;
+
+      if (fruit.present) {
+        if (fruit.timerMs < TIMINGS.fruitLifetime) continue;
+        fruit.present = false;
+        fruit.timerMs = 0;
+        if (this.renderer) this.renderer.setFruit(fruit.col, fruit.row, false, fruit.slot);
+        continue;
+      }
+
+      if (fruit.timerMs < TIMINGS.fruitSpawnInterval) continue;
+      fruit.timerMs = 0;
+      const avoid = [{ col: st.player.col, row: st.player.row }]
+        .concat(st.ghosts.map((g) => ({ col: g.col, row: g.row })));
+      const tile = pickFruitTile(this.grid, Math.random, {
+        avoid, minDistance: FRUIT_MIN_DISTANCE, quadrant: fruit.slot,
+      });
+      if (!tile) continue;
+      fruit.col = tile.col;
+      fruit.row = tile.row;
+      fruit.present = true;
+      if (this.renderer) this.renderer.setFruit(fruit.col, fruit.row, true, fruit.slot);
+      spawned = true;
+    }
+    if (spawned && this.audio && typeof this.audio.play === 'function') {
+      this.audio.play(AudioEvent.FRUIT_SPAWN);
+    }
+  }
+
+  /**
+   * Pressure tempo (Req 12.9 / Properties 28–29), identical rule to
+   * GameScene: every `PRESSURE.checkMs`, the walking distance to the nearest
+   * ghost sets a target playback rate for the score; every frame the actual
+   * rate ramps toward it, so the music speeds up and slows down gradually.
+   * Only runs in the unfrozen update path, so overlays hold it still.
+   * @param {number} time scene clock (ms)
+   * @param {number} delta frame time (ms)
+   */
+  _updatePressure(time, delta) {
+    if (!this.audio || typeof this.audio.setMusicRate !== 'function' || !this.state) return;
+    if (this._musicRate === undefined) { this._musicRate = 1; this._targetRate = 1; }
+
+    if (time >= (this._pressureCheckAt || 0)) {
+      this._pressureCheckAt = time + PRESSURE.checkMs;
+      const st = this.state;
+      const d = nearestGhostPathDistance(
+        this.grid, st.player, st.ghosts.map((g) => ({ col: g.col, row: g.row })), PRESSURE.startTiles,
+      );
+      this._targetRate = pressureTargetRate(d, PRESSURE);
+    }
+
+    const next = approachRate(this._musicRate, this._targetRate, delta, PRESSURE);
+    if (next !== this._musicRate) {
+      this._musicRate = next;
+      this.audio.setMusicRate(next);
+    }
   }
 
   /** Show a marker for every live pellet in the grid (Req 3.1, 3.2). */
@@ -879,50 +969,35 @@ export default class FP3DScene extends Phaser.Scene {
     }
     ctx.globalAlpha = 1;
 
-    // Fruit markers. Every fruit SPAWN tile is shown as a faint ring so the
-    // player always knows where fruit can appear; the ACTIVE fruit (present and
-    // uncollected) is drawn as a bright, outlined red cherry dot with a soft
-    // glow so it clearly stands out on the map.
+    // Fruit markers. Up to four fruits (one per quadrant, Property 27) sit on
+    // random corridor tiles, so there is no fixed spawn ring: each ACTIVE
+    // fruit is drawn as a bright, outlined red cherry dot with a soft glow.
     const fruitR = Math.max(3, cell * 0.5);
-    const spawns = (grid.fruitSpawns && grid.fruitSpawns.length)
-      ? grid.fruitSpawns
-      : (st.fruit ? [st.fruit] : []);
-    for (const fs of spawns) {
-      const fx = ox + (fs.col + 0.5) * cell;
-      const fy = oy + (fs.row + 0.5) * cell;
-      const active = st.fruit && st.fruit.present && st.fruit.col === fs.col && st.fruit.row === fs.row;
-      if (active) {
-        // Glow.
-        ctx.globalAlpha = 0.35;
-        ctx.fillStyle = '#ff5a3c';
-        ctx.beginPath();
-        ctx.arc(fx, fy, fruitR * 1.9, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        // Cherry dot + outline.
-        ctx.fillStyle = '#ff3b30';
-        ctx.beginPath();
-        ctx.arc(fx, fy, fruitR, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.lineWidth = Math.max(1, cell * 0.12);
-        ctx.strokeStyle = '#7a1500';
-        ctx.stroke();
-        // Little green stem so it reads as a cherry.
-        ctx.strokeStyle = '#38e06a';
-        ctx.beginPath();
-        ctx.moveTo(fx, fy - fruitR);
-        ctx.lineTo(fx + fruitR * 0.6, fy - fruitR * 1.8);
-        ctx.stroke();
-      } else {
-        // Faint spawn-location ring.
-        ctx.globalAlpha = 0.5;
-        ctx.lineWidth = Math.max(1, cell * 0.1);
-        ctx.strokeStyle = '#ff8a7a';
-        ctx.beginPath();
-        ctx.arc(fx, fy, fruitR * 0.8, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-      }
+    for (const fruit of st.fruits || []) {
+      if (!fruit.present) continue;
+      const fx = ox + (fruit.col + 0.5) * cell;
+      const fy = oy + (fruit.row + 0.5) * cell;
+      // Glow.
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = '#ff5a3c';
+      ctx.beginPath();
+      ctx.arc(fx, fy, fruitR * 1.9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      // Cherry dot + outline.
+      ctx.fillStyle = '#ff3b30';
+      ctx.beginPath();
+      ctx.arc(fx, fy, fruitR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.lineWidth = Math.max(1, cell * 0.12);
+      ctx.strokeStyle = '#7a1500';
+      ctx.stroke();
+      // Little green stem so it reads as a cherry.
+      ctx.strokeStyle = '#38e06a';
+      ctx.beginPath();
+      ctx.moveTo(fx, fy - fruitR);
+      ctx.lineTo(fx + fruitR * 0.6, fy - fruitR * 1.8);
+      ctx.stroke();
     }
 
     // Player — a bold arrow pointing along the current facing, plus a small
@@ -1140,8 +1215,8 @@ export default class FP3DScene extends Phaser.Scene {
     // FULL freeze → LessonScene overlay is Task 15; here we only clear a clean
     // seam so pellet/movement flow stays correct and the fruit isn't collected
     // twice.
-    const fruit = this.state.fruit;
-    if (fruit && fruit.present && fruit.col === col && fruit.row === row) {
+    const fruit = this.state.fruits.find((f) => f.present && f.col === col && f.row === row);
+    if (fruit) {
       this._onFruitCollected(fruit);
     }
 
@@ -1352,8 +1427,10 @@ export default class FP3DScene extends Phaser.Scene {
       return;
     }
 
-    // Lives remain → reset player + ghosts to spawns (Req 4.3) and unfreeze.
-    this.resetPositions();
+    // Lives remain (Property 25 / resolveCatchPositions): a correct answer
+    // saves the life, so the player stays on the tile where he was caught and
+    // only the ghosts go home (Req 4.3). A wrong answer resets everyone (4.4).
+    this.resetPositions({ keepPlayer: correct });
     this._caught = false;
     this._unfreeze();
   }
@@ -1364,35 +1441,44 @@ export default class FP3DScene extends Phaser.Scene {
    * tracks position as in-memory `{ col, row }`, this rewrites those tiles (and
    * clears any in-flight traversal / buffered intent) rather than moving
    * sprites, then snaps the camera and ghost meshes to the reset state.
+   * @param {object} [opts]
+   * @param {boolean} [opts.keepPlayer=false] true after a correct answer: the
+   *   player stays on his tile (and facing) and only the ghosts go home.
    */
-  resetPositions() {
+  resetPositions({ keepPlayer = false } = {}) {
     const st = this.state;
     if (!st) return;
 
-    // Player back to spawn, facing north, no in-flight step or pending intent.
-    st.player.col = this._playerSpawn.col;
-    st.player.row = this._playerSpawn.row;
-    st.player.facing = this._spawnFacing || 'north';
+    const next = resolveCatchPositions({
+      correct: keepPlayer,
+      player: st.player,
+      playerSpawn: this._playerSpawn,
+      ghostSpawns: st.ghosts.map((g) => g.spawn || { col: g.col, row: g.row }),
+    });
+
+    // Player: kept in place (saved life) or back to spawn. Either way clear any
+    // in-flight step / pending intent. Facing is kept when staying put.
+    st.player.col = next.player.col;
+    st.player.row = next.player.row;
+    if (!keepPlayer) st.player.facing = this._spawnFacing || 'north';
     st.traversal = null;
     if (st.buffer && typeof st.buffer.take === 'function') st.buffer.take();
 
     // Ghosts back to their spawn tiles with a cleared heading.
-    for (const ghost of st.ghosts) {
-      if (ghost.spawn) {
-        ghost.col = ghost.spawn.col;
-        ghost.row = ghost.spawn.row;
-      }
+    st.ghosts.forEach((ghost, i) => {
+      ghost.col = next.ghosts[i].col;
+      ghost.row = next.ghosts[i].row;
       ghost.dir = null;
       // Returned inside the house → run the exit sequence again (matches 2D).
       ghost.exited = false;
-    }
+    });
     // Reset the ghost step accumulator so cadence restarts cleanly.
     this._ghostAccumMs = 0;
     // Stop any continuous walking so the player doesn't auto-move on resume.
     this._heldMoveDir = null;
 
     // Re-seed the renderer: clear any face-the-ghost scare, snap the camera to
-    // the player spawn, and push the reset ghost positions.
+    // the player's (kept or spawn) tile, and push the reset ghost positions.
     if (this.renderer) {
       if (typeof this.renderer.clearFaceGhost === 'function') this.renderer.clearFaceGhost();
       this.renderer.setCamera(st.player.col, st.player.row, st.player.facing);
@@ -1457,12 +1543,13 @@ export default class FP3DScene extends Phaser.Scene {
    */
   _onFruitCollected(fruit) {
     fruit.present = false;
+    fruit.timerMs = 0; // next fruit after a full spawn interval
 
     // Extra life, capped at LIVES_MAX = 10 by ScoreSystem (Req 5.2). Same shared
     // ScoreSystem — never forked.
     this.scoreSystem.gainLife();
 
-    if (this.renderer) this.renderer.setFruit(fruit.col, fruit.row, false);
+    if (this.renderer) this.renderer.setFruit(fruit.col, fruit.row, false, fruit.slot);
     if (this.audio && typeof this.audio.play === 'function') {
       this.audio.play(AudioEvent.FRUIT_COLLECT);
       this.audio.play(AudioEvent.EXTRA_LIFE);
@@ -1717,6 +1804,8 @@ export default class FP3DScene extends Phaser.Scene {
       try { this.renderer.dispose(); } catch { /* ignore */ }
       this.renderer = null;
     }
+    // Back to normal tempo for whatever comes next (menu / game over).
+    if (this.audio && typeof this.audio.setMusicRate === 'function') this.audio.setMusicRate(1);
   }
 }
 

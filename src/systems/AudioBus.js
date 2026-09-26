@@ -48,7 +48,7 @@ export const AudioEvent = Object.freeze({
   TITLE: 'title', // splash / title shown (Req 12.1)
   MENU: 'menu', // menu shown (Req 12.1)
   GAME_START: 'gameStart', // game start / intro jingle (Req 12.2)
-  GAME_MUSIC: 'gameMusic', // gameplay running loop (Req 12.1, 12.8)
+  GAME_MUSIC: 'gameMusic', // gameplay running loop (Req 12.1, 12.8); tempo rises near ghosts (12.9)
   QUIZ_MUSIC: 'quizMusic', // quiz-thinking loop while a question is on screen
   PELLET: 'pellet', // pellet eaten (Req 12.2)
   FRUIT_SPAWN: 'fruitSpawn', // fruit spawned (Req 12.2)
@@ -97,7 +97,7 @@ export const EVENT_SOUND = Object.freeze({
   [AudioEvent.MENU]: { type: AudioType.MUSIC, keys: ['music_score'], loop: true },
   [AudioEvent.GAME_START]: { type: AudioType.SFX, keys: ['sfx_intro'] },
   [AudioEvent.GAME_MUSIC]: {
-    // Gameplay background music: score.mp3, looped.
+    // Gameplay background music: score2_castlevania.mp3, looped.
     type: AudioType.MUSIC,
     keys: ['music_score'],
     loop: true,
@@ -118,14 +118,23 @@ export const EVENT_SOUND = Object.freeze({
   [AudioEvent.FRUIT_COLLECT]: { type: AudioType.SFX, keys: ['sfx_fruit'] },
   [AudioEvent.EXTRA_LIFE]: { type: AudioType.SFX, keys: ['sfx_1up'] },
   [AudioEvent.CAUGHT]: { type: AudioType.SFX, keys: ['sfx_caught'] },
-  [AudioEvent.CORRECT]: { type: AudioType.SFX, keys: ['sfx_correct'] },
+  // Correct answer: the ~5 s "12. Stage Clear.mp3" jingle (quiz music is
+  // stopped first in QuizScene), falling back to the old cue if it's missing.
+  [AudioEvent.CORRECT]: { type: AudioType.SFX, keys: ['music_stage_clear', 'sfx_correct'] },
   [AudioEvent.WRONG]: { type: AudioType.SFX, keys: ['sfx_wrong'] },
   [AudioEvent.LIFE_LOST]: {
     type: AudioType.SFX,
     keys: ['sfx_death_0', 'sfx_death_1'],
     mode: 'sequence',
   },
-  [AudioEvent.LEVEL_CLEAR]: { type: AudioType.SFX, keys: ['sfx_level_clear'] },
+  // Win / level-clear music: "12. Stage Clear.mp3" as a one-shot lead-in that
+  // then hands off to the looped score. A MUSIC cue (not SFX) so the next
+  // pellet chomp can't cut it off.
+  [AudioEvent.LEVEL_CLEAR]: {
+    type: AudioType.MUSIC,
+    keys: ['music_stage_clear', 'music_score'],
+    loop: true,
+  },
   [AudioEvent.GAME_OVER]: { type: AudioType.MUSIC, keys: ['music_gameover'], loop: false },
   [AudioEvent.HIGH_SCORE]: { type: AudioType.SFX, keys: ['sfx_highscore'] },
   [AudioEvent.MENU_SELECT]: { type: AudioType.SFX, keys: ['sfx_select'] },
@@ -196,6 +205,8 @@ export const AudioBus = {
   _noDuckMusic: false,
   /** @type {boolean} */
   _muted: false,
+  /** @type {number} playback rate for the score track (pressure tempo). */
+  _scoreRate: 1,
   /** @type {Record<string, number>} per-event index for `alternate` SFX. */
   _alt: Object.create(null),
   /**
@@ -228,6 +239,7 @@ export const AudioBus = {
     this._activeSfx = new Set();
     this._pending = null;
     this._unlockArmed = false;
+    this._scoreRate = 1;
 
     // Restore persisted mute (Req 12.4). Property 21: it is reapplied on init.
     let muted = false;
@@ -380,6 +392,37 @@ export const AudioBus = {
       this._music = null;
       this._musicKey = null;
       this._noDuckMusic = false;
+    }
+  },
+
+  // --- Pressure tempo (Req 12.9) ---------------------------------------------
+
+  /**
+   * Set the score music's playback rate (1 = normal; higher is faster and
+   * higher-pitched). Scenes ramp this gradually as ghosts close in. Applied
+   * only while the score is the current track; other tracks (quiz, level
+   * clear, game over) always play at normal speed. The value is remembered so
+   * the score picks it up again when it resumes.
+   * @param {number} rate
+   */
+  setMusicRate(rate) {
+    const r = Number.isFinite(rate) && rate > 0 ? rate : 1;
+    this._scoreRate = r;
+    if (this._music && this._musicKey === 'music_score') this._applyRate(this._music, r);
+  },
+
+  /** @returns {number} the remembered score playback rate. */
+  getMusicRate() {
+    return this._scoreRate;
+  },
+
+  /** @private Set a sound's playback rate, tolerating stubs/older APIs. */
+  _applyRate(sound, r) {
+    try {
+      if (typeof sound.setRate === 'function') sound.setRate(r);
+      else sound.rate = r;
+    } catch {
+      /* ignore */
     }
   },
 
@@ -537,7 +580,10 @@ export const AudioBus = {
     this._startMusic(intro, false);
     const introSound = this._music;
     if (introSound && typeof introSound.once === 'function') {
-      introSound.once('complete', () => this._startMusic(body, !!entry.loop));
+      introSound.once('complete', () => {
+        // Only hand off if nothing else (e.g. the quiz) replaced the lead-in.
+        if (this._music === introSound) this._startMusic(body, !!entry.loop);
+      });
     } else {
       this._startMusic(body, !!entry.loop);
     }
@@ -620,6 +666,8 @@ export const AudioBus = {
     this._musicKey = key;
     // Re-assert the target volume deterministically after play().
     setVolume(next, target);
+    // The score keeps its current pressure tempo; every other track is normal.
+    this._applyRate(next, key === 'music_score' ? this._scoreRate : 1);
   },
 
   /** @private Stop any crossfade tweens still targeting a sound. */

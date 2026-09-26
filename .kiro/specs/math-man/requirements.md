@@ -33,6 +33,7 @@ The game targets modern browsers (Chrome, Firefox, Safari, Edge), requires no lo
 4. WHEN Math Man moves over a pellet THEN the system SHALL remove the pellet and increase the score.
 5. WHEN all pellets in the maze are collected THEN the system SHALL advance the player to the next level or display a win state.
 6. WHEN the game is running THE system SHALL display the current score and remaining lives on screen.
+7. WHEN Math Man moves over a big (power) pellet THEN the system SHALL award `POINTS.powerPellet` = 100 points, double its original 50-point value, while a regular pellet stays at 10 points.
 
 ### Requirement 2: Lives System
 
@@ -56,7 +57,7 @@ The game targets modern browsers (Chrome, Firefox, Safari, Edge), requires no lo
 1. WHILE the game is running THE system SHALL move the Einstein ghosts through the maze using a pursuit/patrol behavior.
 2. THE system SHALL render multiple Einstein ghosts in distinct colors (e.g., red, pink, cyan, orange), echoing the classic Pac-Man ghost quartet.
 3. WHEN any Einstein Ghost collides with Math Man THEN the system SHALL pause gameplay and present a grade-appropriate math or science question (see Requirement 4).
-4. WHEN Math Man loses a life AND lives remain THEN the system SHALL reset Math Man and the ghosts to their starting positions.
+4. WHEN Math Man loses a life AND lives remain THEN the system SHALL reset Math Man and the ghosts to their starting positions. WHEN the player saves the life by answering correctly THEN the system SHALL keep Math Man on the tile where he was caught and SHALL return only the ghosts to their starting positions.
 5. THE system SHALL give each Einstein ghost a recognizable Einstein appearance (e.g., wild-hair motif) while keeping the colors distinct.
 6. THE system MAY vary ghost speed or aggressiveness based on the selected difficulty level (see Requirement 10).
 
@@ -70,7 +71,7 @@ The game targets modern browsers (Chrome, Firefox, Safari, Edge), requires no lo
 2. THE system SHALL load questions from the bundled question bank at `public/assets/questions/math_man_question_bank_120.json`, which contains grade-tagged (5/6/7) math and science questions across many topics and difficulty tiers (easy/medium/hard).
 3. THE system SHALL select a question whose `grade` matches the selected level; it MAY further filter by `subject` (math/science) and/or `difficulty`.
 4. WHEN the question is displayed THEN the system SHALL present its multiple-choice options for the player to select (numeric entry MAY be used where appropriate).
-5. IF the player selects the correct answer THEN the system SHALL NOT deduct a life, SHALL show positive feedback, and SHALL resume gameplay.
+5. IF the player selects the correct answer THEN the system SHALL NOT deduct a life, SHALL show positive feedback, SHALL keep Math Man in place while returning the ghosts to their starting positions (see Requirement 3.4), and SHALL resume gameplay.
 6. IF the player selects an incorrect answer THEN the system SHALL deduct one life, SHALL show the correct answer with the question's `explanation`, and SHALL resume gameplay (or trigger game-over if lives reach 0).
 7. THE system SHALL prevent ghost/Math Man movement while the question modal is open.
 8. THE system SHALL avoid repeating the same question (by `id`) twice in a row within a single game session, and SHOULD avoid recently-used questions where possible.
@@ -82,11 +83,13 @@ The game targets modern browsers (Chrome, Firefox, Safari, Edge), requires no lo
 
 #### Acceptance Criteria
 
-1. WHILE a level is in progress THE system SHALL spawn a fruit in the maze periodically or under defined conditions.
+1. WHILE a level is in progress THE system SHALL spawn fruit periodically on randomly selected playable corridor tiles (any tile whose original layout code is a pellet, power pellet, fruit spawn, or Math Man spawn), not only at the layout's fruit spawn tile.
 2. WHEN Math Man collects a fruit THEN the system SHALL grant one extra life (subject to the life cap in Requirement 2.5).
 3. WHEN Math Man collects a fruit THEN the system SHALL display a short math or science lesson (a "fun fact" or micro-lesson).
 4. WHILE the lesson is displayed THE system SHALL allow the player to dismiss it and continue playing.
 5. THE system SHALL vary the lessons so repeated fruit collection shows different content when possible.
+6. WHEN a fruit spawns THE system SHALL NOT place it on a wall, inside the ghost house, or on the tunnel row, and SHALL place it at least `FRUIT_MIN_DISTANCE` tiles (Manhattan) from Math Man and every ghost whenever such a tile exists.
+7. THE system SHALL keep up to 4 fruits in the maze at the same time, one in each quadrant (the maze split at its horizontal and vertical centre lines): a first wave of 4 SHALL appear when the level starts, and WHEN a quadrant's fruit is collected or expires THEN the system SHALL respawn a fruit in that same quadrant after the fruit spawn interval.
 
 ### Requirement 6: Local Records (No Login)
 
@@ -192,6 +195,7 @@ The game targets modern browsers (Chrome, Firefox, Safari, Edge), requires no lo
 6. IF an audio asset fails to load or the browser blocks autoplay THEN the system SHALL continue running without errors and SHALL start/resume audio after the first user interaction.
 7. THE system SHALL manage audio via the Web Audio API (directly or through the chosen engine/library) for low-latency playback of pre-decoded sound effects.
 8. THE gameplay background music MAY loop and MAY change tempo/intensity with difficulty or level (Pac-Man-style siren behavior) as an enhancement.
+9. WHILE gameplay is running, WHEN the nearest ghost is within `PRESSURE.startTiles` (6) walking tiles of Math Man (shortest path through the maze, walls blocking, tunnel wrapping) THE system SHALL speed up the score music (playback rate, raising its pitch) along a `closeness ^ PRESSURE.curve` curve (subtle while the ghost is several tiles away, steep in the last tile or two), up to `PRESSURE.maxRate` (1.2×) when the ghost is on Math Man's tile, and SHALL return it to normal speed when no ghost is within range. The rate SHALL change gradually, by at most `PRESSURE.rampUpPerSec` / `rampDownPerSec` per second, and the same score track SHALL keep playing (no track switch). WHEN a level is cleared THE system SHALL play the win music ("12. Stage Clear.mp3") once and then return to the current gameplay loop. WHEN the player answers a quiz question correctly THE system SHALL play "12. Stage Clear.mp3" as the correct-answer cue.
 
 ### Requirement 13: Sprites and In-Game Art
 
