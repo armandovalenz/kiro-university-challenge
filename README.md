@@ -192,6 +192,10 @@ The game's visual assets (logo, app icon, mascot sprite sheet, collectibles, UI 
 - Built with [Phaser 3](https://phaser.io/) and [Vite](https://vitejs.dev/); the optional first-person 3D mode uses [Three.js](https://threejs.org/).
 - Inspired by Namco's Pac-Man. Pac-Man is a trademark of its respective owner; this project is an educational, non-commercial homage and is not affiliated with or endorsed by Namco / Bandai Namco.
 
+## Kiro University Challenge Eligibility
+
+This project was built as an entry for the Kiro University Challenge. The full eligibility mapping — disqualification criteria plus lesson-by-lesson evidence (Lessons 1–7 and the cloud-session bonus) — lives in [CHALLENGE.md](CHALLENGE.md).
+
 ## License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
