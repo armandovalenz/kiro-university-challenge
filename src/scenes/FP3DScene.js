@@ -253,6 +253,10 @@ export default class FP3DScene extends Phaser.Scene {
       this._pressureCheckAt = 0;
       if (typeof this.audio.play === 'function') this.audio.play(AudioEvent.GAME_MUSIC);
     }
+    // Questions never repeat within a level (Req 4.10). FP3D plays a single
+    // level per run, so the window starts fresh when the scene starts.
+    const questionBank = this.registry.get('questionBank');
+    if (questionBank && typeof questionBank.startLevel === 'function') questionBank.startLevel();
 
     // --- Reduced-motion live toggle (Req 7.4, 7.5) ---------------------------
     // Reduced-motion is initialized from the OS/browser preference above

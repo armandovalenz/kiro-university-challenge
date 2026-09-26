@@ -167,6 +167,8 @@ export default class QuestionBank {
     this.usingFallback = false;
     /** @type {string|null} id of the most recently served question. */
     this._lastId = null;
+    /** @type {Set<string>} ids already served during the current level. */
+    this._usedThisLevel = new Set();
   }
 
   /** @returns {number} number of validated questions currently available. */
@@ -217,9 +219,33 @@ export default class QuestionBank {
    */
   next(grade, filters = {}, recentIds = [], rng = Math.random) {
     const pool = this.byGrade.get(grade) || [];
-    const record = selectNext(pool, filters, recentIds, rng, this._lastId);
-    if (record) this._lastId = record.id;
+    // Never repeat a question within the current level (Req 4.10, Property 30):
+    // every id already served this level is avoided. Only once the whole
+    // eligible pool is used does a new cycle start (still never the same id
+    // twice in a row).
+    const avoid = (Array.isArray(recentIds) ? recentIds : []).concat([...this._usedThisLevel]);
+    const record = selectNext(pool, filters, avoid, rng, this._lastId);
+    if (record) {
+      if (this._usedThisLevel.has(record.id)) this._usedThisLevel.clear(); // pool exhausted
+      this._usedThisLevel.add(record.id);
+      this._lastId = record.id;
+    }
     return record;
+  }
+
+  /**
+   * Start a fresh level: forget which questions were served this level so the
+   * whole bank is available again. The immediately previous id is kept, so the
+   * first question of the new level still differs from the last one asked.
+   * Called by GameScene / FP3DScene at run start and on each level clear.
+   */
+  startLevel() {
+    this._usedThisLevel.clear();
+  }
+
+  /** @returns {number} how many distinct questions were served this level. */
+  get usedThisLevel() {
+    return this._usedThisLevel.size;
   }
 
   /**
@@ -231,6 +257,7 @@ export default class QuestionBank {
     this.byGrade = indexByGrade(validRecords);
     this.usingFallback = usingFallback;
     this._lastId = null;
+    this._usedThisLevel = new Set();
   }
 }
 

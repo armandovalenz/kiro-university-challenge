@@ -177,6 +177,50 @@ describe('QuestionBank — Property 12: No immediate question repeat', () => {
   });
 });
 
+describe('QuestionBank — Property 30: No question repeats within a level', () => {
+  // **Validates: Requirements 4.10**
+  it('the first N picks of a level (N = grade pool size) are all distinct, for any RNG', () => {
+    fc.assert(
+      fc.property(
+        gradeArb,
+        fc.integer({ min: 1, max: 15 }),
+        fc.array(fc.double({ min: 0, max: 0.999, noNaN: true }), { minLength: 1, maxLength: 30 }),
+        fc.integer({ min: 0, max: 20 }),
+        (grade, count, rolls, warmup) => {
+          const pool = Array.from({ length: count }, (_, i) =>
+            makeRecord({ id: `L${grade}-${i}`, grade, subject: 'math', difficulty: 'easy' }),
+          );
+          const bank = new QuestionBank();
+          bank._ingest(pool, false);
+          let k = 0;
+          const rng = () => rolls[k++ % rolls.length];
+
+          // Some earlier level, then a fresh level starts.
+          for (let i = 0; i < warmup; i++) bank.next(grade, {}, [], rng);
+          const lastBefore = bank._lastId;
+          bank.startLevel();
+
+          const seen = new Set();
+          for (let i = 0; i < count; i++) {
+            const q = bank.next(grade, {}, [], rng);
+            expect(seen.has(q.id)).toBe(false);
+            seen.add(q.id);
+            // The new level never opens with the question just asked.
+            if (i === 0 && count > 1 && lastBefore) expect(q.id).not.toBe(lastBefore);
+          }
+          expect(seen.size).toBe(count);
+
+          // Pool exhausted → a new cycle begins, still no back-to-back repeat.
+          if (count > 1) {
+            const prev = bank._lastId;
+            expect(bank.next(grade, {}, [], rng).id).not.toBe(prev);
+          }
+        },
+      ),
+    );
+  });
+});
+
 describe('QuestionBank — Property 13: The question bank always yields a usable set', () => {
   // **Validates: Requirements 4.9**
   // For any load where the JSON is missing or malformed, the active set is

@@ -126,6 +126,7 @@ export default class GameScene extends Phaser.Scene {
     this._musicRate = 1;
     this._targetRate = 1;
     this._pressureCheckAt = 0;
+    this._startQuestionLevel(); // questions never repeat within a level (Req 4.10)
 
     // Duck the music while any overlay is open and restore it on resume. Pausing
     // this scene (quiz/lesson/pause) fires PAUSE → duck; resuming fires RESUME →
@@ -401,6 +402,12 @@ export default class GameScene extends Phaser.Scene {
     }
     this._caught = false;
     if (this.scene.isPaused()) this.scene.resume();
+  }
+
+  /** Reset the shared QuestionBank's per-level no-repeat window (Req 4.10). */
+  _startQuestionLevel() {
+    const bank = this.registry.get('questionBank');
+    if (bank && typeof bank.startLevel === 'function') bank.startLevel();
   }
 
   /** Send every ghost back to its spawn tile (Math Man is left in place). */
@@ -682,6 +689,7 @@ export default class GameScene extends Phaser.Scene {
     // difficulty/grade lives on `this.grade` and is left alone.
     this.scoreSystem.nextLevel();
     this.maze.reset(this.scoreSystem.level);
+    this._startQuestionLevel(); // fresh no-repeat window for the new level
 
     // `Maze.reset` refills the SAME `pellets` group with fresh display objects
     // that have no Arcade body. The Math Man↔pellets overlap wired in create()

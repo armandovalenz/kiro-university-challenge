@@ -76,6 +76,7 @@ The game targets modern browsers (Chrome, Firefox, Safari, Edge), requires no lo
 7. THE system SHALL prevent ghost/Math Man movement while the question modal is open.
 8. THE system SHALL avoid repeating the same question (by `id`) twice in a row within a single game session, and SHOULD avoid recently-used questions where possible.
 9. IF the question bank fails to load or is malformed THEN the system SHALL fall back to a small built-in question set so the quiz still functions.
+10. WITHIN a single level THE system SHALL NOT show the same question (by `id`) twice until every eligible question for the selected grade has been shown; WHEN a new level (or run) starts, the whole bank SHALL become available again, and the first question of the new level SHALL differ from the last one asked.
 
 ### Requirement 5: Fruits, Extra Lives, and Micro-Lessons
 

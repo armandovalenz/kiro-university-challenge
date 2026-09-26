@@ -30,6 +30,10 @@ export default class LessonScene extends Phaser.Scene {
   init(data = {}) {
     this._lesson = data.lesson || null;
     this._onDismiss = typeof data.onDismiss === 'function' ? data.onDismiss : null;
+    // Phaser REUSES this scene instance for every lesson, so the once-only
+    // guard must be reset per launch. Without this, every lesson after the
+    // first returned early in `_finish` and never resumed the game (freeze).
+    this._finished = false;
   }
 
   create() {
