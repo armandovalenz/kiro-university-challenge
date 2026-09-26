@@ -2,11 +2,14 @@
 name: fps3d-assets
 description: >
   Asset-generation pipeline for the Math Man first-person 3D browser mode.
-  Use when generating or integrating 3D models, textures/images, or audio for
-  the game via the Blender MCP (models -> GLB for Three.js, plus CC0 Poly Haven /
-  Poly Pizza) and the Draw Things HTTP API (local Stable Diffusion textures/images on
-  macOS). Covers export settings, texture sizing, licensing/attribution rules,
-  where files must land, and the audio-replacement note.
+  Use when integrating 3D models, textures/images, or audio for the game.
+  SEARCH-FIRST: prefer finding and reusing existing CC0 models via the Blender
+  MCP (Poly Haven primary, Poly Pizza secondary) exported to GLB for Three.js,
+  and only model/generate from scratch as a fallback. Textures/images come from
+  the Draw Things HTTP API (local Stable Diffusion on macOS). Covers search and
+  export settings (apply transforms, verify the exported GLB's axes/extents),
+  texture sizing, photos for picture frames, licensing/attribution rules, where
+  files must land, and the audio-replacement note.
 ---
 
 # FP3D Asset-Generation Pipeline
@@ -26,22 +29,100 @@ replacement for maze-driven geometry or shared logic.
   `public/assets/images/ASSETS.md` or a new `public/assets/models/ASSETS.md`,
   recording source tool, prompt/asset id, license, and attribution.
 
-## 3D models — Blender MCP
+## 3D models — Blender MCP (SEARCH-FIRST: reuse existing CC0 models)
 
-- **Export to GLB** (`export_scene`); Three.js loads `.glb` via `GLTFLoader`
-  out of the box. Prefer GLB over FBX for the web (smaller, single-file,
-  embedded textures).
+**Default policy: search for and reuse an existing, correctly-licensed model
+before modeling or generating anything new.** Building new geometry is the
+fallback, used only when no suitable existing asset can be found.
+
+### Step 1 — search Poly Haven (primary source)
+
+- **Poly Haven is the primary, MCP-searchable source** — CC0 HDRIs, textures,
+  and models, **no attribution required**. Its search/download is wired into
+  Blender MCP, so the agent can query it directly (no browser, no key, no cost).
+- **Workflow:**
+  1. Search Poly Haven via the Blender MCP asset-search tool using keywords
+     that describe the game entity (e.g. `ghost`, `spirit`, `cherry`, `fruit`,
+     `banana`, `orange`, `lamp`, `crate`).
+  2. Review the candidates for fit: recognizable silhouette, low-poly-ish
+     triangle budget, and a clean single mesh that reads well in first person.
+  3. Download/import the chosen asset into Blender via the MCP download tool.
+     (This is a network+file operation — see the safe-mode note below.)
+  4. In Blender: normalize scale to game units, center the origin, strip unused
+     data, and reuse/simplify materials.
+  5. **Export to GLB** (`export_scene`) into `public/assets/models/`; Three.js
+     loads `.glb` via `GLTFLoader` out of the box (prefer GLB over FBX — smaller,
+     single-file, embedded textures).
+  6. Run a Three.js `GLTFLoader` smoke test and confirm scale/origin.
+  7. Log the file in `public/assets/models/ASSETS.md` with source
+     `Poly Haven (CC0)`, the Poly Haven asset id/slug, license `CC0`, and
+     attribution `None required`.
+
+### Step 2 — Poly Pizza (secondary, watch the license)
+
+- If Poly Haven has no fit, try **Poly Pizza** (also MCP-searchable): low-poly
+  models, but ~69% are **CC-BY (attribution REQUIRED)**. Filter with
+  `licence="CC0"` to avoid attribution, or record the exact
+  `polypizza_attribution` credit line in `ASSETS.md` when using CC-BY.
+
+### Step 3 — model from scratch (fallback only)
+
+- Only if no suitable existing CC0/CC-BY asset is found, hand-build low-poly
+  geometry in Blender (primitives + simple ops) and export GLB, as the current
+  `ghost_red`/fruit assets were made. Note this clearly in `ASSETS.md`.
+
+### Always
+
 - **Keep it low-poly.** This is a browser maze game. Target a few hundred to a
   few thousand triangles per entity; reuse materials; bake where possible.
-- **Free asset sources built into Blender MCP (no key, no cost):**
-  - **Poly Haven** — CC0 HDRIs, textures, models. No attribution required.
-  - **Poly Pizza** — low-poly models; ~69% are **CC-BY (attribution REQUIRED)**.
-    Filter with `licence="CC0"` to avoid attribution, or record the
-    `polypizza_attribution` credit line in `ASSETS.md` when using CC-BY.
 - **Do NOT use** Blender MCP's paid AI generators (Hyper3D Rodin, Hunyuan3D) —
-  they need paid cloud keys. Use CC0 sources or hand/AI-assisted modeling only.
+  they need paid cloud keys. Use CC0/CC-BY search results or hand modeling only.
+- **Safe mode blocks downloads.** Blender MCP runs with
+  `BLENDER_MCP_SAFE_MODE=1`, which blocks the network+file operations needed to
+  download a Poly Haven / Poly Pizza asset and export a GLB. Search may return
+  metadata, but fetching/exporting requires the user to authorize a session with
+  safe mode off — ask first, never bypass it silently.
 - After import, verify scale (normalize to game units), origin, and that the
   GLB opens in a Three.js `GLTFLoader` smoke test before committing.
+
+### Export orientation — apply transforms, then verify the file itself
+
+The portrait frame shipped with an arbitrary, slightly tilted rotation baked
+onto its mesh node, and it took many renderer iterations to hang it correctly.
+Avoid that for every new model:
+
+- **Apply rotation and scale before export** (Blender: Object → Apply → All
+  Transforms). The exported mesh node should have **no `rotation`**, no
+  non-unit `scale`, and translation 0 unless the offset is intentional.
+- **Author in Three.js axes:** +Y up, and the model's front facing **+Z**. For
+  wall props, put the **flat back at z = 0** and the origin at the back-centre,
+  so the renderer can hang it with zero offset.
+- **Verify the exported GLB, not the Blender view.** Read the JSON chunk (for
+  node transforms) and the `POSITION` accessor `min`/`max` (for extents) with a
+  short Node script. See the minimal GLB reader in the `fps3d-webgl` skill,
+  §7.1. Confirm:
+  - there is no baked node rotation,
+  - the extents match the stated dimensions,
+  - the flat back really is at the expected coordinate.
+- **Write facts, not intentions, in the handoff.** Report the measured extents
+  per axis, where the back and front are, the node transforms, and the inner
+  opening size and depth for anything that holds an insert. Prose like
+  "origin at back-centre, facing +Z" was wrong for the frame, and only the
+  measured numbers made it placeable.
+
+## Photos and picture inserts
+
+- Photos shown inside frames live in `public/assets/images/` as `.jpg` / `.png`
+  and are listed in `PORTRAIT.pictures` in `FP3DRenderer.js`. Any aspect ratio
+  works. The renderer cover-crops each photo to the frame opening (2:3) at load
+  time, so don't pre-stretch or pad them. Use at least ~512 px on the short
+  side for a sharp result. Very small images (e.g. 250 px) look soft.
+- **Always give the file a real extension** (`.jpg`, `.png`, `.webp`). A file
+  without one may be served with the wrong MIME type.
+- Log every photo in `public/assets/images/ASSETS.md` with its size, subject,
+  source URL and license. Photos of real people or TV characters can carry
+  copyright and likeness rights. Treat unverified ones as demo-only, like the
+  Pac-Man audio, until the source is recorded.
 
 ## Textures / images — Draw Things HTTP API (local, macOS)
 
@@ -88,8 +169,15 @@ stable keys, so swapping files is a drop-in change — keep the same keys.
 
 ## Definition of done for an asset task
 
-1. File is web-ready (GLB for models; PoT-sized compressed image for textures).
-2. It lives under `public/assets/**` and is logged with license in `ASSETS.md`.
-3. License is CC0 or properly attributed; no unknown-license assets.
-4. A quick Three.js load smoke test passes for models.
-5. No change to shared game logic or the pinned dependency set.
+1. For models: an existing-asset search (Poly Haven first, then Poly Pizza) was
+   attempted and either a fitting CC0/CC-BY asset was reused, or the search is
+   noted as exhausted before falling back to modeling from scratch.
+2. File is web-ready (GLB for models; PoT-sized compressed image for textures).
+3. It lives under `public/assets/**` and is logged with source + license in
+   `ASSETS.md` (Poly Haven asset id/slug recorded for reused models).
+4. License is CC0 or properly attributed; no unknown-license assets.
+5. A quick Three.js load smoke test passes for models.
+6. For models, the exported GLB was checked with a script: no baked node
+   rotation, correct extents, and front / back / origin where the handoff says.
+   The measured numbers are written into the handoff.
+7. No change to shared game logic or the pinned dependency set.

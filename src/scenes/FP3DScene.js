@@ -1671,12 +1671,22 @@ export default class FP3DScene extends Phaser.Scene {
     return gameCanvas || null;
   }
 
-  /** Resize the renderer to the current game canvas dimensions. */
+  /**
+   * Resize the renderer to the box its canvas actually fills. The FP3D canvas
+   * is styled 100%×100% of the host container, so the drawing buffer and camera
+   * aspect must come from that container — NOT Phaser's fitted game size, which
+   * has the maze's aspect and made the 3D view stretch horizontally.
+   */
   _syncRendererSize() {
     if (!this.renderer) return;
-    const scaleMgr = this.scale;
-    const w = scaleMgr?.displaySize?.width || this.game?.canvas?.width || 0;
-    const h = scaleMgr?.displaySize?.height || this.game?.canvas?.height || 0;
+    const host = this._rendererParent();
+    let w = host?.clientWidth || 0;
+    let h = host?.clientHeight || 0;
+    if (!w || !h) {
+      const scaleMgr = this.scale;
+      w = scaleMgr?.displaySize?.width || this.game?.canvas?.width || 0;
+      h = scaleMgr?.displaySize?.height || this.game?.canvas?.height || 0;
+    }
     if (w && h) this.renderer.resize(w, h);
   }
 

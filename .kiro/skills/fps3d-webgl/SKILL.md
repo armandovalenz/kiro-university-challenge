@@ -6,8 +6,10 @@ description: >
   designing or implementing FP3D_Mode: Three.js scene/camera/renderer setup,
   PointerLockControls, grid-locked first-person movement over an existing
   tilemap, occlusion-aware rendering of pellets/fruit/ghosts, performance
-  budgeting, WebGL/reduced-motion fallbacks, and keeping game logic
-  framework-agnostic and testable.
+  budgeting, WebGL/reduced-motion fallbacks, orienting and wall-mounting GLB
+  props (portrait frames, signs), fitting photos into frames without
+  stretching (cover-crop + antialiased canvas textures), viewport/aspect
+  sizing, and keeping game logic framework-agnostic and testable.
 ---
 
 # First-Person 3D Web Game Playbook (Three.js on the Math Man stack)
@@ -75,6 +77,14 @@ const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
 - **Walls:** one solid segment per wall tile, footprint = tile cell. Use
   `InstancedMesh` for all wall boxes (one draw call) — key perf win on a
   28×31 grid.
+- **Size the renderer from the box the canvas fills.** The FP3D canvas is
+  styled `100% × 100%` of its host container, so `renderer.setSize()` and
+  `camera.aspect` must use that container's `clientWidth` / `clientHeight`
+  (`FP3DScene._syncRendererSize`). Phaser's `scale.displaySize` has the maze's
+  aspect, not the container's. Using it once stretched the whole 3D view about
+  2× horizontally: frames looked wider than tall and pellets looked squashed.
+  If geometry you know the proportions of looks off, check the aspect before
+  touching the model.
 
 ## 4. Occlusion-aware entities (Requirement 3.7–3.8)
 
@@ -111,7 +121,152 @@ visibility rule. Three.js raycasting may still be used for cosmetic effects.
 - While an overlay (quiz/lesson/pause) is open, ignore all movement/turn input
   and freeze ghosts (Req 4.2, 6.7).
 
-## 7. Testing (mandatory PBT — see steering/testing.md)
+## 7. Wall-mounted GLB props (lessons from the portrait frame)
+
+Hanging a decorative GLB (portrait frame, sign, plaque) on a wall face took
+many failed attempts. Hand-derived Euler angles and stacked
+"fix" rotations kept coming out tumbled, sideways, or buried in the brick. The
+method below worked first time. Use it for any wall prop.
+
+### 7.1 Inspect the GLB before writing any rotation
+
+Never guess a model's axes from the handoff prose or from a Blender screenshot.
+Read the file itself with a small Node script:
+
+- **Node transforms:** parse the JSON chunk and print `nodes[]`. A `rotation`
+  quaternion on the mesh node is a **baked rotation**. It is often arbitrary
+  and slightly tilted (the portrait frame's was about 10° off-axis).
+- **Raw geometry:** read the `POSITION` accessor `min`/`max` for the extents,
+  then group vertices by their value on the thinnest axis. That tells you which
+  side is the flat back (the full-size rectangle) and which is the front (the
+  ornaments or smaller profile).
+
+```js
+// Minimal GLB reader: JSON chunk + BIN chunk.
+const buf = fs.readFileSync('public/assets/models/portrait_frame.glb');
+let o = 12, json, bin;
+while (o < buf.length) {
+  const len = buf.readUInt32LE(o), type = buf.readUInt32LE(o + 4); o += 8;
+  if (type === 0x4E4F534A) json = JSON.parse(buf.slice(o, o + len));
+  else if (type === 0x004E4942) bin = buf.slice(o, o + len);
+  o += len;
+}
+console.log(json.nodes); // baked rotation/translation/scale live here
+```
+
+Portrait-frame facts, for reference: raw X ∈ ±7.44 (width 14.88), raw Z ∈ ±9.36
+(height 18.72), raw Y ∈ [0, 5.64] (depth). The flat back is at y = 0 and the
+ornaments peak at y = 5.64.
+
+### 7.2 Discard the baked rotation and place from raw geometry
+
+- **Reset every node, not just the root.** `gltf.scene.clone()` returns a
+  wrapper, and the baked quaternion sits on the child mesh node. Clearing
+  `model.quaternion` on the wrapper does nothing. Traverse the whole clone:
+
+  ```js
+  model.traverse((o) => { o.quaternion.identity(); o.position.set(0, 0, 0); o.scale.set(1, 1, 1); });
+  ```
+
+- **Map raw axes to the wall frame with one basis matrix.** Use the group's
+  local convention X = along the wall, Y = up, Z = out of the wall into the
+  corridor. Build the rotation directly from where each raw axis should go, and
+  keep det = +1 (flip the width axis if needed):
+
+  ```js
+  const basis = new THREE.Matrix4().makeBasis(
+    new THREE.Vector3(-1, 0, 0), // raw X (width)           → −X
+    new THREE.Vector3(0, 0, 1),  // raw Y (back → front)    → +Z
+    new THREE.Vector3(0, 1, 0),  // raw Z (height)          → +Y
+  );
+  pivot.quaternion.setFromRotationMatrix(basis);
+  ```
+
+- **Seat the flat back at local z = 0.** With the back at raw y = 0 it lands on
+  the wall face automatically, with no depth offset. Recentre only if the raw
+  mesh is not already centred on the other two axes.
+
+### 7.3 Put the wall frame on the group
+
+- Position the group on the wall tile's **inner face**: the wall tile centre
+  (`tileToWorld3D`) pushed `tile / 2` toward the open neighbour, minus a small
+  offset to avoid z-fighting.
+- Give the group a yaw that sends local +Z along the outward normal. Rotating
+  +Z by yaw θ gives (sin θ, 0, cos θ), so north (−Z) is π, south (+Z) is 0,
+  east (+X) is π/2 and west (−X) is −π/2. Do **not** reuse `FACING_TO_YAW`.
+  That table is the camera convention, where the camera looks down −Z, and its
+  sign is the opposite of what a prop needs.
+- Keep **two levels**: the group handles wall placement and yaw, and an inner
+  pivot handles model orientation. When the result is consistent across all
+  wall directions, the group is right and any remaining error is in the pivot.
+
+### 7.4 Debugging orientation
+
+- Add a temporary `THREE.AxesHelper` to each prop group (red = along the wall,
+  green = up, blue = out) behind a config flag. A screenshot of the axes shows
+  which level is wrong. Turn the flag off when you're done.
+- **Don't stack correction knobs** (roll, pitch or face rotations applied in
+  sequence). Each one changes the axes the next one acts on, and they compound
+  unpredictably. If you need a correction, fix the basis matrix instead.
+- Check any rotation you do derive numerically (a short Node script that
+  applies it to the three axis vectors) before building. "Should be right" is
+  not enough.
+
+### 7.5 Picture inserts (photos inside frames)
+
+The frame and its photo are separate: the frame is a GLB, and the photo is a
+plane added to the same group after the frame loads
+(`_attachPortraitPicture`).
+
+- **Size the plane from the real opening, not the prose.** Read the inner-lip
+  vertices from the GLB. For the portrait frame the opening is 7.68 × 11.52,
+  the lip sits at raw y = 1.44, and the back is at 0. Make the plane about 12%
+  larger than the opening and set it just behind the lip (z = 1.2). That hides
+  its edges at any viewing angle without cutting into the moulding.
+- **Place it in the group's frame.** Use X along the wall, Y up and Z out. An
+  unrotated `PlaneGeometry` already faces +Z with the image upright and not
+  mirrored, so it needs no rotation.
+- **Cover-crop, never stretch.** Use `coverCropRect(srcW, srcH, targetAspect,
+  focusX, focusY)` from `src/systems/fp3d/imageCrop.js`. It is pure and
+  property-tested, and returns the largest source rectangle with the target
+  aspect. Draw that rectangle onto a canvas of the opening's aspect (512 × 768
+  for 2:3) with `imageSmoothingQuality = 'high'`, then wrap the canvas in a
+  `CanvasTexture`. Set sRGB colour space, clamp-to-edge wrapping,
+  `LinearMipmapLinearFilter` and max anisotropy. Resampling on the canvas is
+  the antialiasing step; dispose the raw image texture afterwards.
+  - Use `focusY` below 0.5 to keep heads in frame when a photo is taller than
+    the opening. Centre horizontally.
+  - Don't crop with `texture.repeat` / `offset`. It works, but you lose control
+    over the resampling quality.
+- **One texture per photo.** Cache it in a promise map, load it through the
+  timeout-guarded `loadTexture` seam, and share it across frames. Give each
+  plane its own `MeshStandardMaterial`, which `_disposeMaze` frees when the
+  maze is rebuilt. Disposing a material doesn't dispose its map, so shared
+  textures survive until `dispose()`.
+- **Readable in dim corridors.** Set `emissiveMap` to the photo texture at a
+  low `emissiveIntensity` (about 0.25).
+- **Fallback (Req 8.2).** The plane starts as a plain dark canvas colour and
+  switches to the photo on load. Before applying a late load, check that the
+  material still exists (`this._materials.has(mat)`), in case the maze was
+  rebuilt in the meantime.
+- **Photo choice.** Pick the photo with the same seeded RNG as the placement,
+  after the placement picks are drawn, so adding photos doesn't reshuffle
+  where frames hang. Avoid the same photo twice in a row.
+
+### 7.6 Placement and fallback rules
+
+- Pick wall faces that border an open corridor tile. Scatter them with a
+  **seeded** RNG (mulberry32) so placement looks random but is stable across
+  reloads, with at most one prop per wall tile. Never mutate `getLevelLayout()`,
+  since props are decorative and don't affect collision.
+- Load the GLB **once** into a cached promise and `clone(true)` it for each
+  placement. Use a `FP3D.assetTimeoutMs` race, and fall back to a drawn box
+  placeholder seated the same way (Req 8.2).
+- Props are static maze dressing, so track them in `_meshes`. `_disposeMaze`
+  must traverse groups to release cloned child geometry and materials, which
+  aren't in the tracked sets.
+
+## 8. Testing (mandatory PBT — see steering/testing.md)
 
 Property-based tests (Vitest + `fast-check`) are required for all new
 **framework-agnostic** logic. Candidates that MUST get Core Properties + tests:
@@ -122,13 +277,21 @@ Property-based tests (Vitest + `fast-check`) are required for all new
 - Input buffering: at most one buffered input survives a traversal.
 - Line-of-sight: no visibility through any wall tile on the segment; symmetric.
 - Scoring/lives reuse: point values and life cap (max 10, start 6) match 2D.
+- Image cover-crop (`imageCrop.test.js`): the crop stays inside the image, has
+  exactly the target aspect (so nothing is stretched), spans one full side, and
+  is centred at focus 0.5.
+
+When renderer work needs non-trivial maths (crop rectangles, placement
+selection, facing tables), move it into a pure module under
+`src/systems/fp3d/` and property-test it there. Keep the Three.js file for
+wiring only.
 
 Keep Three.js-touching code (renderer/controller wiring, scene flow, DOM) as
 example-based/integration checks — not forced into PBT — but still verified.
 Traceability: each Core Property in `design.md` → one `fast-check` test named
 with `Validates: Requirements x.y`.
 
-## 8. Definition of done for an FP3D task
+## 9. Definition of done for an FP3D task
 
 1. Behavior matches the cited `requirements.md` acceptance criteria.
 2. New pure logic has passing `fast-check` properties (`npm run test -- --run`).

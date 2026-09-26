@@ -30,6 +30,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { FP3D, GHOST_COLORS } from '../config.js';
 import { TILE } from '../maze/mazeData.js';
 import { tileToWorld3D, eyePosition } from '../systems/fp3d/fp3dLogic.js';
+import { coverCropRect } from '../systems/fp3d/imageCrop.js';
 
 /**
  * Thrown at construction time when a WebGL rendering context cannot be
@@ -124,6 +125,60 @@ const FRUIT_MODEL_URLS = {
 };
 /** Rotation order for successive fruit spawns. */
 const FRUIT_MODEL_ORDER = ['cherry', 'banana', 'orange'];
+
+/**
+ * Wall-hung portrait frame prop (PORTRAIT_FRAME_WIRING_HANDOFF.md). A single
+ * gilded moulding GLB, loaded once and cloned for each wall placement. Purely
+ * decorative maze dressing — it never touches the maze layout, tile occupancy,
+ * or collision (frames hang on the inner face of existing wall tiles). On load
+ * failure or a >assetTimeoutMs timeout each placement falls back to a plain
+ * drawn gold box so a missing/broken asset never blocks play (Req 8.2).
+ */
+const PORTRAIT_FRAME_MODEL_URL = '/assets/models/portrait_frame.glb';
+
+/**
+ * Portrait placement tuning. Dimensions are authored against `TILE_SIZE = 24`
+ * (outer footprint 14.88 × 18.72 world units), so the frame is placed at
+ * `scale = 1` and sized to a target fraction of the tile height at runtime.
+ */
+const PORTRAIT = {
+  /** Author outer height of the GLB in world units (for scale normalization). */
+  authoredHeight: 18.72,
+  /** Author moulding depth (thickness) of the GLB in world units. */
+  authoredDepth: 5.64,
+  /** Target frame height as a fraction of one tile's world size. */
+  targetHeightFrac: 0.62,
+  /** Eye-level center of the frame on the wall, as a fraction of TILE_SIZE. */
+  centerYFrac: 0.95,
+  /** Push the frame this fraction of a tile off the wall's inner face. */
+  faceOffsetFrac: 0.02,
+  /** Roughly 1 in N eligible wall faces gets a frame (keeps them spaced out). */
+  placeEvery: 7,
+  /** Deterministic seed so "random" placement is stable across reloads. */
+  seed: 0x9e3779b1,
+  /** Draw per-frame XYZ axes helpers (red=along wall, green=up, blue=out). */
+  debugAxes: false,
+
+  // --- Picture inserts (the photo inside each frame's opening) -------------
+  /** Photos a frame can show; each frame picks one with the seeded RNG. */
+  pictures: [
+    '/assets/images/einstein_photo1.jpg',
+    '/assets/images/copernicus_photo3.jpg',
+    '/assets/images/beakman_photo2.jpg',
+  ],
+  /** Inner opening of the frame (raw GLB units: X width × Z height). */
+  opening: { w: 7.68, h: 11.52 },
+  /** Picture is this much larger than the opening so its edges tuck under the lip. */
+  pictureOverlap: 1.12,
+  /** Depth of the picture plane in front of the flat back (opening lip is at 1.44). */
+  pictureDepth: 1.2,
+  /** Cropped texture size in px (same 2:3 aspect as the opening). */
+  pictureTex: { w: 512, h: 768 },
+  /** Vertical crop focus when a photo is taller than the opening (0 = keep top). */
+  pictureFocusY: 0.3,
+  /** Self-illumination so faces stay readable in the dim corridors. */
+  pictureGlow: 0.25,
+};
 
 /** Ghost body size / eye height as fractions of `TILE_SIZE`. */
 const GHOST_SIZE = { radiusFrac: 0.32, yFrac: 0.45 };
@@ -555,6 +610,353 @@ export class FP3DRenderer {
       ceilMat.map = tex;
       ceilMat.needsUpdate = true;
     });
+
+    // --- Decorative wall portraits (PORTRAIT_FRAME_WIRING_HANDOFF.md) --------
+    // Hung on the inner faces of existing wall tiles that border a corridor.
+    // Purely visual: the maze layout array is untouched and no tile changes
+    // wall/path classification. Rebuilt with the maze so `_disposeMaze` frees
+    // the placements.
+    this._buildPortraits(grid);
+  }
+
+  /**
+   * Choose wall faces adjacent to open corridor tiles, spaced apart via a
+   * seeded pseudo-random pass so frames scatter around the aisles without
+   * clustering, and hang a cloned `portrait_frame.glb` on each. Placement is
+   * deterministic across reloads (stable seed) yet reads as random. The maze
+   * layout stays the single source of truth — this only decides where on top
+   * of an existing wall segment to hang a decorative prop.
+   *
+   * Each frame's world position + outward normal are derived from the
+   * neighboring PATH tile (its floor center via `tileToWorld3D`), so the frame
+   * sits flush on the wall's inner face and its local +Z points into the
+   * corridor toward the player. A drawn gold box is shown immediately as the
+   * Req 8.2 fallback and swapped for the GLB when it loads.
+   * @param {import('../maze/mazeLogic.js').MazeGrid} grid
+   */
+  _buildPortraits(grid) {
+    const tile = grid.tileSize;
+
+    // Outward normals: from a wall tile toward the open neighbor it faces
+    // (X=east, Z=south). The frame's front is its local +Z (origin at the
+    // back-center, per the handoff), so we need the Y-rotation that maps +Z
+    // onto the outward normal. Rotating +Z=(0,0,1) by yaw θ about Y gives
+    // (sin θ, 0, cos θ), so: normal -Z → θ=π (north), +Z → 0 (south),
+    // +X → π/2 (east), -X → -π/2 (west). The frame's BACK then sits against
+    // the wall and its face looks down the corridor.
+    const NEIGHBORS = [
+      { dx: 0, dy: -1, nx: 0, nz: -1, yaw: Math.PI },       // corridor to the north
+      { dx: 0, dy: 1, nx: 0, nz: 1, yaw: 0 },               // corridor to the south
+      { dx: 1, dy: 0, nx: 1, nz: 0, yaw: Math.PI / 2 },     // corridor to the east
+      { dx: -1, dy: 0, nx: -1, nz: 0, yaw: -Math.PI / 2 },  // corridor to the west
+    ];
+
+    // Collect eligible wall faces: a wall tile with an in-bounds, non-wall
+    // neighbor (a corridor the frame would face). One face per (wall,dir).
+    const faces = [];
+    for (let row = 0; row < grid.rows; row++) {
+      for (let col = 0; col < grid.cols; col++) {
+        if (!grid.isWall(col, row)) continue;
+        for (const n of NEIGHBORS) {
+          const ncol = col + n.dx;
+          const nrow = row + n.dy;
+          if (!grid.inBounds(ncol, nrow)) continue;
+          if (grid.isWall(ncol, nrow)) continue; // neighbor must be open corridor
+          faces.push({ col, row, ncol, nrow, n });
+        }
+      }
+    }
+
+    // Seeded RNG (mulberry32) so the "random" selection is stable per reload.
+    let s = PORTRAIT.seed >>> 0;
+    const rand = () => {
+      s |= 0; s = (s + 0x6d2b79f5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+
+    // Pick ~1/placeEvery of the eligible faces, avoiding hanging two frames on
+    // the same wall tile so they read as scattered around the aisles.
+    const usedWall = new Set();
+    const chosen = [];
+    for (const face of faces) {
+      const wallKey = `${face.col},${face.row}`;
+      if (usedWall.has(wallKey)) continue;
+      if (rand() < 1 / PORTRAIT.placeEvery) {
+        usedWall.add(wallKey);
+        chosen.push(face);
+      }
+    }
+
+    if (chosen.length === 0) return;
+
+    // Pick a photo for each frame with the same seeded RNG (stable per reload),
+    // avoiding the same photo twice in a row.
+    const nPics = PORTRAIT.pictures.length;
+    let prevPic = -1;
+    for (const face of chosen) {
+      if (nPics === 0) break;
+      let pic = Math.floor(rand() * nPics) % nPics;
+      if (nPics > 1 && pic === prevPic) pic = (pic + 1) % nPics;
+      face.pictureIndex = pic;
+      prevPic = pic;
+    }
+
+    // Target size + shared vertical placement.
+    const targetH = tile * PORTRAIT.targetHeightFrac;
+    const scale = targetH / PORTRAIT.authoredHeight;
+    const centerY = tile * PORTRAIT.centerYFrac;
+    const faceOffset = tile * PORTRAIT.faceOffsetFrac;
+
+    for (const face of chosen) {
+      // Place the group ON the wall's inner face. The group's local axes are:
+      // +X = along the wall (width), +Y = up, +Z = OUT of the wall into the
+      // corridor (the frame's face normal). We build the model in this clean
+      // local frame (see `_orientPortrait`) and just rotate the whole group so
+      // its +Z points down the corridor. A tiny inward nudge avoids z-fighting.
+      const wall = tileToWorld3D(grid, face.col, face.row);
+      const push = tile / 2 - faceOffset;
+      const x = wall.x + face.n.nx * push;
+      const z = wall.z + face.n.nz * push;
+
+      const group = new THREE.Group();
+      group.position.set(x, centerY, z);
+      group.rotation.y = face.n.yaw; // local +Z (frame face normal) → corridor
+      group.scale.setScalar(scale);
+      group.userData.pictureIndex = face.pictureIndex;
+
+      // Immediate drawn fallback (Req 8.2): a thin gold slab with the frame's
+      // flat face (width × height) in the local X–Y plane and its thin depth
+      // along local Z. Its front face sits at the wall surface (local z=0) and
+      // the body recedes toward the wall (−Z). Kept until the GLB swaps in.
+      const phW = 14.88;
+      const phH = 18.72;
+      const phD = PORTRAIT.authoredDepth;
+      const phGeo = this._trackGeometry(new THREE.BoxGeometry(phW, phH, phD));
+      const phMat = this._trackMaterial(new THREE.MeshStandardMaterial({
+        color: 0xc8a24a, // old-gold tone matching the frame material
+        roughness: 0.5,
+        metalness: 0.6,
+      }));
+      const placeholder = new THREE.Mesh(phGeo, phMat);
+      placeholder.position.z = phD / 2; // back at local z=0, body into the corridor (visible)
+      placeholder.castShadow = true;
+      placeholder.name = 'portrait-placeholder';
+      group.add(placeholder);
+      group.userData.placeholder = placeholder;
+
+      // TEMP DEBUG: axes helper shows the group's local frame in the scene —
+      // red=+X (should run along the wall), green=+Y (up), blue=+Z (should
+      // point into the corridor toward the player). Remove once orientation is
+      // dialed in.
+      if (PORTRAIT.debugAxes) {
+        const axes = new THREE.AxesHelper(tile * 0.9);
+        axes.name = 'portrait-axes';
+        group.add(axes);
+      }
+
+      this.scene.add(group);
+      // Static maze dressing → track with the maze meshes so a rebuild frees it.
+      this._meshes.push(group);
+
+      this._loadPortraitModel(group);
+    }
+  }
+
+  /**
+   * Lazily load the portrait-frame GLB (parsed once, cached as a promise) and
+   * swap the cloned model into `group` in place of the drawn placeholder slab.
+   * Graceful fallback (Req 8.2): no loader, a load error, or a >assetTimeoutMs
+   * timeout leaves the gold placeholder in place and play continues; nothing
+   * throws. The clone is guarded against a maze rebuild that removed the group.
+   * @param {THREE.Group} group the portrait group to populate
+   */
+  _loadPortraitModel(group) {
+    if (!this._portraitGltfPromise) {
+      this._portraitGltfPromise = new Promise((resolve) => {
+        let loader;
+        try {
+          loader = new GLTFLoader();
+        } catch {
+          resolve(null);
+          return;
+        }
+        const timer = setTimeout(() => resolve(null), FP3D.assetTimeoutMs);
+        try {
+          loader.load(
+            PORTRAIT_FRAME_MODEL_URL,
+            (gltf) => { clearTimeout(timer); resolve(gltf || null); },
+            undefined,
+            () => { clearTimeout(timer); resolve(null); },
+          );
+        } catch {
+          clearTimeout(timer);
+          resolve(null);
+        }
+      });
+    }
+
+    this._portraitGltfPromise.then((gltf) => {
+      // Model failed → keep the placeholder. Or the group was disposed on a
+      // maze rebuild (no longer parented) → skip.
+      if (!gltf || !gltf.scene) return;
+      if (!group.parent || this._meshes.indexOf(group) === -1) return;
+
+      const model = gltf.scene.clone(true);
+      model.traverse((obj) => { if (obj.isMesh) obj.castShadow = true; });
+
+      // The GLB ships an arbitrary baked node rotation, so hand-derived Euler
+      // angles kept coming out tumbled AND slightly tilted. Instead, snap the
+      // model's REAL (baked) axes onto the group's clean local frame with one
+      // corrective quaternion — this removes both the wrong facing and the
+      // ~10° tilt in a single, orientation-agnostic step.
+      const pivot = this._orientPortrait(model);
+
+      group.add(pivot);
+      group.userData.model = pivot;
+      const ph = group.userData.placeholder;
+      if (ph) ph.visible = false;
+
+      this._attachPortraitPicture(group);
+    });
+  }
+
+  /**
+   * Fill the frame's opening with its photo. The picture is a plane in the
+   * group's frame (X along the wall, Y up, Z out), centred in the opening and
+   * set just behind the lip so its edges stay hidden. Until the photo loads —
+   * or if it fails (Req 8.2) — the plane shows a plain dark canvas tone.
+   * @param {THREE.Group} group the portrait group (frame already attached)
+   */
+  _attachPortraitPicture(group) {
+    const idx = group.userData.pictureIndex;
+    const url = PORTRAIT.pictures[idx];
+    if (url === undefined) return;
+
+    const w = PORTRAIT.opening.w * PORTRAIT.pictureOverlap;
+    const h = PORTRAIT.opening.h * PORTRAIT.pictureOverlap;
+    const geo = this._trackGeometry(new THREE.PlaneGeometry(w, h));
+    const mat = this._trackMaterial(new THREE.MeshStandardMaterial({
+      color: 0x2a2219, // drawn fallback: dark canvas
+      roughness: 0.85,
+      metalness: 0.0,
+    }));
+    const picture = new THREE.Mesh(geo, mat);
+    picture.name = 'portrait-picture';
+    picture.position.z = PORTRAIT.pictureDepth;
+    picture.receiveShadow = true;
+    group.add(picture);
+
+    this._loadPortraitPicture(url).then((tex) => {
+      // Failed load, or the maze was rebuilt and this material disposed.
+      if (!tex || !this._materials.has(mat)) return;
+      mat.map = tex;
+      mat.color.set(0xffffff);
+      mat.emissive.set(0xffffff);
+      mat.emissiveMap = tex;
+      mat.emissiveIntensity = PORTRAIT.pictureGlow;
+      mat.needsUpdate = true;
+    });
+  }
+
+  /**
+   * Load a photo once (cached promise) and return a texture cropped to the
+   * opening's aspect. The crop is drawn onto a canvas with high-quality
+   * smoothing, so the photo is resampled (antialiased) rather than stretched,
+   * then mipmapped with max anisotropy. Resolves null on error/timeout.
+   * @param {string} url photo URL
+   * @returns {Promise<THREE.Texture|null>}
+   */
+  _loadPortraitPicture(url) {
+    if (!this._pictureTexPromises) this._pictureTexPromises = new Map();
+    if (this._pictureTexPromises.has(url)) return this._pictureTexPromises.get(url);
+
+    const p = this.loadTexture(url).then((raw) => {
+      if (!raw || !raw.image) return null;
+      try {
+        const img = raw.image;
+        const iw = img.naturalWidth || img.width;
+        const ih = img.naturalHeight || img.height;
+        const { w: tw, h: th } = PORTRAIT.pictureTex;
+        const { sx, sy, sw, sh } = coverCropRect(iw, ih, tw / th, 0.5, PORTRAIT.pictureFocusY);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = tw;
+        canvas.height = th;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, tw, th);
+
+        const tex = new THREE.CanvasTexture(canvas);
+        if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+        tex.wrapS = THREE.ClampToEdgeWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        tex.generateMipmaps = true;
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.anisotropy = this.renderer?.capabilities?.getMaxAnisotropy?.() || 1;
+        this._trackTexture(tex);
+
+        // The raw image texture is no longer needed once the crop is baked.
+        if (this._textures) this._textures.delete(raw);
+        try { raw.dispose(); } catch { /* ignore */ }
+        return tex;
+      } catch {
+        return null; // keep the drawn fallback (Req 8.2)
+      }
+    });
+    this._pictureTexPromises.set(url, p);
+    return p;
+  }
+
+  /**
+   * Normalize a loaded portrait-frame model into the group's clean local frame
+   * (X = along the wall, Y = up, Z = out of the wall toward the viewer),
+   * regardless of the GLB's baked node rotation.
+   *
+   * The frame's true axes AFTER the baked rotation (measured from the GLB's
+   * node quaternion) are, in world space:
+   *   - width  (mesh +X) → ≈ (0.03, 0.06, 1.00)   [runs along +Z]
+   *   - depth  (mesh −Y, the front-face normal) → ≈ (-0.99, -0.17, 0.04)
+   *   - height (mesh +Z) → ≈ (-0.17, 0.99, -0.05) [≈ up]
+   * These are near-axis-aligned but carry a ~10° tilt. We build the model's
+   * actual orthonormal basis from these vectors and compute the single rotation
+   * that maps it onto the clean local basis (width→X, up→Y, faceNormal→Z),
+   * killing the tilt. Then recenter and seat the front face at local z=0 so the
+   * body recedes toward the wall (−Z), hanging flush like a real picture.
+   * @param {THREE.Object3D} model the cloned GLB scene (baked node rotation intact)
+   * @returns {THREE.Group} a pivot group holding the oriented, seated model
+   */
+  _orientPortrait(model) {
+    // Deterministic orientation from the RAW mesh geometry (verified by reading
+    // the GLB's POSITION buffer):
+    //   raw X ∈ ±7.44  → frame width  (centered)
+    //   raw Z ∈ ±9.36  → frame height (centered)
+    //   raw Y ∈ [0, 5.64] → depth; y = 0 is the FLAT BACK (full 14.88 × 18.72
+    //   rectangle), the corner ornaments peak at y = 5.64 (the front).
+    // The GLB's baked node quaternion is arbitrary (tilted), so discard it on
+    // every node and map the raw axes directly onto the group's local frame
+    // (X = along the wall, Y = up, Z = out of the wall into the corridor):
+    //   raw X → −X, raw Y (depth, back→front) → +Z, raw Z (height) → +Y.
+    // That's a proper rotation (det = +1). The flat back (raw y = 0) lands at
+    // local z = 0 — on the wall — and the ornaments project into the corridor.
+    model.traverse((obj) => {
+      obj.quaternion.identity();
+      obj.position.set(0, 0, 0);
+      obj.scale.set(1, 1, 1);
+    });
+
+    const pivot = new THREE.Group();
+    const basis = new THREE.Matrix4().makeBasis(
+      new THREE.Vector3(-1, 0, 0), // raw X → −X (width along the wall)
+      new THREE.Vector3(0, 0, 1),  // raw Y → +Z (back on wall, front into corridor)
+      new THREE.Vector3(0, 1, 0),  // raw Z → +Y (height, up)
+    );
+    pivot.quaternion.setFromRotationMatrix(basis);
+    pivot.add(model);
+    return pivot;
   }
 
   /**
@@ -1476,6 +1878,25 @@ export class FP3DRenderer {
       if (typeof mesh.dispose === 'function') {
         // InstancedMesh has its own dispose for the instance buffer.
         try { mesh.dispose(); } catch { /* ignore */ }
+      }
+      // Groups (e.g. portrait frames) hold cloned GLB child meshes whose
+      // geometry/material are NOT in the tracked sets below — recurse and
+      // release them so a maze rebuild doesn't leak them.
+      if (typeof mesh.traverse === 'function') {
+        mesh.traverse((obj) => {
+          if (obj === mesh) return;
+          if (obj.geometry) {
+            this._geometries.delete(obj.geometry);
+            try { obj.geometry.dispose(); } catch { /* ignore */ }
+          }
+          if (obj.material) {
+            const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+            for (const m of mats) {
+              this._materials.delete(m);
+              try { m.dispose(); } catch { /* ignore */ }
+            }
+          }
+        });
       }
     }
     this._meshes = [];
