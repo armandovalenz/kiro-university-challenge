@@ -1,0 +1,304 @@
+{
+  "pbtResults": {
+    "3. Write property test for coordinate round-trip": {
+      "status": "passed",
+      "lastRunTimestamp": 1790388803624
+    },
+    "5. Write property tests for movement, facing, and buffering": {
+      "status": "passed",
+      "lastRunTimestamp": 1790388805014
+    },
+    "7. Write property test for tunnel-wrap resolution": {
+      "status": "passed",
+      "lastRunTimestamp": 1790388806420
+    },
+    "10. Write property test for scoring/lives reuse": {
+      "status": "passed",
+      "lastRunTimestamp": 1790388808412
+    },
+    "9. Write property test for line-of-sight": {
+      "status": "passed",
+      "lastRunTimestamp": 1790388808132
+    }
+  },
+  "executionHistory": {
+    "1. Add the Three.js dependency and FP3D configuration": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388222011
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388231386
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388292671
+      }
+    ],
+    "2. Implement FP3D coordinate mapping in `fp3dLogic.js`": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388222052
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388296931
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388393583
+      }
+    ],
+    "4. Implement movement resolution, facing, and input buffering in `fp3dLogic.js`": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388222079
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388398634
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388501902
+      }
+    ],
+    "6. Implement tunnel-wrap resolution in `fp3dLogic.js`": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388222120
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388517167
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388609566
+      }
+    ],
+    "8. Implement `lineOfSight.js` grid line-of-sight": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388222145
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388629352
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388755921
+      }
+    ],
+    "11. Checkpoint - pure FP3D logic verified": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388222168
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388774496
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388951473
+      }
+    ],
+    "12. Implement the Three.js renderer core (`FP3DRenderer.js`)": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388222192
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388775503
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388952595
+      }
+    ],
+    "13. Implement renderer markers, ghosts, and occlusion": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388222217
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388958500
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790389127952
+      }
+    ],
+    "14. Implement `FP3DScene` gameplay loop and collectible collection": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388222242
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790389138053
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790389403989
+      }
+    ],
+    "15. Wire the capture → quiz and fruit → lesson loops with freeze": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388222278
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790389410550
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790389595565
+      }
+    ],
+    "16. Add the menu Render_Mode toggle, scene registration, and WebGL fallback": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388222304
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790389601126
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790390968983
+      }
+    ],
+    "17. Implement accessibility controls and reduced-motion": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388222328
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790390974017
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790391137751
+      }
+    ],
+    "18. Implement asset, audio, and storage fallbacks": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388222354
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790391141605
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790391270933
+      }
+    ],
+    "19. Final checkpoint - full verification": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388222379
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790391276236
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790391351644
+      }
+    ],
+    "10. Write property test for scoring/lives reuse": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388630538
+      },
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388756903
+      }
+    ],
+    "9. Write property test for line-of-sight": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388762480
+      }
+    ],
+    "3. Write property test for coordinate round-trip": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388763807
+      }
+    ],
+    "5. Write property tests for movement, facing, and buffering": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388764845
+      }
+    ],
+    "7. Write property test for tunnel-wrap resolution": [
+      {
+        "executionId": "9fc635fc-c9ef-4963-9116-f2ad92ad468a",
+        "chatSessionId": "sess_0c983146-9d4a-4239-ac6d-5c14a90c2368",
+        "timestamp": 1790388765920
+      }
+    ]
+  }
+}

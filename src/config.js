@@ -102,6 +102,10 @@ export const STORAGE_DEFAULTS = {
   lastDifficulty: DEFAULT_GRADE,
   audioMuted: false,
   quizStats: { answered: 0, correct: 0 },
+  // Render mode the player last chose (2D top-down vs first-person 3D). Coerced
+  // to '2d' when absent/invalid by Storage.normalize (Req 6.3, 6.6). The literal
+  // default mirrors DEFAULT_RENDER_MODE below.
+  renderMode: '2d',
 };
 
 // --- Asset keys & paths -------------------------------------------------------
@@ -152,3 +156,25 @@ export const QUESTION_BANK_PATH = 'assets/questions/math_man_question_bank_120.j
 
 /** Base path for audio clips (WAV; keys defined with AudioBus in a later task). */
 export const AUDIO_BASE_PATH = 'assets/audio/';
+
+// --- First-person 3D mode (FP3D_Mode) ----------------------------------------
+// Tunable constants for the optional Three.js first-person renderer/controller
+// layer. Kept here (not hardcoded in scenes/renderer) so the 3D layer stays
+// config-driven and the framework-agnostic modules can read timings without
+// importing Three.js. See .kiro/specs/first-person-3d-mode/design.md.
+
+export const FP3D = {
+  eyeHeight: TILE_SIZE * 0.5, // camera anchor height at tile center (Req 2.1)
+  dprCap: 2, // devicePixelRatio cap (perf §5)
+  tileTraversalMs: 300, // per-tile move; longer + eased so the glide is smooth, not sharp (Req 2.2 upper bound relaxed for feel)
+  turnAnimMs: 300, // cardinal turn; matched to the move so turn-and-go corners sweep smoothly (0 when reduced-motion, Req 7.4)
+  fovDegrees: 75, // camera + visibility FOV
+  webglTimeoutMs: 5000, // context-creation budget before 2D fallback (Req 8.1)
+  assetTimeoutMs: 10000, // 3D asset load budget before placeholder (Req 8.2)
+  // Ghosts in FP3D_Mode step at this fraction of their 2D per-grade speed so
+  // they close in gradually and are easier to see approaching. <1 = slower.
+  ghostSpeedScale: 0.5,
+};
+
+/** Render mode used until the player opts into FP3D_Mode (Req 6.3, 6.6). */
+export const DEFAULT_RENDER_MODE = '2d';

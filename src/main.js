@@ -4,6 +4,7 @@ import BootScene from './scenes/BootScene.js';
 import SplashScene from './scenes/SplashScene.js';
 import MenuScene from './scenes/MenuScene.js';
 import GameScene from './scenes/GameScene.js';
+import FP3DScene from './scenes/FP3DScene.js';
 import UIScene from './scenes/UIScene.js';
 import QuizScene from './scenes/QuizScene.js';
 import LessonScene from './scenes/LessonScene.js';
@@ -23,6 +24,10 @@ const scenes = [
   SplashScene,
   MenuScene,
   GameScene,
+  // FP3DScene — the optional first-person 3D mode, launched from MenuScene when
+  // the player selects the 3D render mode (Task 16). Registered after GameScene
+  // so both are available; MenuScene picks between them by renderMode.
+  FP3DScene,
   UIScene,
   QuizScene,
   LessonScene,

@@ -46,6 +46,11 @@ export default class GameScene extends Phaser.Scene {
    */
   init(data = {}) {
     this.grade = GRADES.includes(data.grade) ? data.grade : DEFAULT_GRADE;
+    // When FP3DScene falls back to 2D mid-run (WebGL context lost), it starts
+    // this scene with `preserveScore: true` so the player's lives/score carry
+    // over via the shared registry `scoreSystem` instead of restarting at 6/0
+    // (Req 1.6, 8.5). A fresh start from the menu leaves this false.
+    this._preserveScore = data.preserveScore === true;
   }
 
   create() {
@@ -53,10 +58,17 @@ export default class GameScene extends Phaser.Scene {
     this.audio = this.registry.get('audio') || null;
     this.storage = this.registry.get('storage') || null;
 
-    // Fresh score/lives/level tracker for this run. Published on the registry
-    // so UIScene and later tasks read the same instance (Req 1.6).
-    this.scoreSystem = new ScoreSystem();
-    this.registry.set('scoreSystem', this.scoreSystem);
+    // Score/lives/level tracker for this run. Normally a fresh instance,
+    // published on the registry so UIScene and later tasks read the same one
+    // (Req 1.6). On a mid-run fallback from FP3DScene, reuse the shared instance
+    // already on the registry so lives/score are preserved (Req 8.5).
+    const existing = this.registry.get('scoreSystem');
+    if (this._preserveScore && existing) {
+      this.scoreSystem = existing;
+    } else {
+      this.scoreSystem = new ScoreSystem();
+      this.registry.set('scoreSystem', this.scoreSystem);
+    }
 
     // Build the maze (walls + pellet/fruit groups) and Math Man at its spawn.
     this.maze = new Maze(this, { level: this.scoreSystem.level });

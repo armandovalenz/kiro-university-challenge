@@ -15,7 +15,10 @@
 //   Property 18 — difficulty defaults to DEFAULT_GRADE and persists.
 //   Property 19 — a single global high score across all grades.
 
-import { STORAGE_KEY, STORAGE_DEFAULTS, GRADES } from '../config.js';
+import { STORAGE_KEY, STORAGE_DEFAULTS, GRADES, DEFAULT_RENDER_MODE } from '../config.js';
+
+/** The only render modes Storage will persist; anything else coerces to '2d'. */
+const RENDER_MODES = ['2d', '3d'];
 
 /**
  * A fresh, deeply-copied defaults object. Never hand callers (or the internal
@@ -31,6 +34,7 @@ function makeDefaults() {
       answered: STORAGE_DEFAULTS.quizStats.answered,
       correct: STORAGE_DEFAULTS.quizStats.correct,
     },
+    renderMode: normalizeRenderMode(STORAGE_DEFAULTS.renderMode),
   };
 }
 
@@ -44,7 +48,19 @@ function cloneState(state) {
       answered: state.quizStats.answered,
       correct: state.quizStats.correct,
     },
+    renderMode: state.renderMode,
   };
+}
+
+/**
+ * Coerce an arbitrary value to a valid render mode. Only '2d' and '3d' are
+ * valid; everything else (absent, wrong type, unknown string) falls back to
+ * DEFAULT_RENDER_MODE ('2d') so FP3D_Mode is strictly opt-in (Req 6.3, 6.6).
+ * @param {*} value
+ * @returns {'2d'|'3d'}
+ */
+function normalizeRenderMode(value) {
+  return RENDER_MODES.includes(value) ? value : DEFAULT_RENDER_MODE;
 }
 
 /** Coerce to a non-negative, finite integer, else fall back to `fallback`. */
@@ -86,6 +102,9 @@ function normalize(parsed) {
   const correct = toCount(rawStats.correct, defaults.quizStats.correct);
   state.quizStats.answered = answered;
   state.quizStats.correct = Math.min(correct, answered);
+
+  // renderMode: only '2d' or '3d'; any invalid/absent value coerces to '2d'.
+  state.renderMode = normalizeRenderMode(parsed.renderMode);
 
   return state;
 }
@@ -158,6 +177,7 @@ export default class Storage {
       if ('highScore' in patch) next.highScore = patch.highScore;
       if ('lastDifficulty' in patch) next.lastDifficulty = patch.lastDifficulty;
       if ('audioMuted' in patch) next.audioMuted = patch.audioMuted;
+      if ('renderMode' in patch) next.renderMode = patch.renderMode;
       if (patch.quizStats && typeof patch.quizStats === 'object') {
         next.quizStats = {
           ...next.quizStats,
@@ -213,6 +233,20 @@ export default class Storage {
       this.save({ lastDifficulty: grade });
     }
     return this._state.lastDifficulty;
+  }
+
+  /**
+   * Persist the selected render mode so it preselects next visit (Req 6.3,
+   * 6.6). Only '2d' or '3d' are valid; any other value is ignored (the stored
+   * mode is left unchanged). Mirrors {@link setDifficulty}.
+   * @param {'2d'|'3d'} mode
+   * @returns {'2d'|'3d'} the effective persisted render mode.
+   */
+  setRenderMode(mode) {
+    if (RENDER_MODES.includes(mode)) {
+      this.save({ renderMode: mode });
+    }
+    return this._state.renderMode;
   }
 
   /**
