@@ -191,6 +191,17 @@ export default class MathMan extends Phaser.Physics.Arcade.Sprite {
     // 30/60/120/240 Hz. It replaces the old epsilon-based snap-and-decide,
     // which oscillated on high-refresh displays (when stepLen < centerEpsilon
     // the entity snapped back every frame instead of crossing a full tile).
+    // Latch tunnel-wrap for this whole tick. `grid.wrapIfTunnel` overwrites the
+    // entity's `tunnelWrapped` on every call (it can run twice per tick), so we
+    // capture each result and expose the combined value after the loop — the
+    // scene reads it to play the teleport SFX once per crossing (Req 12.10).
+    let wrappedThisTick = false;
+    this.tunnelWrapped = false;
+    const wrap = () => {
+      this.grid.wrapIfTunnel(this);
+      if (this.tunnelWrapped) wrappedThisTick = true;
+    };
+
     const dt = Math.min(delta, 100) / 1000;
     let budget = this.speed * dt;
     if (budget <= 0) {
@@ -251,7 +262,7 @@ export default class MathMan extends Phaser.Physics.Arcade.Sprite {
         // tunnel edge, then re-decide (apply buffered turn / wall stop) there.
         this.x = targetCenter.x;
         this.y = targetCenter.y;
-        this.grid.wrapIfTunnel(this);
+        wrap();
         budget -= remaining;
         const reached = this.grid.worldToTile(this.x, this.y);
         this._decideAtTile(reached.col, reached.row);
@@ -261,10 +272,13 @@ export default class MathMan extends Phaser.Physics.Arcade.Sprite {
         this.x += d.dx * budget;
         this.y += d.dy * budget;
         // Horizontal wrap at tunnel-row edges (mutates this.x when applicable).
-        this.grid.wrapIfTunnel(this);
+        wrap();
         budget = 0;
       }
     }
+
+    // Expose the combined result for the whole tick (see `wrap` above).
+    this.tunnelWrapped = wrappedThisTick;
 
     this._faceDirection();
     this._updateAnimation();

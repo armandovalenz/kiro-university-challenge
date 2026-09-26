@@ -52,6 +52,7 @@ const AUDIO_ASSETS = [
   { key: 'music_game', file: 'siren0.wav' },
   { key: 'music_score', file: 'score2_castlevania.mp3' },
   { key: 'music_jeopardy', file: 'jeopardy.mp3' },
+  { key: 'sfx_tunnel', file: 'twilight_zone_x.wav' },
   { key: 'sfx_pellet_0', file: 'eat_dot_0.wav' },
   { key: 'sfx_pellet_1', file: 'eat_dot_1.wav' },
   { key: 'sfx_fruit_spawn', file: 'credit.wav' },

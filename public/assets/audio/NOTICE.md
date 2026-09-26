@@ -41,6 +41,8 @@ require code changes.
   `music_stage_clear`) was added by the project creator with no recorded
   source. `13. Game Complete.mp3` and `18 Pressure.mp3` are present but not
   wired in. The same demo-only terms apply.
+- `twilight_zone_x.wav` (tunnel / teleport cue, `sfx_tunnel`) was added by the
+  project creator with no recorded source. The same demo-only terms apply.
 - `score.mp3` and `jeopardy.mp3` also come from third parties and have no
   recorded source. The same demo-only terms apply. `score.mp3` is no longer
   wired in.

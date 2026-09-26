@@ -50,6 +50,7 @@ export const AudioEvent = Object.freeze({
   GAME_START: 'gameStart', // game start / intro jingle (Req 12.2)
   GAME_MUSIC: 'gameMusic', // gameplay running loop (Req 12.1, 12.8); tempo rises near ghosts (12.9)
   QUIZ_MUSIC: 'quizMusic', // quiz-thinking loop while a question is on screen
+  TUNNEL: 'tunnel', // Math Man teleports through the tunnel/wrap hallway (Req 12.10)
   PELLET: 'pellet', // pellet eaten (Req 12.2)
   FRUIT_SPAWN: 'fruitSpawn', // fruit spawned (Req 12.2)
   FRUIT_COLLECT: 'fruitCollect', // fruit collected / bonus (Req 12.2)
@@ -109,6 +110,7 @@ export const EVENT_SOUND = Object.freeze({
     keys: ['music_jeopardy'],
     loop: true,
   },
+  [AudioEvent.TUNNEL]: { type: AudioType.SFX, keys: ['sfx_tunnel'] },
   [AudioEvent.PELLET]: {
     type: AudioType.SFX,
     keys: ['sfx_pellet_0', 'sfx_pellet_1'],

@@ -1169,8 +1169,10 @@ export default class FP3DScene extends Phaser.Scene {
     // unchanged tile when no wrap applies.
     const wrapped = resolveTunnel(this.grid, from.col, from.row, stepFacing);
     let to;
+    let didWrap = false;
     if (wrapped.col !== from.col || wrapped.row !== from.row) {
       to = { col: wrapped.col, row: wrapped.row, moved: true };
+      didWrap = true; // stepped through the tunnel hallway (Req 12.10)
     } else {
       to = resolveMove(this.grid, from.col, from.row, stepFacing);
     }
@@ -1182,9 +1184,14 @@ export default class FP3DScene extends Phaser.Scene {
       active: true,
       from,
       to: { col: to.col, row: to.row },
+      wrapped: didWrap,
       ms,
       elapsed: 0,
     };
+    // Teleport SFX at the moment the wrap step begins (Req 12.10).
+    if (didWrap && this.audio && typeof this.audio.play === 'function') {
+      this.audio.play(AudioEvent.TUNNEL);
+    }
     if (this.renderer) this.renderer.animateMove(from, st.traversal.to, ms);
   }
 

@@ -145,6 +145,12 @@ export default class GameScene extends Phaser.Scene {
     this._pollInput();
     this.mathMan.tick(delta);
 
+    // Teleport SFX: `MathMan.tick` sets `tunnelWrapped` the frame it crosses a
+    // tunnel-hallway edge (Req 12.10). Play the cue once per crossing.
+    if (this.mathMan.tunnelWrapped && this.audio && typeof this.audio.play === 'function') {
+      this.audio.play(AudioEvent.TUNNEL);
+    }
+
     // Advance each Einstein ghost's AI-driven movement (Task 10).
     if (this.ghosts) {
       const ghosts = this.ghosts.getChildren ? this.ghosts.getChildren() : [];

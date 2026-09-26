@@ -204,8 +204,14 @@ export class MazeGrid {
     if (!entity) return entity;
     const { row } = this.worldToTile(entity.x, entity.y);
     if (this.tunnelRows.has(row)) {
-      entity.x = this.wrapX(entity.x);
+      const wrapped = this.wrapX(entity.x);
+      // Flag the actual edge crossing (x moved) so callers can react, e.g. play
+      // the teleport SFX. Cleared to false whenever no wrap happened this call.
+      entity.tunnelWrapped = wrapped !== entity.x;
+      entity.x = wrapped;
+      return entity;
     }
+    entity.tunnelWrapped = false;
     return entity;
   }
 
