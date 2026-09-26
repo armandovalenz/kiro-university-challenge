@@ -7,7 +7,8 @@ description: >
   PointerLockControls, grid-locked first-person movement over an existing
   tilemap, occlusion-aware rendering of pellets/fruit/ghosts, performance
   budgeting, WebGL/reduced-motion fallbacks, orienting and wall-mounting GLB
-  props (portrait frames, signs), fitting photos into frames without
+  props (portrait frames, torches, signs) via the shared wallDecor placement
+  helper, pooled point lights for light-emitting props, fitting photos into frames without
   stretching (cover-crop + antialiased canvas textures), viewport/aspect
   sizing, and keeping game logic framework-agnostic and testable.
 ---
@@ -255,16 +256,62 @@ plane added to the same group after the frame loads
 
 ### 7.6 Placement and fallback rules
 
-- Pick wall faces that border an open corridor tile. Scatter them with a
-  **seeded** RNG (mulberry32) so placement looks random but is stable across
-  reloads, with at most one prop per wall tile. Never mutate `getLevelLayout()`,
-  since props are decorative and don't affect collision.
+- **Use the shared helper. Don't write per-prop placement maths.**
+  `src/systems/fp3d/wallDecor.js` is pure and property-tested, and portraits
+  and torches both use it:
+  - `wallFaces(grid)` returns every wall face bordering an open corridor tile,
+    with its outward normal and group yaw (`WALL_NEIGHBORS`).
+  - `seededRandom(seed)` is a mulberry32 RNG.
+  - `pickSpacedFaces(faces, { rand, every, minSpacing, excludeWalls })` keeps
+    about 1 in `every` faces, at most one per wall tile, at least
+    `minSpacing` tiles apart, and skips `excludeWalls`.
+- Use a separate seed for each prop type, so tuning one never reshuffles the
+  other.
+- Build props in a fixed order and pass the earlier ones' wall tiles
+  (`wallKey(col, row)`) as `excludeWalls`. Torches skip `_portraitWalls`, for
+  example.
+- Never mutate `getLevelLayout()`, since props are decorative and don't affect
+  collision.
 - Load the GLB **once** into a cached promise and `clone(true)` it for each
   placement. Use a `FP3D.assetTimeoutMs` race, and fall back to a drawn box
   placeholder seated the same way (Req 8.2).
 - Props are static maze dressing, so track them in `_meshes`. `_disposeMaze`
   must traverse groups to release cloned child geometry and materials, which
   aren't in the tracked sets.
+
+### 7.7 Torches and pooled lights (second wall prop)
+
+The torch (`torch_wall_01.glb`) confirmed that §7.1–7.2 generalise. It had
+the same export faults as the frame, plus a scale fault:
+
+- **Scale from a target tile fraction, not `scale = 1`.** The model is about
+  0.925 units tall, and walls are about 53 units tall (`TILE_SIZE = 24`). Use
+  `scale = tile * targetHeightFrac / authoredHeight`, with `authoredHeight`
+  read from the raw extents. Never rescale the source GLB.
+- **Seat the back from measured numbers.** The bracket back was at raw
+  z = +0.09, not at the origin, and the torch leaned out along raw −Z. After
+  the traverse reset, use a pivot with `rotation.y = π` (raw −Z → +Z; this
+  also maps raw X → −X, so det stays +1) and `position.z = authoredBackZ`.
+  When the lean axis is simple, a single yaw is enough and no basis matrix is
+  needed.
+- **Compute the light position once.** Store the raw flame centre in config,
+  map it through the same pivot transform (`(−x, y, −z + backZ)`), then call
+  `group.updateMatrixWorld(true)` and `group.localToWorld(v)`. Cache
+  `flameWorld` for each torch. Don't wait for the GLB, because the placeholder
+  and the model share the frame.
+- **Use a fixed light pool, never one light per prop.** Every
+  `PointLight` adds per-fragment cost to every lit material, and changing the
+  light count forces shader recompiles. Create `maxLights` (4) lights once and
+  reassign them every `lightReassignMs` (200 ms) to the props nearest the
+  camera, sorted by `distanceToSquared`. Leave spares at intensity 0 rather
+  than removing them. Set `castShadow = false`. Gate the whole feature behind
+  a single flag (`TORCH.lights`).
+- **Flicker (if added) must honour `reducedMotion`** (Req 7.4). Hold the
+  intensity steady, or change it only slowly.
+- **Tune density with `placeEvery` and `minSpacing`.** Torches use
+  `placeEvery 3` and `minSpacing 5`, which gives 34 torches on the current
+  maze. Compute the count with the pure helper in Node before judging it in
+  the browser.
 
 ## 8. Testing (mandatory PBT — see steering/testing.md)
 
@@ -280,6 +327,10 @@ Property-based tests (Vitest + `fast-check`) are required for all new
 - Image cover-crop (`imageCrop.test.js`): the crop stays inside the image, has
   exactly the target aspect (so nothing is stretched), spans one full side, and
   is centred at focus 0.5.
+- Wall-prop placement (`wallDecor.test.js`): every face borders an open tile
+  with a correct outward normal and yaw, there is at most one pick per wall
+  tile, spacing and exclusions are respected, and `seededRandom` is
+  deterministic for a given seed.
 
 When renderer work needs non-trivial maths (crop rectangles, placement
 selection, facing tables), move it into a pure module under

@@ -31,6 +31,9 @@ import { FP3D, GHOST_COLORS } from '../config.js';
 import { TILE } from '../maze/mazeData.js';
 import { tileToWorld3D, eyePosition } from '../systems/fp3d/fp3dLogic.js';
 import { coverCropRect } from '../systems/fp3d/imageCrop.js';
+import {
+  wallFaces, seededRandom, pickSpacedFaces, wallKey,
+} from '../systems/fp3d/wallDecor.js';
 
 /**
  * Thrown at construction time when a WebGL rendering context cannot be
@@ -178,6 +181,52 @@ const PORTRAIT = {
   pictureFocusY: 0.3,
   /** Self-illumination so faces stay readable in the dim corridors. */
   pictureGlow: 0.25,
+};
+
+/**
+ * Wall-mounted torches (TORCH_WALL_WIRING_HANDOFF.md). Purely decorative —
+ * never touches the maze layout or collision. Geometry facts come from reading
+ * the GLB, not the handoff prose: the mesh node carries an arbitrary baked
+ * rotation (discarded), raw Y is up (−0.045 → 0.88, flame on top), the torch
+ * leans out along raw −Z, and the bracket back sits at raw z = +0.09. The model
+ * is only ~0.92 units tall, so it is scaled up to `targetHeightFrac` of a tile.
+ */
+const TORCH_WALL_MODEL_URL = '/assets/models/torch_wall_01.glb';
+const TORCH = {
+  /** Raw model height (y extent) used to derive the scale. */
+  authoredHeight: 0.925,
+  /** Raw z of the bracket back (the wall side). */
+  authoredBackZ: 0.09,
+  /** Raw flame centre (for the point light), before orientation. */
+  flameRaw: { x: 0, y: 0.72, z: -0.17 },
+  /** Target torch height as a fraction of one tile. */
+  targetHeightFrac: 0.5,
+  /** Bracket height on the wall as a fraction of one tile (eye level is 0.5). */
+  mountYFrac: 0.8,
+  /** Keep roughly 1 in N eligible wall faces (after spacing/exclusions). */
+  placeEvery: 3,
+  /** Minimum corridor-tile (Manhattan) distance between torches. */
+  minSpacing: 5,
+  /** Separate seed from the portraits so their placements don't interact. */
+  seed: 0x7f4a7c15,
+
+  // --- Optional lighting (visual only; set lights: false to remove) --------
+  /** Pair torches with warm point lights. */
+  lights: true,
+  /**
+   * Fixed pool of point lights reassigned to the torches nearest the camera.
+   * A constant light count keeps shader cost flat however many torches the
+   * maze has (no per-torch lights, no shader recompiles while walking).
+   */
+  maxLights: 4,
+  lightColor: 0xff9a3c,
+  /** Physically-based intensity; with decay 1 the fall-off is ~1/d. */
+  lightIntensity: 14,
+  /** Cut-off distance in tiles. */
+  lightDistanceTiles: 5,
+  lightDecay: 1,
+  /** How often (ms) the pool is reassigned to the nearest torches. */
+  lightReassignMs: 200,
 };
 
 /** Ghost body size / eye height as fractions of `TILE_SIZE`. */
@@ -617,6 +666,165 @@ export class FP3DRenderer {
     // wall/path classification. Rebuilt with the maze so `_disposeMaze` frees
     // the placements.
     this._buildPortraits(grid);
+
+    // --- Decorative wall torches (TORCH_WALL_WIRING_HANDOFF.md) --------------
+    // Placed after the portraits so they avoid the portrait wall tiles.
+    this._buildTorches(grid);
+  }
+
+  /**
+   * Mount cloned `torch_wall_01.glb` torches on spaced-out wall faces, using
+   * the same shared face/yaw helper as the portraits and avoiding the portrait
+   * wall tiles. Each torch group sits on the wall's inner face with local +Z
+   * pointing into the corridor. A drawn shaft + flame placeholder shows until
+   * (and unless) the GLB loads (Req 8.2).
+   * @param {import('../maze/mazeLogic.js').MazeGrid} grid
+   */
+  _buildTorches(grid) {
+    const tile = grid.tileSize;
+    this._torches = [];
+
+    const chosen = pickSpacedFaces(wallFaces(grid), {
+      rand: seededRandom(TORCH.seed),
+      every: TORCH.placeEvery,
+      minSpacing: TORCH.minSpacing,
+      excludeWalls: this._portraitWalls || new Set(),
+    });
+    if (chosen.length === 0) return;
+
+    const scale = (tile * TORCH.targetHeightFrac) / TORCH.authoredHeight;
+    const mountY = tile * TORCH.mountYFrac;
+    const push = tile / 2 - tile * PORTRAIT.faceOffsetFrac;
+
+    for (const face of chosen) {
+      const wall = tileToWorld3D(grid, face.col, face.row);
+      const group = new THREE.Group();
+      group.name = 'wall-torch';
+      group.position.set(wall.x + face.n.nx * push, mountY, wall.z + face.n.nz * push);
+      group.rotation.y = face.n.yaw; // local +Z → into the corridor
+      group.scale.setScalar(scale);
+
+      // Drawn fallback (Req 8.2), authored in the same local frame as the
+      // oriented model (raw units, Y up, back at z = 0, leaning out to +Z).
+      const shaftGeo = this._trackGeometry(new THREE.BoxGeometry(0.07, 0.6, 0.07));
+      const shaftMat = this._trackMaterial(new THREE.MeshStandardMaterial({ color: 0x5a3a1e, roughness: 0.8 }));
+      const shaft = new THREE.Mesh(shaftGeo, shaftMat);
+      shaft.position.set(0, 0.25, 0.12);
+      const flameGeo = this._trackGeometry(new THREE.ConeGeometry(0.05, 0.3, 8));
+      const flameMat = this._trackMaterial(new THREE.MeshStandardMaterial({
+        color: 0xff7a1a, emissive: 0xff7a1a, emissiveIntensity: 1.0,
+      }));
+      const flame = new THREE.Mesh(flameGeo, flameMat);
+      flame.position.set(0, 0.72, 0.12);
+      const placeholder = new THREE.Group();
+      placeholder.name = 'torch-placeholder';
+      placeholder.add(shaft, flame);
+      group.add(placeholder);
+      group.userData.placeholder = placeholder;
+
+      this.scene.add(group);
+      this._meshes.push(group); // static maze dressing, freed by _disposeMaze
+
+      // World-space flame position for the light pool. Raw flame (x, y, z)
+      // lands at (−x, y, −z + backZ) after the 180° orientation + back seat.
+      group.updateMatrixWorld(true);
+      const f = TORCH.flameRaw;
+      const flameWorld = group.localToWorld(
+        new THREE.Vector3(-f.x, f.y, -f.z + TORCH.authoredBackZ),
+      );
+      this._torches.push({ group, flameWorld });
+
+      this._loadTorchModel(group);
+    }
+  }
+
+  /**
+   * Load the torch GLB once (cached promise, 10 s timeout, never rejects) and
+   * swap an oriented clone into `group` in place of the drawn placeholder.
+   * Orientation is derived from the RAW geometry: reset every node's baked
+   * transform, turn 180° about Y (raw −Z lean → +Z into the corridor; raw X →
+   * −X keeps it a proper rotation), then seat the bracket back at local z = 0.
+   * @param {THREE.Group} group the torch group to populate
+   */
+  _loadTorchModel(group) {
+    if (!this._torchGltfPromise) {
+      this._torchGltfPromise = new Promise((resolve) => {
+        let loader;
+        try { loader = new GLTFLoader(); } catch { resolve(null); return; }
+        const timer = setTimeout(() => resolve(null), FP3D.assetTimeoutMs);
+        try {
+          loader.load(
+            TORCH_WALL_MODEL_URL,
+            (gltf) => { clearTimeout(timer); resolve(gltf || null); },
+            undefined,
+            () => { clearTimeout(timer); resolve(null); },
+          );
+        } catch {
+          clearTimeout(timer);
+          resolve(null);
+        }
+      });
+    }
+
+    this._torchGltfPromise.then((gltf) => {
+      if (!gltf || !gltf.scene) return; // keep the placeholder (Req 8.2)
+      if (!group.parent || this._meshes.indexOf(group) === -1) return;
+
+      const model = gltf.scene.clone(true);
+      model.traverse((obj) => {
+        obj.quaternion.identity();
+        obj.position.set(0, 0, 0);
+        obj.scale.set(1, 1, 1);
+      });
+
+      const pivot = new THREE.Group();
+      pivot.rotation.y = Math.PI;              // raw −Z lean → +Z (corridor)
+      pivot.position.z = TORCH.authoredBackZ;  // bracket back flush at z = 0
+      pivot.add(model);
+      group.add(pivot);
+      group.userData.model = pivot;
+      if (group.userData.placeholder) group.userData.placeholder.visible = false;
+    });
+  }
+
+  /**
+   * Keep the fixed point-light pool on the torches nearest the camera. Lights
+   * are created once and reused, so the light count (and shader cost) never
+   * changes during play; unused lights sit at intensity 0.
+   * @param {number} now current time in ms
+   */
+  _stepTorchLights(now) {
+    if (!TORCH.lights || !this._torches || this._torches.length === 0 || !this.camera) return;
+    if (this._torchLightsAt && now - this._torchLightsAt < TORCH.lightReassignMs) return;
+    this._torchLightsAt = now;
+
+    if (!this._torchLights) {
+      const tile = this.grid.tileSize;
+      this._torchLights = [];
+      for (let i = 0; i < TORCH.maxLights; i++) {
+        const light = new THREE.PointLight(
+          TORCH.lightColor, 0, tile * TORCH.lightDistanceTiles, TORCH.lightDecay,
+        );
+        light.castShadow = false;
+        light.name = 'torch-light';
+        this.scene.add(light);
+        this._torchLights.push(light);
+      }
+    }
+
+    const cam = this.camera.position;
+    const nearest = this._torches
+      .map((t) => ({ t, d: t.flameWorld.distanceToSquared(cam) }))
+      .sort((a, b) => a.d - b.d);
+    this._torchLights.forEach((light, i) => {
+      const hit = nearest[i];
+      if (hit) {
+        light.position.copy(hit.t.flameWorld);
+        light.intensity = TORCH.lightIntensity;
+      } else {
+        light.intensity = 0;
+      }
+    });
   }
 
   /**
@@ -636,58 +844,14 @@ export class FP3DRenderer {
    */
   _buildPortraits(grid) {
     const tile = grid.tileSize;
+    this._portraitWalls = new Set();
 
-    // Outward normals: from a wall tile toward the open neighbor it faces
-    // (X=east, Z=south). The frame's front is its local +Z (origin at the
-    // back-center, per the handoff), so we need the Y-rotation that maps +Z
-    // onto the outward normal. Rotating +Z=(0,0,1) by yaw θ about Y gives
-    // (sin θ, 0, cos θ), so: normal -Z → θ=π (north), +Z → 0 (south),
-    // +X → π/2 (east), -X → -π/2 (west). The frame's BACK then sits against
-    // the wall and its face looks down the corridor.
-    const NEIGHBORS = [
-      { dx: 0, dy: -1, nx: 0, nz: -1, yaw: Math.PI },       // corridor to the north
-      { dx: 0, dy: 1, nx: 0, nz: 1, yaw: 0 },               // corridor to the south
-      { dx: 1, dy: 0, nx: 1, nz: 0, yaw: Math.PI / 2 },     // corridor to the east
-      { dx: -1, dy: 0, nx: -1, nz: 0, yaw: -Math.PI / 2 },  // corridor to the west
-    ];
-
-    // Collect eligible wall faces: a wall tile with an in-bounds, non-wall
-    // neighbor (a corridor the frame would face). One face per (wall,dir).
-    const faces = [];
-    for (let row = 0; row < grid.rows; row++) {
-      for (let col = 0; col < grid.cols; col++) {
-        if (!grid.isWall(col, row)) continue;
-        for (const n of NEIGHBORS) {
-          const ncol = col + n.dx;
-          const nrow = row + n.dy;
-          if (!grid.inBounds(ncol, nrow)) continue;
-          if (grid.isWall(ncol, nrow)) continue; // neighbor must be open corridor
-          faces.push({ col, row, ncol, nrow, n });
-        }
-      }
-    }
-
-    // Seeded RNG (mulberry32) so the "random" selection is stable per reload.
-    let s = PORTRAIT.seed >>> 0;
-    const rand = () => {
-      s |= 0; s = (s + 0x6d2b79f5) | 0;
-      let t = Math.imul(s ^ (s >>> 15), 1 | s);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-
-    // Pick ~1/placeEvery of the eligible faces, avoiding hanging two frames on
-    // the same wall tile so they read as scattered around the aisles.
-    const usedWall = new Set();
-    const chosen = [];
-    for (const face of faces) {
-      const wallKey = `${face.col},${face.row}`;
-      if (usedWall.has(wallKey)) continue;
-      if (rand() < 1 / PORTRAIT.placeEvery) {
-        usedWall.add(wallKey);
-        chosen.push(face);
-      }
-    }
+    // Wall faces + outward normal/yaw come from the shared, property-tested
+    // `wallDecor` helper (also used by torches). Seeded selection keeps ~1 in
+    // `placeEvery` faces, at most one frame per wall tile.
+    const rand = seededRandom(PORTRAIT.seed);
+    const chosen = pickSpacedFaces(wallFaces(grid), { rand, every: PORTRAIT.placeEvery });
+    for (const face of chosen) this._portraitWalls.add(wallKey(face.col, face.row));
 
     if (chosen.length === 0) return;
 
@@ -1674,6 +1838,7 @@ export class FP3DRenderer {
     this._applyCameraRotation();
 
     this._stepFruit(now);
+    this._stepTorchLights(now);
     this._stepPellets(now);
     this._stepGhosts(now);
   }

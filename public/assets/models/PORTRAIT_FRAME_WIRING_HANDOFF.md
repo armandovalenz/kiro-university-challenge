@@ -1,4 +1,4 @@
-# FP3D Portrait Frame Wiring Handoff
+it# FP3D Portrait Frame Wiring Handoff
 
 Instruction for the fps3d-architect / main developing agent to add hangable
 picture-frame decorations to walls in FP3D_Mode. This handoff covers **only
@@ -121,3 +121,73 @@ nesting it inside the frame's opening at the same wall placement.
 5. Run `npm run test -- --run` — no framework-agnostic logic should be
    touched, so this should be a no-op/pass-through, but confirm nothing
    broke.
+
+---
+
+## Correction addendum (as wired, measured from the GLB)
+
+Added after integration. The original text above is kept as written. The
+"origin at back-centre, facing +Z, hang at scale 1" guidance didn't match
+`portrait_frame.glb`. Following it produced frames that tumbled, turned
+sideways, or sank into the brick across many attempts. The numbers below come
+from reading the GLB directly.
+
+### What the file actually contains
+
+| Handoff claim | Measured in the GLB |
+| --- | --- |
+| Facing +Z, height along Y | Raw **X ±7.44** is the width (14.88), raw **Z ±9.36** is the height (18.72), and raw **Y [0, 5.64]** is the depth. |
+| Back at the origin | The flat back is at **raw y = 0**. The corner ornaments peak at y = 5.64. |
+| No node transform mentioned | The mesh node has a **baked quaternion** `[-0.478, -0.546, -0.435, 0.534]`, about 10° off-axis. It must be discarded. |
+| Opening ≈ 7.68 × 11.52 | Confirmed. The inner lip sits at **raw y = 1.44**. |
+
+### Orientation as wired (`src/render/FP3DRenderer.js`, `_orientPortrait`)
+
+- The baked transform is reset on **every** node of the clone. The quaternion
+  lives on the child mesh node, not on the `scene.clone()` wrapper.
+- One `makeBasis` rotation maps the raw axes to the group frame (det = +1):
+  raw X → −X (along the wall), raw Y → +Z (out of the wall), raw Z → +Y (up).
+  The flat back lands at local z = 0 with no depth offset.
+- The group sits on the wall's inner face with yaw north π, south 0,
+  east π/2, west −π/2.
+- Do not reuse `FACING_TO_YAW`. That is the camera convention and has the
+  opposite sign.
+- All earlier roll, pitch and face correction knobs were removed.
+- Scale is derived from `authoredHeight 18.72` and `targetHeightFrac 0.62`
+  (not 1), with the frame centred at `centerYFrac 0.95`.
+
+### Placement
+
+Uses the shared `src/systems/fp3d/wallDecor.js` helpers, which are seeded and
+place at most one frame per wall tile (`placeEvery 7`, `seed 0x9e3779b1`).
+Portrait wall tiles are recorded so that torches avoid them.
+
+### Picture insert (the "follow-up" above, now implemented without a GLB)
+
+- The picture is a `PlaneGeometry`, not a separate GLB. It is added to the
+  same group, about 12% larger than the opening (`pictureOverlap 1.12`) and
+  set just behind the lip at z = 1.2.
+- Photos are chosen at random with the seeded RNG from
+  `einstein_photo1.jpg`, `copernicus_photo3.jpg` and `beakman_photo2.jpg`.
+- Each photo is cover-cropped with the pure, property-tested
+  `coverCropRect` (`src/systems/fp3d/imageCrop.js`). The crop is drawn onto a
+  512 × 768 canvas with high-quality smoothing, so nothing is stretched, and
+  wrapped in a `CanvasTexture` with mipmaps and anisotropy.
+  `pictureFocusY 0.3` keeps faces in frame.
+- The photo texture is also the emissive map at 0.25, so photos stay readable
+  in dim corridors. A dark placeholder shows until each photo loads.
+- Photo provenance is logged in `public/assets/images/ASSETS.md`. That entry
+  still has an open TODO.
+
+### Related fix
+
+Frames looked about 2× too wide because the renderer was sized from Phaser's
+`scale.displaySize`. `FP3DScene._syncRendererSize` now sizes from the host
+container's `clientWidth` / `clientHeight`.
+
+### Requested export fixes (for the asset author)
+
+1. Apply all transforms before export, so there is no node rotation.
+2. Put the flat back at z = 0, the front along +Z and the height along +Y.
+3. In future handoffs, state the measured extents and axis directions from
+   the exported file.

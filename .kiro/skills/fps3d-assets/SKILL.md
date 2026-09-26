@@ -110,6 +110,27 @@ Avoid that for every new model:
   "origin at back-centre, facing +Z" was wrong for the frame, and only the
   measured numbers made it placeable.
 
+### Scale and origin in game units (lessons from the wall torch)
+
+`torch_wall_01.glb` repeated the frame's baked-rotation fault and added two
+more. Check all three on every export:
+
+- **Author at game scale.** One Blender unit is one world unit, `TILE_SIZE` is
+  24, and FP3D walls are about 53 units tall. The torch was about 0.925 units
+  tall, so the handoff's "scale = 1" would have made it about 50× too small.
+  Size props to their in-game height: a torch is about 12 units (half a tile),
+  and the frame is about 18.72. If you can't, state the real extents so the
+  renderer can derive a scale.
+- **Put the origin exactly at the mounting back.** The torch's bracket back was
+  at z = +0.09, not at 0, and the torch leaned out along −Z instead of +Z.
+  Either mistake breaks "flush with no offset".
+- **Record points the renderer needs** in the handoff, such as the flame centre
+  for a light, measured in the exported file's raw coordinates.
+- When a handoff turns out to be wrong, append a **correction addendum** with
+  the measured values and the as-wired config. Don't rewrite the original.
+  See the addenda in `PORTRAIT_FRAME_WIRING_HANDOFF.md` and
+  `TORCH_WALL_WIRING_HANDOFF.md`.
+
 ## Photos and picture inserts
 
 - Photos shown inside frames live in `public/assets/images/` as `.jpg` / `.png`
@@ -178,6 +199,7 @@ stable keys, so swapping files is a drop-in change — keep the same keys.
 4. License is CC0 or properly attributed; no unknown-license assets.
 5. A quick Three.js load smoke test passes for models.
 6. For models, the exported GLB was checked with a script: no baked node
-   rotation, correct extents, and front / back / origin where the handoff says.
-   The measured numbers are written into the handoff.
+   rotation, correct extents at game scale (not ~50× too small), and front /
+   back / origin where the handoff says. The measured numbers are written into
+   the handoff.
 7. No change to shared game logic or the pinned dependency set.

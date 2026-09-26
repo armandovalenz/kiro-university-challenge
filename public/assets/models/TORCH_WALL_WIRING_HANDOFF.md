@@ -117,3 +117,80 @@ ghosts, fruit, and the portrait frame.
 6. Run `npm run test -- --run` — no framework-agnostic logic should be
    touched, so this should be a no-op/pass-through, but confirm nothing
    broke.
+
+---
+
+## Correction addendum (as wired, measured from the GLB)
+
+Added after integration. The original text above is kept as written. Several
+claims about the file did not match `torch_wall_01.glb`. The numbers below
+come from reading the GLB directly (JSON `nodes[]` plus the `POSITION`
+accessor min/max), not from the Blender scene.
+
+### What the file actually contains
+
+| Handoff claim | Measured in the GLB |
+| --- | --- |
+| ~0.11 × 0.32 × 0.92, height along Z | About 0.925 tall along **raw Y** (−0.045 → 0.88). The flame is on top. |
+| Origin at the bracket back, flush at (0, 0, 0) | The bracket back sits at **raw z = +0.09**, not at 0. |
+| Local +Z points out of the wall | The torch leans out along **raw −Z**. The flame centre is at raw (0, 0.72, −0.17). |
+| No node transform mentioned | The mesh node has an **arbitrary baked rotation**. It must be discarded. |
+| `scale = 1` fits `TILE_SIZE = 24` | `scale = 1` is about **50× too small**. FP3D walls are roughly 53 units tall. |
+
+### Orientation and scale as wired (`src/render/FP3DRenderer.js`)
+
+- The baked transform is reset on every node of the clone, not just the
+  wrapper: `model.traverse(o => { o.quaternion.identity(); o.position.set(0,0,0); o.scale.set(1,1,1); })`.
+- An inner pivot gets `rotation.y = π`, which turns the raw −Z lean into +Z
+  (into the corridor), and `position.z = TORCH.authoredBackZ` (0.09), which
+  seats the bracket back at local z = 0.
+- The outer group sits on the wall's inner face with the shared per-wall yaw
+  (north π, south 0, east π/2, west −π/2).
+- Scale is `tile * targetHeightFrac / authoredHeight`, so the torch is half a
+  tile tall. The bracket is mounted at `tile * mountYFrac`.
+
+`TORCH` config as shipped: `authoredHeight 0.925`, `authoredBackZ 0.09`,
+`flameRaw {0, 0.72, −0.17}`, `targetHeightFrac 0.5`, `mountYFrac 0.8`,
+`placeEvery 3`, `minSpacing 5`, `seed 0x7f4a7c15`.
+
+### Placement
+
+- Uses the shared, property-tested helper `src/systems/fp3d/wallDecor.js`
+  (`wallFaces`, `seededRandom`, `pickSpacedFaces`), which is the same one the
+  portraits use.
+- Wall tiles that already carry a portrait are excluded.
+- On the current maze this places 34 torches.
+
+### Lights (the optional step, implemented with a cap)
+
+- Uses a **fixed pool of 4 `PointLight`s**, created once and reassigned every
+  200 ms to the torches nearest the camera. Unused lights stay at intensity 0.
+- There are no per-torch lights. The light count never changes, so there are
+  no shader recompiles and shader cost stays flat.
+- Each torch's flame world position is computed once with
+  `group.localToWorld` from `flameRaw`, after the 180° turn and back seat:
+  `(−x, y, −z + backZ)`.
+- Settings: colour `0xff9a3c`, intensity 14, distance 5 tiles, decay 1.
+- Everything is gated by `TORCH.lights`. Set it to `false` to remove the
+  lights entirely.
+- There is no flicker. If flicker is added later, it must be suppressed when
+  `reducedMotion` is on (Req 7.4).
+
+### Fallback
+
+A drawn shaft and cone placeholder shows until the GLB loads, and stays if the
+load fails or times out (Req 8.2). Late loads are ignored if the maze has been
+rebuilt.
+
+### Requested export fixes (for the asset author)
+
+1. Apply all transforms before export, so the node has no rotation, translation
+   or scale.
+2. Put the origin at the bracket back and point the torch out along +Z.
+3. Author at game scale, about 12 units tall (half of `TILE_SIZE = 24`), or
+   state the real extents.
+4. In future handoffs, list the measured extents and axis directions from the
+   exported file, not the Blender dimensions panel.
+
+If the file is re-exported with these fixes, update `TORCH.authoredHeight`,
+`authoredBackZ`, `flameRaw` and the pivot turn to match.
