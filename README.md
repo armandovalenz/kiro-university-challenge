@@ -74,12 +74,24 @@ npm run test            # watch mode
 npm run test -- --run   # single non-watch run
 ```
 
-### Linting
+### Linting & security checks
 
 Source under `src/` is linted with a flat-config ESLint setup (`eslint.config.js`). This is what the optional `lint-on-save-debounced` hook runs:
 
 ```bash
 npm run lint
+```
+
+The lint config also surfaces **code-level security issues**:
+
+- [`eslint-plugin-security`](https://github.com/eslint-community/eslint-plugin-security) — flags risky patterns (unsafe regex, `eval`-like calls, non-literal `fs`/`require`, timing attacks). The high-false-positive `detect-object-injection` rule is disabled because it fires on ordinary array/grid indexing.
+- [`eslint-plugin-no-unsanitized`](https://github.com/mozilla/eslint-plugin-no-unsanitized) — flags XSS sinks (`innerHTML`, `insertAdjacentHTML`, `document.write`, …) with non-literal input, aimed at the DOM overlay modals.
+
+Dependency (CVE) vulnerabilities are checked separately with `npm audit`. Run both at once:
+
+```bash
+npm run audit       # dependency CVEs (fails on high/critical)
+npm run security    # lint + audit together
 ```
 
 ## Controls

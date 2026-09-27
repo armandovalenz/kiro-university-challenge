@@ -1,3 +1,6 @@
+// Copyright (c) 2026 Armando Valenz
+// SPDX-License-Identifier: MIT
+//
 // QuizModal — the accessible DOM form for the Einstein quiz (Req 4.1, 4.4,
 // 4.5, 4.6, 9.2, 9.3).
 //
