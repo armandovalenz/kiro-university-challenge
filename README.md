@@ -1,8 +1,11 @@
-# Math Man
+<img width="740" height="792" alt="image" src="https://github.com/user-attachments/assets/930db705-0ba9-4a6a-97a4-ae79228a9da5" />
 
 Math Man is an educational, browser-based maze arcade game inspired by Pac-Man. Guide **Math Man** through a maze collecting pellets while avoiding a colorful quartet of **Einstein ghosts**. The twist: when a ghost catches you, instead of an instant loss you're given a grade-appropriate **math or science** question — answer correctly to survive. Fruits grant an extra life and a short math or science micro-lesson.
 
 Built with **Phaser 3** and **Vite**, it runs entirely in the browser with no backend and no login — all records (high score, difficulty preference, mute state, quiz stats) are saved in `localStorage`.
+
+<img width="1506" height="800" alt="image" src="https://github.com/user-attachments/assets/043f2243-efab-47cc-ae24-b3c99f874771" />
+
 
 ## Features
 
