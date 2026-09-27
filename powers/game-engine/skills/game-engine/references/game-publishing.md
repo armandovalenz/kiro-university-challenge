@@ -2,6 +2,8 @@
 
 This reference covers the three pillars of publishing web-based games: distribution channels and platforms, promotion strategies, and monetization models.
 
+Sources: [MDN Web Docs — Publishing games](https://developer.mozilla.org/en-US/docs/Games/Publishing_games) (text licensed [CC-BY-SA 2.5](https://developer.mozilla.org/en-US/docs/MDN/Writing_guidelines/Attrib_copyright_license)). Rephrased and summarized for licensing compliance.
+
 ## Game Distribution
 
 Game distribution encompasses the channels and platforms through which players discover and access your game. Choosing the right distribution strategy depends on your target audience, game type, and business goals.

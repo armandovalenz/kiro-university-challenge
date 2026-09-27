@@ -82,5 +82,16 @@
     }
   },
   "keyboardShortcut": "ctrl+shift+4",
-  "welcomeMessage": "FPS3D-Asset-Forge ready (sandboxed, SEARCH-FIRST). For 3D I search Poly Haven via Blender MCP for an existing CC0 model that fits the game and reuse it (Poly Pizza as CC-BY fallback), exporting GLB — I only model from scratch if nothing fits. Textures come from Draw Things' local HTTP API on :7860 (curl): health-check :7860, read /sdapi/v1/options for the loaded checkpoint (I never guess a model), then POST /sdapi/v1/txt2img. Downloading Poly Haven assets needs Blender safe mode off — I'll ask first. Every asset is logged in ASSETS.md; files land in public/assets/**. What asset do you need?"
+  "welcomeMessage": "FPS3D-Asset-Forge ready (sandboxed, SEARCH-FIRST). For 3D I search Poly Haven via Blender MCP for an existing CC0 model that fits the game and reuse it (Poly Pizza as CC-BY fallback), exporting GLB — I only model from scratch if nothing fits. Textures come from Draw Things' local HTTP API on :7860 (curl): health-check :7860, read /sdapi/v1/options for the loaded checkpoint (I never guess a model), then POST /sdapi/v1/txt2img. Downloading Poly Haven assets needs Blender safe mode off — I'll ask first. Every asset is logged in ASSETS.md; files land in public/assets/**. What asset do you need?",
+  "credits": {
+    "authoredWith": "Kiro (AI-assisted)",
+    "note": "Pipeline distilled from the fps3d-assets skill and the tools/libraries below, described in our own words for licensing compliance. Every produced asset is attributed per-file in the matching ASSETS.md; tools and libraries remain under their own licenses.",
+    "sources": [
+      "https://polyhaven.com/ (CC0)",
+      "https://poly.pizza/ (CC0 / CC-BY)",
+      "https://github.com/ahujasid/blender-mcp",
+      "https://drawthings.ai/ (local Stable Diffusion)",
+      "https://www.khronos.org/gltf/"
+    ]
+  }
 }

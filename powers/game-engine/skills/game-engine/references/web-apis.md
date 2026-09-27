@@ -2,6 +2,8 @@
 
 A comprehensive reference covering the web platform APIs most relevant to building browser-based games. Each section describes what the API is, why it matters for games, its key interfaces and methods, and provides brief code examples where applicable.
 
+Sources: [MDN Web Docs — Web APIs](https://developer.mozilla.org/en-US/docs/Web/API) and [MDN Web Docs — Games](https://developer.mozilla.org/en-US/docs/Games) (text licensed [CC-BY-SA 2.5](https://developer.mozilla.org/en-US/docs/MDN/Writing_guidelines/Attrib_copyright_license)). Rephrased and summarized for licensing compliance.
+
 ---
 
 ## asm.js

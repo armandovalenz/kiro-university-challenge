@@ -208,6 +208,25 @@ See [`public/assets/audio/NOTICE.md`](public/assets/audio/NOTICE.md) for the att
 
 The game's visual assets (logo, app icon, mascot sprite sheet, collectibles, UI kit, posters, and hero images in `public/assets/images/`) were **generated with ChatGPT (OpenAI image generation)**. Under OpenAI's Terms of Use, the creator owns and may use these outputs, including commercially. Note that purely AI-generated images may have limited copyright protection in some jurisdictions. Per-file details are in [`public/assets/images/ASSETS.md`](public/assets/images/ASSETS.md).
 
+### Kiro-generated skills, agents & references
+
+The Kiro automation in this workspace (steering, specs, agents, skills, hooks, and the `game-engine` Power) was authored with **Kiro** (AI-assisted). The knowledge baked into those artifacts is distilled from the public documentation and tools listed below. Each artifact also carries its own inline `Source:` attribution; this table is the consolidated view. Content from these sources was rephrased and summarized for compliance with their licensing.
+
+| Kiro artifact | Purpose | Primary sources it draws on |
+|---------------|---------|-----------------------------|
+| `powers/game-engine` references — `basics.md`, `techniques.md`, `game-control-mechanisms.md`, `web-apis.md`, `3d-web-games.md` | General game-engine, controls, Web API, and 3D theory | [MDN Web Docs — Games](https://developer.mozilla.org/en-US/docs/Games) (CC-BY-SA 2.5) |
+| `powers/game-engine` reference — `algorithms.md` | Raycasting, collision, physics, vector math | [deepnight.net](https://deepnight.net/tutorial/bresenham-magic-raycasting-line-of-sight-pathfinding/), [gamedev.net](https://www.gamedev.net/), [winter.dev](https://winter.dev/articles/physics-engine) |
+| `powers/game-engine` reference — `game-engine-core-principles.md` | Engine architecture principles | [gamedev.net — Making a Game Engine: Core Design Principles](https://www.gamedev.net/articles/programming/general-and-gameplay-programming/making-a-game-engine-core-design-principles-r3210/) |
+| `powers/game-engine` reference — `terminology.md` | Game-dev glossary | [Game Industry Career Guide — glossary](https://www.gameindustrycareerguide.com/video-game-development-terms-glossary/) |
+| `powers/game-engine` reference — `game-publishing.md` | Distribution, promotion, monetization | [MDN Web Docs — Publishing games](https://developer.mozilla.org/en-US/docs/Games/Publishing_games) |
+| `.kiro/skills/fps3d-webgl` | Three.js first-person patterns | [Three.js docs](https://threejs.org/docs/), [three.js `PointerLockControls`](https://threejs.org/docs/#examples/en/controls/PointerLockControls), [sbcode.net Three.js tutorials](https://sbcode.net/threejs/pointerlock-controls/), [MDN — 3D on the web](https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_on_the_web) |
+| `.kiro/skills/fps3d-assets` | 3D/texture asset pipeline | [Poly Haven](https://polyhaven.com/) (CC0), [Poly Pizza](https://poly.pizza/) (CC0/CC-BY), [Blender MCP](https://github.com/ahujasid/blender-mcp), [Draw Things](https://drawthings.ai/) (local Stable Diffusion), [glTF/GLB spec](https://www.khronos.org/gltf/) |
+| `.kiro/skills/game-engine` | Pointer into the `game-engine` Power | See the `powers/game-engine` reference rows above |
+| `.kiro/agents/fps3d-architect` | Builds FP3D mode | The `fps3d-webgl` + `game-engine` skills; trusts [threejs.org](https://threejs.org/), [MDN](https://developer.mozilla.org/), [sbcode.net](https://sbcode.net/), [vitejs.dev](https://vitejs.dev/), [phaser.io](https://phaser.io/) |
+| `.kiro/agents/fps3d-asset-forge` | Produces FP3D assets | The `fps3d-assets` skill; [Blender MCP](https://github.com/ahujasid/blender-mcp), [Poly Haven](https://polyhaven.com/), [Poly Pizza](https://poly.pizza/), [Draw Things API](https://drawthings.ai/) |
+
+The Kiro-authored artifacts (steering, specs, agents, skills, hooks, and the `game-engine` Power source) are covered by this project's **MIT license**. Third-party documentation and tools linked above remain under their own licenses (e.g., MDN text is [CC-BY-SA 2.5](https://developer.mozilla.org/en-US/docs/MDN/Writing_guidelines/Attrib_copyright_license)); the assets those tools produce are attributed per-file in the relevant `ASSETS.md`.
+
 ### Other
 
 - Built with [Phaser 3](https://phaser.io/) and [Vite](https://vitejs.dev/); the optional first-person 3D mode uses [Three.js](https://threejs.org/).

@@ -2,6 +2,8 @@
 
 This reference covers the primary control mechanisms available for web-based games, including mobile touch, desktop keyboard and mouse, gamepad controllers, and unconventional input methods.
 
+Sources: [MDN Web Docs — Games: Techniques](https://developer.mozilla.org/en-US/docs/Games/Techniques) and the [MDN Gamepad API](https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API) / [Touch events](https://developer.mozilla.org/en-US/docs/Web/API/Touch_events) references (text licensed [CC-BY-SA 2.5](https://developer.mozilla.org/en-US/docs/MDN/Writing_guidelines/Attrib_copyright_license)). Rephrased and summarized for licensing compliance.
+
 ## Mobile Touch Controls
 
 Mobile touch controls are essential for web-based games targeting mobile devices. A mobile-first approach ensures games are accessible on the most widely used platform for HTML5 games.

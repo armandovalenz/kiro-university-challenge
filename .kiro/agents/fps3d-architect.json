@@ -95,5 +95,16 @@
     ]
   },
   "keyboardShortcut": "ctrl+shift+3",
-  "welcomeMessage": "FPS3D-Architect ready. Goal: a fine-tuned first-person 3D browser mode for Math Man (Phaser 3 + Vite + Three.js), reusing all shared game logic. What should we design or build?"
+  "welcomeMessage": "FPS3D-Architect ready. Goal: a fine-tuned first-person 3D browser mode for Math Man (Phaser 3 + Vite + Three.js), reusing all shared game logic. What should we design or build?",
+  "credits": {
+    "authoredWith": "Kiro (AI-assisted)",
+    "note": "Guidance distilled from the fps3d-webgl and game-engine skills and the public docs below, rephrased/summarized for licensing compliance. Each source remains under its own license.",
+    "sources": [
+      "https://threejs.org/docs/",
+      "https://sbcode.net/threejs/pointerlock-controls/",
+      "https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_on_the_web (CC-BY-SA 2.5)",
+      "https://vitejs.dev/",
+      "https://phaser.io/"
+    ]
+  }
 }

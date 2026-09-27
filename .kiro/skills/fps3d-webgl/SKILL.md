@@ -25,6 +25,17 @@ not a new game.
 The full spec is the source of truth: `.kiro/specs/first-person-3d-mode/`.
 When code and spec disagree, the spec wins; reconcile explicitly.
 
+> **Sources & attribution.** This playbook was authored with Kiro (AI-assisted)
+> and distills public documentation, rephrased and summarized for licensing
+> compliance:
+> [Three.js documentation](https://threejs.org/docs/),
+> [three.js `PointerLockControls`](https://threejs.org/docs/#examples/en/controls/PointerLockControls),
+> [sbcode.net Three.js tutorials](https://sbcode.net/threejs/pointerlock-controls/), and
+> [MDN Web Docs — 3D on the web](https://developer.mozilla.org/en-US/docs/Games/Techniques/3D_on_the_web)
+> (MDN text: CC-BY-SA 2.5). The project's own
+> `powers/game-engine/.../references/3d-web-games.md` reference is also drawn on.
+> Each linked source remains under its own license.
+
 ## 1. Library decision (per Requirement 9)
 
 - **Use Three.js** for the WebGL layer. The project's own reference

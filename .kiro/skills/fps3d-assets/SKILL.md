@@ -20,6 +20,17 @@ FP3D reuses the existing maze/entities; generated assets are an **enhancement**
 (nicer ghost/fruit/collectible meshes, wall/floor textures, skybox), never a
 replacement for maze-driven geometry or shared logic.
 
+> **Sources & attribution.** This pipeline was authored with Kiro (AI-assisted)
+> and references these external tools and asset libraries, described in our own
+> words for licensing compliance:
+> [Poly Haven](https://polyhaven.com/) (CC0 models/textures/HDRIs),
+> [Poly Pizza](https://poly.pizza/) (CC0 / CC-BY low-poly models),
+> [Blender MCP](https://github.com/ahujasid/blender-mcp),
+> [Draw Things](https://drawthings.ai/) (local Stable Diffusion HTTP API), and
+> the [glTF / GLB specification](https://www.khronos.org/gltf/). Each asset
+> those tools produce must be logged with its own source + license in the
+> relevant `ASSETS.md`; the tools and libraries remain under their own licenses.
+
 ## Where generated files must land
 
 - 3D models: `public/assets/models/**` (create if missing) as **`.glb`**.
