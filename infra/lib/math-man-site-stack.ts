@@ -35,6 +35,32 @@ export class MathManSiteStack extends cdk.Stack {
       );
     }
 
+    // Guard against shipping a build that is missing the runtime-optimized
+    // display images. These live under assets/images/optimized/ and are loaded
+    // by SplashScene/MenuScene/UIScene; when one is absent the game silently
+    // falls back to drawn text (e.g. the logo becomes a plain "MATH MAN"
+    // title) instead of erroring — which previously let an incomplete deploy
+    // ship unnoticed. Fail the synth/deploy loudly instead. Keep this list in
+    // sync with the `optimized/` paths in src/config.js (IMAGE_ASSETS).
+    const requiredAssets = [
+      'assets/images/optimized/02_logo.png',
+      'assets/images/optimized/03_app_icon.png',
+      'assets/images/optimized/06_ui_kit.png',
+      'assets/images/optimized/08_poster_einstein_enemies.png',
+      'assets/images/optimized/09_hero_einstein_enemies.png',
+    ];
+    const missingAssets = requiredAssets.filter(
+      (rel) => !fs.existsSync(path.join(distPath, rel)),
+    );
+    if (missingAssets.length > 0) {
+      throw new Error(
+        `Build at ${distPath} is missing required asset(s):\n` +
+          missingAssets.map((rel) => `  - ${rel}`).join('\n') +
+          `\nRun "npm run build" in the project root (and regenerate the ` +
+          `optimized/ images per public/assets/images/ASSETS.md) before deploying.`,
+      );
+    }
+
     // Private bucket to hold the static assets. No public access; CloudFront
     // reads it via OAC. Objects are encrypted with S3-managed keys.
     const siteBucket = new s3.Bucket(this, 'SiteBucket', {
@@ -77,7 +103,14 @@ export class MathManSiteStack extends cdk.Stack {
             "default-src 'self'",
             "script-src 'self'",
             "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data:",
+            // Phaser's loader fetches images/spritesheets via XHR and hands
+            // them to the texture manager as blob: object URLs (this is the
+            // default even for same-origin assets in a production build). Those
+            // are same-origin blobs the app creates from assets already loaded
+            // under 'self', so allow blob: here — without it every image is
+            // blocked at the blob step ("violates ... img-src 'self' data:")
+            // and the game silently falls back to drawn text/shapes.
+            "img-src 'self' data: blob:",
             "media-src 'self'",
             "connect-src 'self'",
             "font-src 'self'",
