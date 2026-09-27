@@ -142,12 +142,17 @@ export class MathManSiteStack extends cdk.Stack {
     });
 
     // Upload the build to the bucket and invalidate the cache on each deploy.
+    // The default deployment Lambda gets 128 MB, which is not enough to
+    // download + extract + `s3 sync` the ~35 MB of audio assets (it was killed
+    // with Runtime.OutOfMemory, so CloudFormation never received a response and
+    // rolled the stack back). Give it more headroom.
     new s3deploy.BucketDeployment(this, 'DeployMathMan', {
       sources: [s3deploy.Source.asset(distPath)],
       destinationBucket: siteBucket,
       distribution,
       distributionPaths: ['/*'],
       prune: true,
+      memoryLimit: 512,
     });
 
     // Handy outputs after deploy.
