@@ -24,7 +24,7 @@ src/
     first-person-3d-mode/  # requirements.md, design.md, tasks.md (FP3D_Mode — Three.js first-person layer)
   steering/                # product.md, tech.md, structure.md, testing.md
   agents/                  # fps3d-architect.json, fps3d-asset-forge.json (FP3D specialist sub-agents)
-  hooks/                   # lint-on-save-debounced.json (PostFileSave lint, disabled by default)
+  hooks/                   # lint-after-edit.json (PostToolUse + PostFileSave auto-lint, enabled)
   skills/
     game-engine/           # thin pointer → powers/game-engine (content moved there)
     fps3d-webgl/           # Three.js first-person playbook for FP3D_Mode
@@ -62,7 +62,7 @@ powers/
   - `fps3d-architect` — designs and builds FP3D_Mode on the Phaser 3 + Vite + Three.js stack; reuses all framework-agnostic logic and keeps the 3D layer isolated. Writes under `src/**`, `tests/**`, the FP3D spec, the `fps3d-webgl` skill, and build config.
   - `fps3d-asset-forge` — sandboxed asset producer for FP3D_Mode. Generates web-ready GLB models (Blender MCP, safe mode) and textures/images (local Draw Things HTTP API on :7860 via curl). Writes ONLY under `public/assets/**`; never touches game source, specs, or steering.
 - **Skills** (`.kiro/skills/`): `fps3d-webgl` (Three.js first-person patterns) and `fps3d-assets` (asset pipeline) back the FP3D agents; `game-engine` is a thin pointer into the `powers/game-engine` Kiro Power.
-- **Hooks** (`.kiro/hooks/`): `lint-on-save-debounced` runs `npm run lint` after a debounced `src/**` save (disabled by default).
+- **Hooks** (`.kiro/hooks/`): `lint-after-edit` bundles two enabled agent hooks that run `npm run lint` and fix findings at the source — one on `PostToolUse` (agent file edits: `fs_write|str_replace|fs_append`) and one on `PostFileSave` (saved `.js` files).
 
 ## Naming
 

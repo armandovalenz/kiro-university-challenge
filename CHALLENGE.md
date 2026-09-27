@@ -37,17 +37,14 @@ These enforce concrete standards (e.g., "keep logic framework-agnostic — no Ph
 
 ## Lesson 3 — Hooks
 
-The project ships a Kiro agent hook at [`.kiro/hooks/lint-on-save-debounced.json`](.kiro/hooks/lint-on-save-debounced.json):
+The project ships a Kiro agent hook file at [`.kiro/hooks/lint-after-edit.json`](.kiro/hooks/lint-after-edit.json) that bundles **two enabled hooks** which keep the source lint-clean automatically:
 
-| Field | Value |
-|-------|-------|
-| Name | Lint on Save (src, 15s debounce) |
-| Trigger | `PostFileSave` |
-| Matcher | `/src/.*\.(js|mjs|jsx|ts|tsx)$` (JS/TS files under `src/`) |
-| Action | `command` — runs `npm run lint` after a 15-second debounce (token-file guard so only the last save in a burst triggers a lint) |
-| Enabled | `false` (opt-in; disabled by default to avoid unprompted runs) |
+| Hook | Trigger | Matcher | Action |
+|------|---------|---------|--------|
+| Lint after agent edits | `PostToolUse` | `fs_write\|str_replace\|fs_append` (any file-writing tool) | `agent` — prompts the model to run `npm run lint` and fix findings at the source |
+| Lint after file save | `PostFileSave` | `\.js$` (saved JS files) | `agent` — same lint-and-fix prompt when the user saves a JS file |
 
-It follows the Lesson 3 schema exactly (`version`, `hooks[]`, `trigger`, `matcher`, `action.type` + `action.command`) and demonstrates a non-trivial pattern — a debounced `PostFileSave` command hook rather than the bare example. The `npm run lint` script it invokes is a real, working target: the repo ships a flat ESLint config (`eslint.config.js`) with `eslint`, `@eslint/js`, and `globals` pinned as `devDependencies`, and `npm run lint` passes cleanly.
+Both hooks are `enabled: true`. They follow the Lesson 3 schema exactly (`version`, `hooks[]`, `trigger`, `matcher`, `action.type` + `action.prompt`) and demonstrate a non-trivial pattern — **`agent`-type hooks** that inject a remediation prompt (run ESLint, fix at the source, never disable rules or use `eslint-disable`/`_`-ignore workarounds, then re-run to confirm 0 problems) rather than a bare `command`. They also cover both edit paths: agent-driven edits (`PostToolUse`) and human saves (`PostFileSave`). The `npm run lint` script they invoke is a real, working target: the repo ships a flat ESLint config (`eslint.config.js`) with `eslint`, `@eslint/js`, and `globals` pinned as `devDependencies`, and `npm run lint` passes cleanly.
 
 ## Lesson 4 — Property-based testing
 
@@ -128,7 +125,7 @@ Part of the security review and hardening was performed in a **Kiro cloud sessio
 
 (Verify with `git log --pretty='%h %an <%ae> | %cn | %s'`.) The `Kiro Agent` committer identity is the cloud sandbox committing server-side, distinct from the local `Armando Valenzuela` commits made in the IDE.
 
-The project configuration is also fully **cloud-portable**: all `.kiro/` project config (specs, steering, the two custom agents, the hook, skills, and the per-agent MCP server) is committed to the repo, so it travels automatically into a cloud session's sandbox when the repo is cloned.
+The project configuration is also fully **cloud-portable**: all `.kiro/` project config (specs, steering, the two custom agents, the `lint-after-edit` hooks, skills, and the per-agent MCP server) is committed to the repo, so it travels automatically into a cloud session's sandbox when the repo is cloned.
 
 ## Requirements verified outside this repository
 

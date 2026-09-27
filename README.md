@@ -76,7 +76,7 @@ npm run test -- --run   # single non-watch run
 
 ### Linting & security checks
 
-Source under `src/` is linted with a flat-config ESLint setup (`eslint.config.js`). This is what the optional `lint-on-save-debounced` hook runs:
+Source under `src/` is linted with a flat-config ESLint setup (`eslint.config.js`). This is also what the `lint-after-edit` agent hook runs automatically after edits and saves:
 
 ```bash
 npm run lint
@@ -139,7 +139,7 @@ src/
     first-person-3d-mode/  # requirements.md, design.md, tasks.md (FP3D first-person mode)
   steering/                # product.md, tech.md, structure.md, testing.md (project guidance)
   agents/                  # fps3d-architect, fps3d-asset-forge (FP3D specialist sub-agents)
-  hooks/                   # lint-on-save-debounced (disabled by default)
+  hooks/                   # lint-after-edit (auto-lint after agent edits + file saves)
   skills/
     game-engine/           # thin pointer → powers/game-engine (content moved there)
     fps3d-webgl/           # Three.js first-person playbook for FP3D mode
@@ -169,7 +169,7 @@ The workspace ships Kiro automation to support the FP3D mode:
 
 - **Agents** ([`.kiro/agents/`](.kiro/agents/)) — `fps3d-architect` (designs/builds FP3D mode on the Phaser 3 + Vite + Three.js stack, reusing shared logic) and `fps3d-asset-forge` (sandboxed producer of web-ready GLB models via Blender MCP and textures via the local Draw Things HTTP API; writes only under `public/assets/**`).
 - **Skills** ([`.kiro/skills/`](.kiro/skills/)) — `fps3d-webgl` (Three.js first-person patterns), `fps3d-assets` (asset pipeline), and `game-engine` (pointer into the `powers/game-engine` Power).
-- **Hooks** ([`.kiro/hooks/`](.kiro/hooks/)) — `lint-on-save-debounced` runs `npm run lint` after a debounced save of a `src/**` file (disabled by default).
+- **Hooks** ([`.kiro/hooks/`](.kiro/hooks/)) — `lint-after-edit` ships two enabled agent hooks that keep the source clean automatically: a `PostToolUse` hook (matcher `fs_write|str_replace|fs_append`) that runs `npm run lint` after the agent edits a file, and a `PostFileSave` hook (matcher `\.js$`) that runs it when you save a JS file. Both fix findings at the source rather than disabling rules.
 
 ### Question bank
 
