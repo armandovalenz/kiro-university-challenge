@@ -87,7 +87,7 @@ describe('Property 7: Scoring and lives reuse matches the 2D rules', () => {
         fc.array(fc.boolean(), { minLength: 0, maxLength: 40 }),
         (outcomes) => {
           const score = new ScoreSystem();
-          let expected = LIVES_START;
+          let expected;
 
           for (const correct of outcomes) {
             const cost = lifeCostFor(correct);

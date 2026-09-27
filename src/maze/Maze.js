@@ -7,7 +7,6 @@
 // gracefully — if art fails to load we draw simple shape textures instead
 // (Req 13.5).
 
-import Phaser from 'phaser';
 import { TILE_SIZE, IMAGE_ASSETS } from '../config.js';
 import { TILE } from './mazeData.js';
 import { MazeGrid, tileKey } from './mazeLogic.js';

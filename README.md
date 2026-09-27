@@ -74,6 +74,14 @@ npm run test            # watch mode
 npm run test -- --run   # single non-watch run
 ```
 
+### Linting
+
+Source under `src/` is linted with a flat-config ESLint setup (`eslint.config.js`). This is what the optional `lint-on-save-debounced` hook runs:
+
+```bash
+npm run lint
+```
+
 ## Controls
 
 | Action | Keys |
@@ -97,8 +105,9 @@ npm run test -- --run   # single non-watch run
 
 ```
 index.html                 # Vite entry; hosts the #game container + DOM overlay root
-package.json               # phaser (pinned), vite, vitest + fast-check (mandatory PBT)
+package.json               # phaser (pinned), vite, vitest + fast-check (mandatory PBT), eslint
 vite.config.js
+eslint.config.js           # flat ESLint config (npm run lint)
 public/
   assets/
     images/                # logo, sprite sheets, UI kit (+ ASSETS.md)

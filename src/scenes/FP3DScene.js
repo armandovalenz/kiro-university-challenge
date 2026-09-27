@@ -1657,7 +1657,6 @@ export default class FP3DScene extends Phaser.Scene {
     if (this._fallbackTo2D) return; // already handed off; ignore repeats
     this._fallbackTo2D = true;
     this._fallbackReason = reason;
-    // eslint-disable-next-line no-console
     console.warn(`FP3DScene: falling back to 2D (${reason})`, err || '');
     this.events.emit('fp3d-fallback', { reason });
 

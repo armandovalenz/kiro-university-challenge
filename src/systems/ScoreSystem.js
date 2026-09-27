@@ -77,7 +77,6 @@ class Emitter {
         listener(payload);
       } catch (err) {
         // Swallow listener errors: state integrity must not depend on the HUD.
-        // eslint-disable-next-line no-console
         console.error('ScoreSystem listener error:', err);
       }
     }

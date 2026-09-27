@@ -110,7 +110,7 @@ describe('ScoreSystem — Property 2: Lives stay within bounds', () => {
     fc.assert(
       fc.property(lifeOps, (ops) => {
         const system = new ScoreSystem();
-        let expected = LIVES_START;
+        let expected;
         for (const op of ops) {
           const before = system.lives;
           if (op === 'lose') {

@@ -4,9 +4,9 @@ This project ([Math Man](README.md)) was built as an entry for the Kiro Universi
 
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
-| GitHub repository is public | ✅ | Repo is public (`"private": false`, `"visibility": "public"`). |
+| GitHub repository is public | ✅ | Repo is public on GitHub (`https://github.com/armandovalenz/kiro-university-challenge` loads without authentication). |
 | `.kiro` folder and required files present | ✅ | `.kiro/` includes `specs/` (`math-man/` and `first-person-3d-mode/`, each with `requirements.md`, `design.md`, `tasks.md`), `steering/` (`product.md`, `tech.md`, `structure.md`, `testing.md`), `agents/`, `hooks/`, and `skills/`. |
-| Project functions as described | ✅ | `npm run build` produces a static `dist/` build; `npm run test -- --run` passes all tests (65 tests across 12 files, including mandatory `fast-check` property-based tests). Both specs' task lists are complete. |
+| Project functions as described | ✅ | `npm run build` produces a static `dist/` build; `npm run test -- --run` passes all tests (93 tests across 17 files, including mandatory `fast-check` property-based tests). Both specs' task lists are complete. |
 | Meaningful Kiro usage | ✅ | Two structured specs, four steering docs, custom sub-agents (`fps3d-architect`, `fps3d-asset-forge`), a hook, and skills — all consistent with the shipped source. |
 
 ## Lesson 1 — Spec-driven development
@@ -47,7 +47,7 @@ The project ships a Kiro agent hook at [`.kiro/hooks/lint-on-save-debounced.json
 | Action | `command` — runs `npm run lint` after a 15-second debounce (token-file guard so only the last save in a burst triggers a lint) |
 | Enabled | `false` (opt-in; disabled by default to avoid unprompted runs) |
 
-It follows the Lesson 3 schema exactly (`version`, `hooks[]`, `trigger`, `matcher`, `action.type` + `action.command`) and demonstrates a non-trivial pattern — a debounced `PostFileSave` command hook rather than the bare example.
+It follows the Lesson 3 schema exactly (`version`, `hooks[]`, `trigger`, `matcher`, `action.type` + `action.command`) and demonstrates a non-trivial pattern — a debounced `PostFileSave` command hook rather than the bare example. The `npm run lint` script it invokes is a real, working target: the repo ships a flat ESLint config (`eslint.config.js`) with `eslint`, `@eslint/js`, and `globals` pinned as `devDependencies`, and `npm run lint` passes cleanly.
 
 ## Lesson 4 — Property-based testing
 
