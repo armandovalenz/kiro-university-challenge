@@ -21,18 +21,18 @@ Built with **Phaser 3** and **Vite**, it runs entirely in the browser with no ba
 
 ## Tech Stack
 
-| Concern | Choice |
-|---------|--------|
-| Rendering + game loop | Phaser 3 (`Phaser.AUTO` — WebGL with Canvas fallback) |
-| Bundler / dev server | Vite |
-| State flow | Phaser Scene Manager |
-| Physics / overlap | Phaser Arcade Physics |
-| Maze | Phaser Tilemap |
-| Audio | Phaser Sound Manager (Web Audio API) |
-| Accessible modals | DOM overlays (HTML/CSS) |
-| Persistence | `localStorage` (+ in-memory fallback) |
-| First-person 3D layer | Three.js (WebGL) — optional FP3D mode, in progress |
-| Tests | Vitest + `fast-check` (property-based tests are mandatory) |
+| Concern | Choice | Mode |
+|---------|--------|------|
+| Rendering + game loop | Phaser 3 (`Phaser.AUTO` — WebGL with Canvas fallback) | 2D |
+| First-person 3D layer | Three.js (WebGL) — optional FP3D mode, in progress | 3D |
+| Bundler / dev server | Vite | Shared |
+| State flow | Phaser Scene Manager | 2D |
+| Physics / overlap | Phaser Arcade Physics | 2D |
+| Maze | Phaser Tilemap | 2D |
+| Audio | Phaser Sound Manager (Web Audio API) | Shared |
+| Accessible modals | DOM overlays (HTML/CSS) | Shared |
+| Persistence | `localStorage` (+ in-memory fallback) | Shared |
+| Tests | Vitest + `fast-check` (property-based tests are mandatory) | Shared |
 
 ## Getting Started
 

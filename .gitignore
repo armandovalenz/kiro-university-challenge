@@ -68,3 +68,7 @@ Desktop.ini
 .tmp/
 *.tsbuildinfo
 .eslintcache
+
+# Local-only demo scripts (not committed)
+docs/demo-script-90s.md
+docs/demo-script-2min.md
