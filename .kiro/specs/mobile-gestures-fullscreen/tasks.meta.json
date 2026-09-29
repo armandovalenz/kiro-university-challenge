@@ -1,0 +1,352 @@
+{
+  "pbtResults": {
+    "2.2 Write property test: movement resolution is total and single-valued at or above the deadzone": {
+      "status": "passed",
+      "lastRunTimestamp": 1790652849405
+    },
+    "2.3 Write property test: below the deadzone resolves to steer, never a move": {
+      "status": "passed",
+      "lastRunTimestamp": 1790652849454
+    },
+    "2.4 Write property test: forward-assist cone snaps to forward": {
+      "status": "passed",
+      "lastRunTimestamp": 1790652850608
+    },
+    "2.5 Write property test: turn resolution yields exactly one cardinal": {
+      "status": "passed",
+      "lastRunTimestamp": 1790652851708
+    },
+    "3.2 Write property test: classification is single-valued with a sharp Flick/Drag boundary": {
+      "status": "passed",
+      "lastRunTimestamp": 1790652857888
+    },
+    "3.3 Write property test: classification is deterministic": {
+      "status": "passed",
+      "lastRunTimestamp": 1790652858734
+    }
+  },
+  "executionHistory": {
+    "1. Add GESTURE threshold constants to `config.js`": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652473072
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652480889
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652542975
+      }
+    ],
+    "2.1 Implement `resolveMovementVector` and `resolveFlickTurn`": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652473116
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652548428
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652734901
+      }
+    ],
+    "3.1 Implement `classifyGesture` and `movementVector`": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652473143
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652548816
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652736273
+      }
+    ],
+    "4. Checkpoint - pure gesture logic verified": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652473164
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652904074
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652985059
+      }
+    ],
+    "5.1 Build `createFullscreenToggle`": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652473193
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652549785
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652737736
+      }
+    ],
+    "6.1 Implement `setCrosshair` and `setInteractionIndicator`": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652473212
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652551191
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652739129
+      }
+    ],
+    "7.1 Attach touch/pointer listeners and sampling": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652473247
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652992186
+      },
+      {
+        "executionId": "308ee051-cfb0-445b-bdb2-dd3243d243e3",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790654580976
+      }
+    ],
+    "7.2 Route classified gestures through the existing `fp3dLogic` seam": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652473264
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652993591
+      },
+      {
+        "executionId": "308ee051-cfb0-445b-bdb2-dd3243d243e3",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790654582258
+      }
+    ],
+    "7.3 Implement interaction targeting under the Crosshair": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652473282
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652994979
+      },
+      {
+        "executionId": "308ee051-cfb0-445b-bdb2-dd3243d243e3",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790654583136
+      }
+    ],
+    "8.1 Remove the Render_Mode toggle and always launch '3d'": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652473301
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652552335
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652740127
+      }
+    ],
+    "9. Final checkpoint - full verification": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652473320
+      },
+      {
+        "executionId": "308ee051-cfb0-445b-bdb2-dd3243d243e3",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790654587867
+      },
+      {
+        "executionId": "308ee051-cfb0-445b-bdb2-dd3243d243e3",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790654604376
+      }
+    ],
+    "2. Implement the vector-to-direction resolver (`gestureResolve.js`)": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652734932
+      }
+    ],
+    "3. Implement the gesture classifier (`gestureClassifier.js`)": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652736300
+      }
+    ],
+    "5. Implement the accessible `FullscreenToggle` DOM control": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652737791
+      }
+    ],
+    "6. Add Crosshair and Interaction_Indicator to `FP3DRenderer`": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652739162
+      }
+    ],
+    "8. Make FP3D_Mode the only player-facing mode in `MenuScene`": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652740151
+      }
+    ],
+    "2.2 Write property test: movement resolution is total and single-valued at or above the deadzone": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652756239
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652883784
+      }
+    ],
+    "2.3 Write property test: below the deadzone resolves to steer, never a move": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652757687
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652885033
+      }
+    ],
+    "2.4 Write property test: forward-assist cone snaps to forward": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652759025
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652886470
+      }
+    ],
+    "2.5 Write property test: turn resolution yields exactly one cardinal": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652760485
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652887374
+      }
+    ],
+    "3.2 Write property test: classification is single-valued with a sharp Flick/Drag boundary": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652761892
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652888869
+      }
+    ],
+    "3.3 Write property test: classification is deterministic": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652762709
+      },
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652890000
+      }
+    ],
+    "5.2 Write example tests for `FullscreenToggle`": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652996378
+      }
+    ],
+    "6.2 Write example tests for the Interaction_Indicator": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652997334
+      }
+    ],
+    "8.2 Write example tests for the 3D-only launch and retained fallback": [
+      {
+        "executionId": "ec2bc82b-713a-474a-96fc-49bb40310f8f",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790652998796
+      }
+    ],
+    "7. Wire touch input and gesture dispatch into `FP3DScene`": [
+      {
+        "executionId": "308ee051-cfb0-445b-bdb2-dd3243d243e3",
+        "chatSessionId": "sess_9079a094-80e4-427c-b9df-1f756fb8afdb",
+        "timestamp": 1790654583169
+      }
+    ]
+  }
+}

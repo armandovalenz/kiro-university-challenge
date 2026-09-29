@@ -475,6 +475,16 @@ export class FP3DRenderer {
     // Build the static maze geometry now that the scene exists.
     this.buildMaze(grid);
 
+    // Build the fixed-center HUD (Crosshair + Interaction_Indicator). This is a
+    // small DOM overlay layered over the WebGL canvas — the reticle and the
+    // action label are screen-space UI, not scene geometry, so drawing them in
+    // the DOM keeps them crisp and lets `textContent` carry the ≤24-char label
+    // for assistive tech. Three.js still stays isolated to this file (Req 9.1):
+    // the HUD holds no Three.js objects. When there is no parent element (a
+    // caller passed a bare canvas, or a headless test), the HUD is skipped and
+    // the setters below no-op — a graceful fallback, never a throw (Req 6).
+    this._buildHud();
+
     // Seed an initial size from the parent's client rect now that the camera
     // exists, so the very first rendered frame is correctly sized even before
     // the scene's resize sync fires (a 0x0 or stale size renders nothing).
@@ -1474,6 +1484,227 @@ export class FP3DRenderer {
    */
   setReducedMotion(enabled) {
     this.reducedMotion = !!enabled;
+    // Reflect the preference on the HUD immediately so the Interaction_Indicator
+    // stops any non-essential pulse the moment reduced motion is turned on
+    // (Req 6.4), matching the instant-snap the camera/marker tweens use above.
+    this._applyHudReducedMotion();
+  }
+
+  // --- Crosshair + Interaction_Indicator HUD (Req 1.2, 6) --------------------
+
+  /**
+   * Longest Interaction_Indicator label the renderer will show. The spec caps
+   * the action label at 24 characters (Req 6.1); a longer label is truncated so
+   * a stray caller can never overflow the reticle or break assistive reading.
+   */
+  static get MAX_INDICATOR_LABEL() { return 24; }
+
+  /**
+   * Build the fixed-center HUD: a Crosshair reticle and an Interaction_Indicator
+   * (a dot + an action label). Both are DOM nodes centered over the play surface
+   * and layered above the WebGL canvas (below the quiz/lesson overlay root).
+   *
+   * The Floating_Joystick deliberately has NO persistent on-screen control here
+   * (Req 1.2): the HUD draws only the Crosshair and, on demand, the indicator —
+   * never a joystick base. Any origin marker for an active Touch_Hold is the
+   * scene's concern and is drawn under the finger, so it never competes with or
+   * obscures this centered reticle.
+   *
+   * No-op when there is no parent element or no DOM (a bare-canvas caller or a
+   * headless test) — the renderer keeps working and the public setters below
+   * simply do nothing (graceful fallback, Req 6).
+   */
+  _buildHud() {
+    this._hudEl = null;
+    this._crosshairEl = null;
+    this._indicatorEl = null;
+    this._indicatorLabelEl = null;
+    this._crosshairVisible = false;
+    this._indicatorLabel = null;
+
+    const parent = this._parentEl;
+    if (!parent || typeof document === 'undefined' || typeof document.createElement !== 'function') {
+      return;
+    }
+
+    // Container fills the play surface, ignores pointer events (so it never
+    // steals touches from the joystick/interaction layer), and sits just above
+    // the 3D canvas (zIndex 5) but below the accessible overlay root (zIndex 10).
+    const hud = document.createElement('div');
+    hud.className = 'fp3d-hud';
+    Object.assign(hud.style, {
+      position: 'absolute',
+      inset: '0',
+      pointerEvents: 'none',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: '6',
+    });
+
+    // Crosshair: a small fixed reticle at the exact screen center. Hidden until
+    // setCrosshair(true). Kept intentionally minimal so it reads as a targeting
+    // dot, not a joystick.
+    const crosshair = document.createElement('div');
+    crosshair.className = 'fp3d-crosshair';
+    crosshair.setAttribute('aria-hidden', 'true');
+    Object.assign(crosshair.style, {
+      position: 'absolute',
+      width: '18px',
+      height: '18px',
+      display: 'none',
+      // Two thin bars forming a plus, drawn with borders on inner pseudo-less
+      // markup: use a box with a centered dot via background gradients.
+      background:
+        'linear-gradient(#fff, #fff) center/2px 18px no-repeat, '
+        + 'linear-gradient(#fff, #fff) center/18px 2px no-repeat',
+      opacity: '0.85',
+      filter: 'drop-shadow(0 0 1px rgba(0,0,0,0.9))',
+    });
+
+    // Interaction_Indicator: a centered dot plus a short action label beneath
+    // it. Hidden until setInteractionIndicator(label). The dot marks the target
+    // under the Crosshair; the label (≤24 chars) prompts the Tap (Req 6.1).
+    const indicator = document.createElement('div');
+    indicator.className = 'fp3d-interaction-indicator';
+    Object.assign(indicator.style, {
+      position: 'absolute',
+      display: 'none',
+      flexDirection: 'column',
+      alignItems: 'center',
+      transform: 'translateY(22px)', // sit just below the crosshair center
+      pointerEvents: 'none',
+    });
+
+    const dot = document.createElement('div');
+    dot.className = 'fp3d-interaction-dot';
+    Object.assign(dot.style, {
+      width: '8px',
+      height: '8px',
+      borderRadius: '50%',
+      background: '#ffe28a',
+      boxShadow: '0 0 6px rgba(255,226,138,0.9)',
+      marginBottom: '6px',
+    });
+
+    const label = document.createElement('div');
+    label.className = 'fp3d-interaction-label';
+    Object.assign(label.style, {
+      font: '600 13px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+      letterSpacing: '0.08em',
+      color: '#fff',
+      textShadow: '0 1px 2px rgba(0,0,0,0.9)',
+      padding: '2px 8px',
+      borderRadius: '4px',
+      background: 'rgba(0,0,0,0.45)',
+      whiteSpace: 'nowrap',
+    });
+
+    indicator.appendChild(dot);
+    indicator.appendChild(label);
+    hud.appendChild(crosshair);
+    hud.appendChild(indicator);
+    parent.appendChild(hud);
+
+    this._hudEl = hud;
+    this._crosshairEl = crosshair;
+    this._indicatorEl = indicator;
+    this._indicatorLabelEl = label;
+
+    // Apply the current reduced-motion preference to the freshly built HUD.
+    this._applyHudReducedMotion();
+  }
+
+  /**
+   * Enable/disable the non-essential pulse on the Interaction_Indicator dot to
+   * honor Reduced_Motion (Req 6.4). The indicator still shows and hides based on
+   * the targeted Interactable — only the animation is suppressed.
+   */
+  _applyHudReducedMotion() {
+    const dot = this._indicatorEl ? this._indicatorEl.querySelector('.fp3d-interaction-dot') : null;
+    if (!dot) return;
+    if (this.reducedMotion) {
+      dot.style.animation = 'none';
+    } else {
+      // A soft, subtle pulse (kept short so it reads as an affordance, not a
+      // distraction). Defined inline via the Web Animations API so no global
+      // stylesheet/keyframes are required and it is trivially cancelable.
+      dot.style.animation = 'none';
+      if (typeof dot.animate === 'function') {
+        try {
+          if (this._dotAnim) { this._dotAnim.cancel(); this._dotAnim = null; }
+          if (this._indicatorLabel != null) {
+            this._dotAnim = dot.animate(
+              [{ opacity: 0.55, transform: 'scale(0.85)' }, { opacity: 1, transform: 'scale(1.15)' }],
+              { duration: 700, direction: 'alternate', iterations: Infinity, easing: 'ease-in-out' },
+            );
+          }
+        } catch { /* animation is non-essential; ignore if unsupported */ }
+      }
+    }
+  }
+
+  /**
+   * Show or hide the fixed center Crosshair reticle (Req 1.2). The reticle marks
+   * the tile/object a Tap targets; it never renders a joystick control. No-op
+   * when the HUD is unavailable (headless/bare-canvas), so callers need not
+   * guard.
+   * @param {boolean} visible whether the Crosshair should be shown
+   */
+  setCrosshair(visible) {
+    this._crosshairVisible = !!visible;
+    if (!this._crosshairEl) return;
+    this._crosshairEl.style.display = this._crosshairVisible ? 'block' : 'none';
+  }
+
+  /**
+   * Show the Interaction_Indicator with `label`, or hide it when `label` is
+   * null/empty (Req 6.1–6.3, 6.5, 6.6).
+   *
+   * The scene calls this from its per-frame targeting: it passes the action
+   * label (e.g. "COLLECT") while a present, in-range Interactable is under the
+   * Crosshair, and passes `null` the frame none is targeted, the target goes out
+   * of range, or the target is removed. Because it is applied synchronously on
+   * that frame, the show/hide and label swap land well within the 100 ms bound
+   * the spec requires (Req 6.2, 6.3, 6.6). The label is truncated to 24
+   * characters (Req 6.1). Non-essential pulse is suppressed under Reduced_Motion
+   * (Req 6.4). No-op when the HUD is unavailable.
+   *
+   * @param {string|null} label action label (≤24 chars) or null to hide
+   */
+  setInteractionIndicator(label) {
+    const text = (label == null || label === '')
+      ? null
+      : String(label).slice(0, FP3DRenderer.MAX_INDICATOR_LABEL);
+    const changed = text !== this._indicatorLabel;
+    this._indicatorLabel = text;
+
+    if (!this._indicatorEl) return;
+
+    if (text === null) {
+      this._indicatorEl.style.display = 'none';
+      if (this._indicatorLabelEl) this._indicatorLabelEl.textContent = '';
+      if (this._dotAnim) { try { this._dotAnim.cancel(); } catch { /* ignore */ } this._dotAnim = null; }
+      return;
+    }
+
+    if (this._indicatorLabelEl) this._indicatorLabelEl.textContent = text;
+    this._indicatorEl.style.display = 'flex';
+    // (Re)apply the pulse only when the label first appears or changes, so a
+    // steady target does not restart the animation every frame.
+    if (changed) this._applyHudReducedMotion();
+  }
+
+  /** Remove the HUD DOM and cancel any indicator animation. */
+  _disposeHud() {
+    if (this._dotAnim) { try { this._dotAnim.cancel(); } catch { /* ignore */ } this._dotAnim = null; }
+    if (this._hudEl && this._hudEl.parentNode) {
+      try { this._hudEl.parentNode.removeChild(this._hudEl); } catch { /* ignore */ }
+    }
+    this._hudEl = null;
+    this._crosshairEl = null;
+    this._indicatorEl = null;
+    this._indicatorLabelEl = null;
   }
 
   // --- Pellet / power-pellet / fruit markers ---------------------------------
@@ -2324,6 +2555,8 @@ export class FP3DRenderer {
       this.canvas.removeEventListener('webglcontextlost', this._contextLostHandler, false);
       this._contextLostHandler = null;
     }
+    // Tear down the Crosshair/Interaction_Indicator HUD DOM (Req 6).
+    this._disposeHud();
     this._disposeDynamic();
     this._disposeMaze();
     // Release any textures loaded via the loadTexture seam (Req 8.2). None are

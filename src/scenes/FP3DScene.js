@@ -33,7 +33,7 @@
 import Phaser from 'phaser';
 
 import {
-  DEFAULT_GRADE, GRADES, GHOST_PERSONALITIES, FP3D, TIMINGS, FRUIT_MIN_DISTANCE, PRESSURE,
+  DEFAULT_GRADE, GRADES, GHOST_PERSONALITIES, FP3D, TIMINGS, FRUIT_MIN_DISTANCE, PRESSURE, GESTURE,
 } from '../config.js';
 import { nearestGhostPathDistance, pressureTargetRate, approachRate } from '../systems/pressure.js';
 import {
@@ -50,7 +50,11 @@ import {
   turnRight,
   setFacing,
 } from '../systems/fp3d/fp3dLogic.js';
-import { isGhostVisible } from '../systems/fp3d/lineOfSight.js';
+import { isGhostVisible, hasLineOfSight } from '../systems/fp3d/lineOfSight.js';
+import { classifyGesture, movementVector } from '../systems/fp3d/gestureClassifier.js';
+import { resolveMovementVector, resolveFlickTurn } from '../systems/fp3d/gestureResolve.js';
+import { createFullscreenToggle } from '../ui/FullscreenToggle.js';
+import LevelClearModal from '../ui/LevelClearModal.js';
 import {
   computeTargetTile,
   chooseGhostDirection,
@@ -232,6 +236,18 @@ export default class FP3DScene extends Phaser.Scene {
     this._buildTouchControls();
     this._buildHud();
 
+    // One-thumb touch gesture input path (Req 1, 2, 4, 5) + the accessible
+    // Fullscreen_Toggle (Req 9). Both are additive to the keyboard path above:
+    // keyboard and gestures stay interchangeable within a session, with no
+    // input-mode lock (Req 8.1–8.3). The crosshair reticle is shown so the Tap/
+    // Long_Press interaction target is visible.
+    if (this.renderer && typeof this.renderer.setCrosshair === 'function') {
+      this.renderer.setCrosshair(true);
+    }
+    this._setupTouchGestures();
+    this._buildFullscreenToggle();
+    this._buildReturnToMenuButton();
+
     // --- Audio: gameplay music like GameScene (silent no-op if unavailable) --
     // EVERY FP3D sound is played as `this.audio.play(AudioEvent.X)` through the
     // shared `AudioBus` — this scene NEVER calls `this.sound.*` / `scene.sound.*`
@@ -281,6 +297,17 @@ export default class FP3DScene extends Phaser.Scene {
     // clears it.
     this._caught = false;
 
+    // Guards the win → next-level transition so it fires exactly once per clear
+    // and cannot re-enter mid-transition (mirrors GameScene._levelTransition).
+    // After `grid.reset` the pellet count is non-zero again, so `_checkLevelClear`
+    // will not re-trigger on the same cleared board.
+    this._levelTransition = false;
+
+    // The "Level Complete!" DOM dialog, present only while a win is being
+    // announced (built in `_advanceLevel`, torn down in `_onLevelClearDismissed`
+    // / `_returnToMenu` / `_onShutdown`).
+    this._levelClearModal = null;
+
     // Duck the gameplay music while an overlay is open and restore it on
     // resume, matching GameScene's overlay ducking (Req 12.7). Because FP3DScene
     // drives its own render loop rather than pausing via the Scene Manager, the
@@ -306,6 +333,11 @@ export default class FP3DScene extends Phaser.Scene {
     // Frozen (overlay open, Task 15) → render only, no movement/ghost activity
     // (Req 4.2, 6.7). Movement/turn input is ignored while frozen.
     if (this.state.frozen) {
+      // Overlay open: no interaction affordance while play is suspended so no
+      // stale "COLLECT" prompt lingers over the quiz/lesson (Req 6.6, 8.4).
+      if (this.renderer && typeof this.renderer.setInteractionIndicator === 'function') {
+        this.renderer.setInteractionIndicator(null);
+      }
       this._updateHud();
       this.renderer.render(this.state);
       return;
@@ -321,6 +353,7 @@ export default class FP3DScene extends Phaser.Scene {
     this._advanceGhosts();
     this._updatePressure(time, delta);
     this._renderGhosts();
+    this._updateInteractionIndicator();
     this._updateHud();
 
     this.renderer.render(this.state);
@@ -515,6 +548,10 @@ export default class FP3DScene extends Phaser.Scene {
     for (const ev of turnLeftKeys) kb.on(ev, () => this._queueTurn('left'), this);
     for (const ev of turnRightKeys) kb.on(ev, () => this._queueTurn('right'), this);
 
+    // Escape abandons the run and returns straight to the main menu (no
+    // game-over / high-score write) — the chosen "quit to menu" behavior.
+    kb.on('keydown-ESC', () => this._returnToMenu(), this);
+
     this._setupMouseLook();
   }
 
@@ -671,6 +708,596 @@ export default class FP3DScene extends Phaser.Scene {
   _queueMove(dir) {
     if (!this.state || this.state.frozen) return;
     this.state.buffer.push({ type: 'move', dir });
+  }
+
+  // --- One-thumb touch gestures (Req 1, 2, 4, 5, 7, 8) -----------------------
+
+  /**
+   * Attach the raw touch/pointer listeners that feed the framework-agnostic
+   * gesture pipeline. This is the ONLY place the DOM touch events are wired; the
+   * classification (`gestureClassifier`) and vector→intent resolution
+   * (`gestureResolve`) are pure modules, and the resulting intents flow through
+   * the SAME `fp3dLogic` seam the keyboard uses (Req 7.1, 8.1–8.3) — this scene
+   * never forks movement/turn/tunnel/buffer logic.
+   *
+   * Touch events are preferred (`touchstart`/`touchmove`/`touchend`); when the
+   * platform reports no `ontouchstart` we fall back to Pointer Events
+   * (`pointerdown`/`pointermove`/`pointerup`), filtered to `touch`/`pen` so a
+   * mouse still drives the existing click-drag free-look (`_setupMouseLook`)
+   * rather than double-anchoring a Floating_Joystick. Listeners live on the game
+   * surface element and are removed on shutdown.
+   */
+  _setupTouchGestures() {
+    if (typeof document === 'undefined') return; // headless / tests
+
+    const surface = this._surfaceEl();
+    if (!surface || typeof surface.addEventListener !== 'function') return;
+    this._gestureSurface = surface;
+
+    // Floating_Joystick + sampling state for the active Touch_Hold (Req 1.1–1.6).
+    //   origin        — anchored touch point ({x,y} in dip); null when no hold
+    //   pointerId     — the id of the active touch so a 2nd concurrent touch is
+    //                   ignored (Req 1.6)
+    //   samples       — ordered {x,y,t} samples for classifyGesture (Req 1.3)
+    //   vector        — live Movement_Vector (point - origin)
+    // `_tapCtx` carries the previous Tap so a Double_Tap can be detected across
+    // interactions (Req 5.9); it is the classifier `ctx`.
+    this._touch = { origin: null, pointerId: null, samples: null, vector: null };
+    this._tapCtx = { prevTapAt: null, prevTapPos: null };
+
+    const supportsTouch = typeof window !== 'undefined' && 'ontouchstart' in window;
+
+    if (supportsTouch) {
+      this._touchHandlers = {
+        start: (e) => this._onTouchStart(e),
+        move: (e) => this._onTouchMove(e),
+        end: (e) => this._onTouchEnd(e),
+      };
+      surface.addEventListener('touchstart', this._touchHandlers.start, { passive: false });
+      surface.addEventListener('touchmove', this._touchHandlers.move, { passive: false });
+      surface.addEventListener('touchend', this._touchHandlers.end, { passive: false });
+      surface.addEventListener('touchcancel', this._touchHandlers.end, { passive: false });
+      this._touchMode = 'touch';
+    } else {
+      // Pointer Events fallback — only touch/pen anchor a joystick; a mouse is
+      // left to the existing free-look so the two input models don't collide.
+      this._pointerHandlers = {
+        down: (e) => { if (e.pointerType !== 'mouse') this._onTouchStart(e); },
+        move: (e) => { if (e.pointerType !== 'mouse') this._onTouchMove(e); },
+        up: (e) => { if (e.pointerType !== 'mouse') this._onTouchEnd(e); },
+      };
+      surface.addEventListener('pointerdown', this._pointerHandlers.down);
+      surface.addEventListener('pointermove', this._pointerHandlers.move);
+      surface.addEventListener('pointerup', this._pointerHandlers.up);
+      surface.addEventListener('pointercancel', this._pointerHandlers.up);
+      this._touchMode = 'pointer';
+    }
+  }
+
+  /**
+   * Normalize a touch/pointer event to a single `{ x, y, t, id }` sample in
+   * device-independent pixels relative to the surface, plus a stable pointer id
+   * used to reject a second concurrent touch. For a `TouchEvent` the first
+   * `changedTouches` entry is used; for a `PointerEvent` the event itself.
+   * @param {TouchEvent|PointerEvent} e
+   * @returns {{ x:number, y:number, t:number, id:(number|string) }|null}
+   */
+  _samplePoint(e) {
+    const now = (typeof performance !== 'undefined' && performance.now)
+      ? performance.now()
+      : Date.now();
+    let clientX;
+    let clientY;
+    let id;
+    if (e && e.changedTouches && e.changedTouches.length) {
+      const t = e.changedTouches[0];
+      clientX = t.clientX;
+      clientY = t.clientY;
+      id = t.identifier;
+    } else if (e && typeof e.clientX === 'number') {
+      clientX = e.clientX;
+      clientY = e.clientY;
+      id = e.pointerId != null ? e.pointerId : 'pointer';
+    } else {
+      return null;
+    }
+    // Convert to surface-local dip so the anchor and samples share one frame.
+    let x = clientX;
+    let y = clientY;
+    const surface = this._gestureSurface;
+    if (surface && typeof surface.getBoundingClientRect === 'function') {
+      try {
+        const r = surface.getBoundingClientRect();
+        x = clientX - r.left;
+        y = clientY - r.top;
+      } catch { /* keep client coords */ }
+    }
+    return { x, y, t: now, id };
+  }
+
+  /**
+   * Whether a point (client coords) lands over an interactive on-screen control
+   * we must not treat as a Floating_Joystick anchor — the Fullscreen_Toggle
+   * (Req 1.1). Uses each control's bounding rect so a Touch_Hold that begins on
+   * the button starts no movement.
+   * @param {number} clientX
+   * @param {number} clientY
+   * @returns {boolean}
+   */
+  _pointOverInteractiveControl(clientX, clientY) {
+    const el = this._fullscreenToggle && this._fullscreenToggle.el;
+    if (!el || typeof el.getBoundingClientRect !== 'function') return false;
+    try {
+      const r = el.getBoundingClientRect();
+      return clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Begin a Touch_Hold: anchor a Floating_Joystick origin at the touch point and
+   * enter movement mode (Req 1.1). A point over the Fullscreen_Toggle is ignored
+   * so the control handles it (Req 1.1); a second concurrent touch is ignored so
+   * the original origin is retained (Req 1.6). No persistent on-screen joystick
+   * is drawn (Req 1.2) — the origin lives only in `_touch`.
+   * @param {TouchEvent|PointerEvent} e
+   */
+  _onTouchStart(e) {
+    if (!this._touch) return;
+    // A hold already active → a second concurrent touch changes nothing (Req 1.6).
+    if (this._touch.origin) {
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      return;
+    }
+
+    // Over an interactive control (Fullscreen_Toggle) → no joystick (Req 1.1).
+    const clientX = (e.changedTouches && e.changedTouches.length)
+      ? e.changedTouches[0].clientX
+      : e.clientX;
+    const clientY = (e.changedTouches && e.changedTouches.length)
+      ? e.changedTouches[0].clientY
+      : e.clientY;
+    if (this._pointOverInteractiveControl(clientX, clientY)) return;
+
+    const p = this._samplePoint(e);
+    if (!p) return;
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
+    this._touch.origin = { x: p.x, y: p.y };
+    this._touch.pointerId = p.id;
+    this._touch.samples = [{ x: p.x, y: p.y, t: p.t }];
+    this._touch.vector = { x: 0, y: 0 };
+  }
+
+  /**
+   * Sample the active Touch_Hold: record `{x,y,t}` and recompute the
+   * Movement_Vector relative to the anchored origin (Req 1.3). Samples from a
+   * second concurrent touch (a different pointer id) are ignored (Req 1.6).
+   * While an overlay is open the samples are still recorded but produce no
+   * movement — the freeze is enforced at dispatch (Req 8.4).
+   * @param {TouchEvent|PointerEvent} e
+   */
+  _onTouchMove(e) {
+    const touch = this._touch;
+    if (!touch || !touch.origin) return;
+    const p = this._samplePoint(e);
+    if (!p) return;
+    // Only the pointer that anchored the origin drives the vector (Req 1.6).
+    if (touch.pointerId != null && p.id !== touch.pointerId) return;
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
+    touch.samples.push({ x: p.x, y: p.y, t: p.t });
+    touch.vector = movementVector(touch.origin, { x: p.x, y: p.y });
+  }
+
+  /**
+   * End the Touch_Hold (Release): classify the completed interaction to exactly
+   * one Gesture, dispatch it through the `fp3dLogic` seam, then clear the origin
+   * and stop movement (Req 1.4). A Release from a non-anchoring pointer is
+   * ignored. The classifier context (`_tapCtx`) is advanced so a following Tap
+   * can pair into a Double_Tap (Req 5.9).
+   * @param {TouchEvent|PointerEvent} e
+   */
+  _onTouchEnd(e) {
+    const touch = this._touch;
+    if (!touch || !touch.origin) return;
+    const p = this._samplePoint(e);
+    // Release from a different pointer than the active hold → ignore (Req 1.6).
+    if (p && touch.pointerId != null && p.id !== touch.pointerId) return;
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
+    if (p) touch.samples.push({ x: p.x, y: p.y, t: p.t });
+
+    const result = classifyGesture(touch.samples, GESTURE, this._tapCtx);
+    const facing = this.state ? this.state.player.facing : 'north';
+    this._dispatchGesture(result, facing);
+
+    // Advance the Double_Tap context using this interaction's START (Req 5.9).
+    if (result.gesture === 'Tap' || result.gesture === 'Double_Tap') {
+      const first = touch.samples[0];
+      this._tapCtx = { prevTapAt: first.t, prevTapPos: { x: first.x, y: first.y } };
+    }
+
+    // Release: clear the Floating_Joystick origin and stop movement (Req 1.4).
+    // A held continuous walk is a keyboard concept; a gesture move is a single
+    // buffered intent, so clearing the origin ends the "movement mode".
+    this._touch.origin = null;
+    this._touch.pointerId = null;
+    this._touch.samples = null;
+    this._touch.vector = null;
+  }
+
+  /**
+   * Route one classified {@link classifyGesture} result to the EXISTING
+   * `fp3dLogic` seam — never a forked movement/turn/tunnel/buffer path (Req 7):
+   *
+   *   - **Drag** → `resolveMovementVector`:
+   *       - `move`  → push a `{ type:'move' }` intent into the existing
+   *         `InputBuffer`. A cardinal move carries a single `steps` entry; a
+   *         `diagonal` carries its two nearest cardinals dominant-axis-first,
+   *         fed one leg at a time and skipping a blocked leg (Req 2.4, 2.7).
+   *       - `steer` → adjust facing to the nearest cardinal via
+   *         `fp3dLogic.setFacing` with NO tile move (Req 2.8).
+   *   - **Flick** → `resolveFlickTurn` → push a `{ type:'turn' }` intent (Req 4).
+   *   - **Double_Tap** → push a forward dash `{ type:'move' }` intent (Req 5.4).
+   *   - **Tap** → `interactUnderCrosshair()` (Req 5.1–5.3).
+   *   - **Long_Press** → `inspectUnderCrosshair()` (Req 5.6, 5.7).
+   *
+   * All gesture-derived MOVE/TURN intents are frozen while a quiz/lesson overlay
+   * is open (Req 8.4). Interactions (Tap/Long_Press) are likewise ignored while
+   * frozen. Under Reduced_Motion the resulting grid-locked position and cardinal
+   * facing still change; only non-essential camera motion is suppressed, which
+   * the renderer already honors via its reduced-motion flag (Req 7.5, 8.5).
+   * @param {{gesture:string, vector?:{x:number,y:number}, direction?:('left'|'right')}} result
+   * @param {'north'|'east'|'south'|'west'} facing current facing
+   */
+  _dispatchGesture(result, facing) {
+    if (!result || !this.state) return;
+    const frozen = this.state.frozen;
+
+    switch (result.gesture) {
+      case 'Drag': {
+        if (frozen) return; // overlay open: no move/turn (Req 8.4)
+        const outcome = resolveMovementVector(result.vector || { x: 0, y: 0 }, GESTURE);
+        if (outcome.kind === 'steer') {
+          // Gentle steering: adjust facing to the nearest cardinal, no move
+          // (Req 2.8). Reuse fp3dLogic.setFacing so exactly one cardinal is set.
+          this._applyGestureFacing(setFacing(outcome.toward));
+        } else {
+          // A move intent (single cardinal or a diagonal sequence). The buffer
+          // holds at most one intent; extras are dropped (Req 7.3).
+          this.state.buffer.push({ type: 'move', gesture: true, steps: outcome.steps.slice() });
+        }
+        return;
+      }
+      case 'Flick': {
+        if (frozen) return; // overlay open: no move/turn (Req 8.4)
+        const to = resolveFlickTurn(setFacing(facing), result.direction === 'left' ? 'left' : 'right');
+        this.state.buffer.push({ type: 'turn', gesture: true, to });
+        return;
+      }
+      case 'Double_Tap': {
+        if (frozen) return; // overlay open: no move/turn (Req 8.4)
+        // Forward dash of exactly one grid move in the current facing (Req 5.4).
+        this.state.buffer.push({ type: 'move', gesture: true, steps: ['forward'] });
+        return;
+      }
+      case 'Tap': {
+        if (frozen) return; // overlay open: interactions suspended (Req 8.4)
+        this.interactUnderCrosshair();
+        return;
+      }
+      case 'Long_Press': {
+        if (frozen) return;
+        this.inspectUnderCrosshair();
+        return;
+      }
+      default:
+        // Touch_Hold / Release / anything else: no discrete action.
+    }
+  }
+
+  /**
+   * Apply a gesture-derived facing change to exactly one cardinal and animate
+   * the camera turn (Req 2.8, 7.2). Reuses the same `renderer.animateTurn` the
+   * keyboard turn path uses, so Reduced_Motion snapping is honored identically.
+   * @param {'north'|'east'|'south'|'west'} to target cardinal
+   */
+  _applyGestureFacing(to) {
+    if (!this.state) return;
+    const from = this.state.player.facing;
+    const next = setFacing(to);
+    if (next === from) return;
+    this.state.player.facing = next;
+    if (this.renderer && typeof this.renderer.animateTurn === 'function') {
+      this.renderer.animateTurn(from, next);
+    }
+  }
+
+  // --- Interaction targeting under the Crosshair (Req 5, 6) ------------------
+
+  /**
+   * Walk the Crosshair line (the player's current facing ray) and return the
+   * nearest present, in-range Interactable tile on it, or null. Per the design's
+   * Interactable mapping, FRUIT is the only Interactable in FP3D_Mode today —
+   * pellets are auto-collected on tile entry and ghosts capture on tile
+   * occupancy, so neither is targetable. The seam is generic against
+   * `state.fruits`: if a future task adds doors/ladders/pickups, they extend the
+   * same targeting adapter rather than forking it.
+   *
+   * A tile is targeted only when the straight facing ray reaches it with no wall
+   * strictly between (reusing the framework-agnostic `hasLineOfSight` walk) and
+   * it is within `GESTURE.interactionRangeTiles` of the camera (Req 5.2, 6.1,
+   * 6.5). The nearest such fruit along the ray wins (Req 5.2).
+   * @returns {{ kind:'fruit', fruit:object, distance:number }|null}
+   */
+  _targetUnderCrosshair() {
+    const st = this.state;
+    const grid = this.grid;
+    if (!st || !grid) return null;
+
+    const { col, row, facing } = st.player;
+    const step = {
+      north: { dCol: 0, dRow: -1 },
+      south: { dCol: 0, dRow: 1 },
+      west: { dCol: -1, dRow: 0 },
+      east: { dCol: 1, dRow: 0 },
+    }[facing] || { dCol: 0, dRow: -1 };
+
+    const range = GESTURE.interactionRangeTiles;
+    let best = null;
+    // Walk straight ahead tile by tile within range; the nearest matching fruit
+    // that is not blocked by a wall between the camera and it wins.
+    for (let d = 1; d <= range; d++) {
+      const tc = col + step.dCol * d;
+      const tr = row + step.dRow * d;
+      if (grid.isWall(tc, tr)) break; // wall occludes anything beyond it
+      const fruit = (st.fruits || []).find((f) => f.present && f.col === tc && f.row === tr);
+      if (fruit && hasLineOfSight(grid, col, row, tc, tr)) {
+        best = { kind: 'fruit', fruit, distance: d };
+        break; // nearest along the ray
+      }
+    }
+    return best;
+  }
+
+  /**
+   * Primary interaction (Tap): act on the nearest present, in-range Interactable
+   * under the Crosshair (Req 5.1, 5.2). For a fruit this calls the EXACT
+   * tile-entry collection path (`_onFruitCollected` → shared `ScoreSystem` +
+   * `LessonScene`), so Tap-to-collect forks no scoring/lesson logic — it is a
+   * convenience over walking onto the tile. When nothing is targeted it is a
+   * no-op and leaves position and facing unchanged (Req 5.3).
+   */
+  interactUnderCrosshair() {
+    if (!this.state || this.state.frozen) return;
+    const target = this._targetUnderCrosshair();
+    if (!target) return; // no Interactable under the Crosshair (Req 5.3)
+    if (target.kind === 'fruit' && target.fruit.present) {
+      this._onFruitCollected(target.fruit);
+    }
+  }
+
+  /**
+   * Secondary interaction (Long_Press / inspect): preview the targeted
+   * Interactable without consuming it or moving (Req 5.6). For a fruit this
+   * shows its micro-lesson topic as the Interaction_Indicator label without
+   * launching `LessonScene` or collecting the fruit. When nothing is targeted it
+   * is a no-op and leaves position and facing unchanged (Req 5.7).
+   */
+  inspectUnderCrosshair() {
+    if (!this.state || this.state.frozen) return;
+    const target = this._targetUnderCrosshair();
+    if (!target) return; // nothing to inspect (Req 5.7)
+    if (target.kind === 'fruit' && target.fruit.present) {
+      const topic = this._fruitInspectLabel();
+      if (this.renderer && typeof this.renderer.setInteractionIndicator === 'function') {
+        this.renderer.setInteractionIndicator(topic);
+      }
+    }
+  }
+
+  /**
+   * A short inspect label (≤24 chars) for a fruit's micro-lesson. Peeks at the
+   * next LessonBank topic without consuming a lesson when possible; falls back
+   * to a generic "INSPECT" when no topic is available. Kept ≤24 chars to match
+   * the Interaction_Indicator contract (Req 6.1).
+   * @returns {string}
+   */
+  _fruitInspectLabel() {
+    let topic = null;
+    const bank = this.lessonBank;
+    if (bank) {
+      if (typeof bank.peek === 'function') {
+        try { const l = bank.peek(); topic = l && (l.topic || l.title); } catch { /* ignore */ }
+      }
+    }
+    const label = topic ? String(topic).toUpperCase() : 'INSPECT';
+    return label.slice(0, 24);
+  }
+
+  /**
+   * Drive `FP3DRenderer.setInteractionIndicator(...)` from whatever Interactable
+   * is currently under the Crosshair (Req 6.1, 6.5). Shows the primary action
+   * label ("COLLECT") for a present, in-range fruit and hides the indicator
+   * (null) when none is targeted, out of range, or removed. Called every
+   * unfrozen frame so the affordance appears/updates/clears well within 100 ms.
+   */
+  _updateInteractionIndicator() {
+    if (!this.renderer || typeof this.renderer.setInteractionIndicator !== 'function') return;
+    const target = this._targetUnderCrosshair();
+    const label = target && target.kind === 'fruit' ? 'COLLECT' : null;
+    this.renderer.setInteractionIndicator(label);
+  }
+
+  // --- Fullscreen toggle (Req 9) ---------------------------------------------
+
+  /**
+   * Construct the accessible Fullscreen_Toggle over the game surface and mount
+   * it on `#overlay-root` (the same host as the quiz/lesson modals). The helper
+   * returns `null` when the Fullscreen API is unavailable, in which case no
+   * control is added and gameplay continues (Req 9.5). A rejected request is
+   * caught inside the helper; here we only log via the `onError` hook. The
+   * button is positioned top-right, clear of the compass/minimap HUD.
+   */
+  _buildFullscreenToggle() {
+    if (typeof document === 'undefined') return; // headless / tests
+    const surface = this._surfaceEl();
+    if (!surface) return;
+
+    const toggle = createFullscreenToggle(surface, {
+      onError: (err) => console.warn('FP3DScene: fullscreen request failed', err || ''),
+    });
+    if (!toggle) return; // API unavailable → no control (Req 9.5)
+
+    const root = document.getElementById('overlay-root') || document.body;
+    if (root && toggle.el) {
+      Object.assign(toggle.el.style, {
+        position: 'absolute',
+        top: '10px',
+        right: '10px',
+        zIndex: '20',
+        pointerEvents: 'auto',
+      });
+      root.appendChild(toggle.el);
+    }
+    this._fullscreenToggle = toggle;
+  }
+
+  // --- Discreet on-screen "return to menu" control ---------------------------
+
+  /**
+   * Build a subtle, unobtrusive "return to menu" control on `#overlay-root`
+   * (the same host as the touch controls / Fullscreen_Toggle). It is a real
+   * `<button>` tucked in the TOP-LEFT corner at low opacity, becoming more
+   * visible on hover/focus, so it does not distract from play but is always
+   * reachable. Clicking it — or focusing it and pressing Enter/Space — routes
+   * to the SAME `_returnToMenu()` the Escape key uses. It carries an
+   * `aria-label` and a visible focus ring for keyboard/AT users. Positioned in a
+   * corner and stopping propagation only on its own activation so it never
+   * captures the gameplay touches used for movement. No-op in headless/tests.
+   */
+  _buildReturnToMenuButton() {
+    if (typeof document === 'undefined') return; // headless / tests
+    const root = document.getElementById('overlay-root') || document.body;
+    if (!root) return;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'fp3d-return-menu';
+    btn.setAttribute('aria-label', 'Return to menu');
+    // A small back glyph; the accessible name comes from aria-label above.
+    btn.textContent = '\u2190 Menu';
+    Object.assign(btn.style, {
+      position: 'absolute',
+      top: '10px',
+      left: '10px',
+      zIndex: '20',
+      pointerEvents: 'auto',
+      padding: '4px 8px',
+      font: '600 12px/1.2 monospace',
+      color: '#cfe0ff',
+      background: 'rgba(0, 0, 20, 0.35)',
+      border: '1px solid rgba(120, 160, 255, 0.4)',
+      borderRadius: '6px',
+      opacity: '0.28', // discreet at rest…
+      cursor: 'pointer',
+      transition: 'opacity 120ms ease',
+      touchAction: 'manipulation',
+      userSelect: 'none',
+    });
+
+    // …but clearly visible (and shows a focus ring) on hover/focus.
+    const reveal = () => { btn.style.opacity = '1'; btn.style.outline = '2px solid #ffe000'; };
+    const dim = () => { btn.style.opacity = '0.28'; btn.style.outline = 'none'; };
+    btn.addEventListener('mouseenter', reveal);
+    btn.addEventListener('mouseleave', dim);
+    btn.addEventListener('focus', reveal);
+    btn.addEventListener('blur', dim);
+
+    // Activate on pointerdown for a snappy tap, and on click so keyboard
+    // Enter/Space activation also works (the browser synthesizes a click).
+    // Stop propagation only on THIS control's own events so a tap here never
+    // anchors a movement joystick, while gameplay touches elsewhere are
+    // untouched. A pointer-handled activation swallows the following click.
+    let handledByPointer = false;
+    btn.addEventListener('pointerdown', (e) => {
+      handledByPointer = true;
+      e.preventDefault();
+      e.stopPropagation();
+      this._returnToMenu();
+    });
+    btn.addEventListener('click', (e) => {
+      if (handledByPointer) { handledByPointer = false; return; }
+      e.preventDefault();
+      e.stopPropagation();
+      this._returnToMenu();
+    });
+
+    root.appendChild(btn);
+    this._returnMenuBtn = btn;
+  }
+
+  /** Remove the discreet return-to-menu control (scene teardown). */
+  _destroyReturnToMenuButton() {
+    if (this._returnMenuBtn) {
+      try {
+        this._returnMenuBtn.remove();
+      } catch {
+        if (this._returnMenuBtn.parentNode) {
+          this._returnMenuBtn.parentNode.removeChild(this._returnMenuBtn);
+        }
+      }
+      this._returnMenuBtn = null;
+    }
+  }
+
+  /**
+   * The game surface element used as the fullscreen target and the touch-event
+   * host: the `#app` container (which wraps the canvas and the overlay root) so
+   * fullscreen brings the whole game surface, not just the canvas. Falls back to
+   * the canvas' parent, then the canvas, then `document.body`.
+   * @returns {HTMLElement|null}
+   */
+  _surfaceEl() {
+    if (typeof document !== 'undefined') {
+      const app = document.getElementById('app');
+      if (app) return app;
+    }
+    const gameCanvas = this.game && this.game.canvas;
+    if (gameCanvas && gameCanvas.parentElement) return gameCanvas.parentElement;
+    if (gameCanvas) return gameCanvas;
+    if (typeof document !== 'undefined' && document.body) return document.body;
+    return null;
+  }
+
+  /** Remove the touch/pointer gesture listeners and the Fullscreen_Toggle. */
+  _destroyTouchGestures() {
+    const surface = this._gestureSurface;
+    if (surface && typeof surface.removeEventListener === 'function') {
+      if (this._touchHandlers) {
+        surface.removeEventListener('touchstart', this._touchHandlers.start);
+        surface.removeEventListener('touchmove', this._touchHandlers.move);
+        surface.removeEventListener('touchend', this._touchHandlers.end);
+        surface.removeEventListener('touchcancel', this._touchHandlers.end);
+      }
+      if (this._pointerHandlers) {
+        surface.removeEventListener('pointerdown', this._pointerHandlers.down);
+        surface.removeEventListener('pointermove', this._pointerHandlers.move);
+        surface.removeEventListener('pointerup', this._pointerHandlers.up);
+        surface.removeEventListener('pointercancel', this._pointerHandlers.up);
+      }
+    }
+    this._touchHandlers = null;
+    this._pointerHandlers = null;
+    this._gestureSurface = null;
+    this._touch = null;
+
+    if (this._fullscreenToggle && typeof this._fullscreenToggle.destroy === 'function') {
+      try { this._fullscreenToggle.destroy(); } catch { /* ignore */ }
+    }
+    this._fullscreenToggle = null;
   }
 
   // --- On-screen touch controls (Req 2.6) ------------------------------------
@@ -1142,11 +1769,118 @@ export default class FP3DScene extends Phaser.Scene {
       this._beginStep(this._heldMoveDir);
       if (st.traversal) return; // a step started; done
     }
-    // Otherwise honor a single buffered one-shot move (touch button tap).
+    // Otherwise honor a single buffered one-shot intent (touch button tap or a
+    // resolved gesture). Turns apply in place; gesture moves may carry a
+    // diagonal `steps` sequence resolved cardinal-relative to the CURRENT facing.
     const intent = st.buffer.take();
-    if (intent && intent.type === 'move') {
-      this._beginStep(intent.dir);
+    if (!intent) return;
+    if (intent.type === 'turn') {
+      // A Flick-resolved cardinal turn (Req 4). Applied in place; if the player
+      // is still holding forward, the next tick continues down the new facing.
+      this._applyGestureFacing(intent.to);
+      return;
     }
+    if (intent.type === 'move') {
+      if (Array.isArray(intent.steps)) {
+        // A gesture move: one cardinal, or a diagonal fed one leg at a time,
+        // skipping a blocked leg (Req 2.4, 2.7). Each leg is a facing-relative
+        // grid move resolved through the same `_beginGestureStep` → resolveMove/
+        // resolveTunnel seam. At most one leg actually starts a traversal this
+        // tick; the remaining leg (if any) is re-buffered so it runs on arrival.
+        this._runGestureSteps(intent.steps);
+      } else if (intent.dir) {
+        // Legacy on-screen touch-button move ({ type:'move', dir }).
+        this._beginStep(intent.dir);
+      }
+    }
+  }
+
+  /**
+   * Run a gesture move's `steps` sequence (one or two cardinal legs). Attempts
+   * legs in order, skipping any leg blocked by a wall (Req 2.7); the FIRST leg
+   * that actually moves starts the traversal, and any leftover leg is re-buffered
+   * so it is attempted the moment the player reaches the next tile center
+   * (preserving the at-most-one-in-flight, grid-locked model, Req 7.1, 7.3).
+   * A fully blocked sequence keeps the player put and preserves facing (Req 2.6).
+   * @param {string[]} steps ordered move intents ('forward'|'backward'|'strafe-left'|'strafe-right')
+   */
+  _runGestureSteps(steps) {
+    const st = this.state;
+    if (!st || !Array.isArray(steps) || steps.length === 0) return;
+    for (let i = 0; i < steps.length; i++) {
+      const started = this._beginGestureStep(steps[i]);
+      if (started) {
+        // A leg moved; re-buffer any remaining legs for the next arrival so the
+        // diagonal completes as a grid-locked two-step (at most one in flight).
+        const remaining = steps.slice(i + 1);
+        if (remaining.length) {
+          st.buffer.push({ type: 'move', gesture: true, steps: remaining });
+        }
+        return;
+      }
+      // Blocked leg → skip it and try the next (Req 2.7).
+    }
+    // Fully blocked: player stays put, facing preserved (Req 2.6).
+  }
+
+  /**
+   * Begin ONE facing-relative gesture step and report whether a traversal
+   * started. A gesture move intent is expressed relative to the current facing:
+   *   forward       → step in facing
+   *   backward      → step opposite the facing
+   *   strafe-left   → step 90° counter-clockwise of the facing
+   *   strafe-right  → step 90° clockwise of the facing
+   * The step direction is resolved to a cardinal and applied through the EXISTING
+   * `resolveTunnel`/`resolveMove` seam (Req 2.5, 7.1, 7.4) — the player's FACING
+   * is NOT changed by a strafe/back move, matching keyboard `back` (only the
+   * position moves). A wall keeps the player put and preserves facing (Req 2.6,
+   * 7.5).
+   * @param {string} intent one of forward/backward/strafe-left/strafe-right
+   * @returns {boolean} true when a traversal was started
+   */
+  _beginGestureStep(intent) {
+    const st = this.state;
+    if (!st) return false;
+    const facing = st.player.facing;
+    let stepFacing;
+    switch (intent) {
+      case 'forward': stepFacing = facing; break;
+      case 'backward': stepFacing = this._opposite(facing); break;
+      case 'strafe-left': stepFacing = turnLeft(facing); break;
+      case 'strafe-right': stepFacing = turnRight(facing); break;
+      default: return false;
+    }
+
+    const from = { col: st.player.col, row: st.player.row };
+    // Tunnel wrap takes priority at a tunnel-row edge (Req 7.4); otherwise a
+    // normal grid move (Req 7.1). Facing is preserved through both.
+    const wrapped = resolveTunnel(this.grid, from.col, from.row, stepFacing);
+    let to;
+    let didWrap = false;
+    if (wrapped.col !== from.col || wrapped.row !== from.row) {
+      to = { col: wrapped.col, row: wrapped.row, moved: true };
+      didWrap = true;
+    } else {
+      to = resolveMove(this.grid, from.col, from.row, stepFacing);
+    }
+    if (!to.moved) return false; // wall / out of bounds: stay put (Req 2.6, 7.5)
+
+    const ms = FP3D.tileTraversalMs;
+    st.traversal = {
+      active: true,
+      from,
+      to: { col: to.col, row: to.row },
+      wrapped: didWrap,
+      ms,
+      elapsed: 0,
+    };
+    if (didWrap && this.audio && typeof this.audio.play === 'function') {
+      this.audio.play(AudioEvent.TUNNEL);
+    }
+    if (this.renderer && typeof this.renderer.animateMove === 'function') {
+      this.renderer.animateMove(from, st.traversal.to, ms);
+    }
+    return true;
   }
 
   /**
@@ -1219,6 +1953,10 @@ export default class FP3DScene extends Phaser.Scene {
       if (this.audio && typeof this.audio.play === 'function') {
         this.audio.play(AudioEvent.PELLET);
       }
+      // Eating that last pellet clears the level → win music + auto-advance
+      // (Req 1.5). Checked right after the pellet is scored so a cleared board
+      // is detected the instant the final pellet is consumed.
+      this._checkLevelClear();
     }
 
     // --- Fruit (Req 5.1, 5.2) ------------------------------------------------
@@ -1233,6 +1971,162 @@ export default class FP3DScene extends Phaser.Scene {
 
     // --- Capture check (Task 15 owns the quiz freeze) ------------------------
     this._checkCapture();
+  }
+
+  // --- Level progression (win → next level, Req 1.5) -------------------------
+
+  /**
+   * Detect a cleared maze (every pellet eaten) and advance to the next level,
+   * mirroring GameScene._checkLevelClear. Fires once per clear: the
+   * `_levelTransition` guard blocks re-entry while a transition is in flight,
+   * and after `_advanceLevel` rebuilds the pellet layer `isLevelCleared()` is
+   * false again, so it will not re-trigger on the same board. Called from
+   * `_onArriveTile` right after a pellet is scored.
+   */
+  _checkLevelClear() {
+    if (this._levelTransition) return;
+    if (!this.grid || !this.grid.isLevelCleared()) return;
+    this._advanceLevel();
+  }
+
+  /**
+   * Win transition (Req 1.5): play the win/"Stage Clear" music, BUMP THE GRADE
+   * one step (5→6→7, capped at the last grade), advance the run's level, and
+   * rebuild the maze's pellet layer for it — preserving score and lives
+   * (ScoreSystem.nextLevel only bumps `level`). The grade bump naturally raises
+   * ghost speed (`ghostSpeedForGrade(this.grade)` is read per tick) and the
+   * question grade (QuizScene reads `this.grade`) without forking either. Math
+   * Man and the ghosts return to their spawns for the fresh level, the fruit
+   * slots are rebuilt, and the renderer's pellet/fruit markers are re-seeded to
+   * match the rebuilt grid.
+   *
+   * The next level is built and revealed immediately, but the scene is FROZEN
+   * and a "Level Complete!" announcement dialog (`LevelClearModal`) is shown
+   * over the shared `#overlay-root`. Play only resumes — and the once-only
+   * `_levelTransition` guard is only cleared — in `_onLevelClearDismissed`, when
+   * the player continues (or immediately, if the dialog cannot render).
+   */
+  _advanceLevel() {
+    this._levelTransition = true;
+
+    // Freeze immediately so movement/ghosts are suspended while the "Level
+    // Complete!" dialog is up — the same overlay contract the quiz/lesson use
+    // (Req 4.2, 6.7). The render loop keeps drawing the (rebuilt) frozen 3D
+    // frame behind the DOM overlay. Play only resumes in
+    // `_onLevelClearDismissed`, which also clears `_levelTransition`.
+    this._freeze();
+
+    // The cleared level number is the run's CURRENT level, captured before the
+    // ScoreSystem bump below so the dialog announces the level just finished.
+    const clearedLevel = this.scoreSystem ? this.scoreSystem.level : undefined;
+
+    // 1) Win music (silent no-op when audio / asset is unavailable). LEVEL_CLEAR
+    //    is a MUSIC cue: it plays "Stage Clear" then loops the score track.
+    if (this.audio && typeof this.audio.play === 'function') {
+      this.audio.play(AudioEvent.LEVEL_CLEAR);
+    }
+
+    // 2) Bump the grade one step along GRADES (5→6→7), capped at the top grade
+    //    (stay at 7 after 7). Falling back to DEFAULT_GRADE's index when the
+    //    current grade is somehow off-list keeps the step well-defined. Capture
+    //    the grade BEFORE and AFTER so the dialog can show any change.
+    const fromGrade = this.grade;
+    const idx = GRADES.indexOf(this.grade);
+    const from = idx === -1 ? GRADES.indexOf(DEFAULT_GRADE) : idx;
+    const nextIdx = Math.min((from < 0 ? 0 : from) + 1, GRADES.length - 1);
+    this.grade = GRADES[nextIdx];
+    const toGrade = this.grade;
+
+    // 3) Advance the level and rebuild the pure grid's pellet layer for it.
+    //    Score/lives are preserved (nextLevel only bumps `level`). Hide every
+    //    currently-shown pellet marker BEFORE the reset — the only shown markers
+    //    are exactly the grid's remaining live pellets (eaten ones were removed
+    //    on eat), so this clears the renderer of stale markers without inventing
+    //    a renderer method — then re-seed from the rebuilt grid.
+    if (this.renderer && typeof this.renderer.setPelletVisible === 'function') {
+      for (const key of this.grid.pellets.keys()) {
+        const [pc, pr] = key.split(',').map(Number);
+        this.renderer.setPelletVisible(pc, pr, false);
+      }
+    }
+    this.scoreSystem.nextLevel();
+    this.grid.reset(this.scoreSystem.level);
+
+    // Refresh the ghost-house release setup against the rebuilt grid so the
+    // exit/re-entry rules match the new level's layout.
+    this._house = houseRegionFromGrid(this.grid);
+    this._noReentryGrid = blockHouseReentry(this.grid, this._house);
+
+    // 4) Fresh no-repeat question window for the new level (same guard as create).
+    const questionBank = this.registry.get('questionBank');
+    if (questionBank && typeof questionBank.startLevel === 'function') {
+      questionBank.startLevel();
+    }
+
+    // 5) Re-seed the renderer's pellet markers from the rebuilt grid (Req 3.1).
+    if (this.renderer && typeof this.renderer.setPelletVisible === 'function') {
+      this._seedPelletMarkers();
+    }
+
+    // 6) Rebuild the fruit slots for the new level the same way create() seeds
+    //    them, and re-seed their renderer markers so none linger and none are
+    //    double-collected (the old slots are replaced wholesale).
+    this.state.fruits = this._buildFruitStates();
+    if (this.renderer && typeof this.renderer.setFruit === 'function') {
+      for (const f of this.state.fruits) {
+        this.renderer.setFruit(f.col, f.row, f.present, f.slot);
+      }
+    }
+
+    // 7) Return Math Man and the ghosts to their spawns for the fresh level,
+    //    reusing the same spawn-reset path a resolved quiz uses (no duplication).
+    //    The next level is now built and revealed BEHIND the dialog.
+    this.resetPositions();
+
+    // 8) Announce the win over the shared `#overlay-root` and WAIT for the
+    //    player. We deliberately do NOT clear `_levelTransition` or unfreeze
+    //    here — `_onLevelClearDismissed` does both once the player continues, so
+    //    the transition fires exactly once and play stays suspended until then.
+    const root = this._overlayRoot();
+    this._levelClearModal = new LevelClearModal(root);
+    const opened = this._levelClearModal.open(
+      {
+        level: clearedLevel,
+        score: this.scoreSystem ? this.scoreSystem.score : undefined,
+        fromGrade,
+        toGrade,
+      },
+      () => this._onLevelClearDismissed(),
+    );
+
+    // Headless / no-DOM safety: if the panel could not render (tests/headless),
+    // don't strand the frozen scene — resume immediately via the same dismissed
+    // path, exactly like LessonScene does when `opened` is false (Req 8: graceful
+    // fallback).
+    if (!opened) {
+      this._onLevelClearDismissed();
+    }
+  }
+
+  /** Locate the DOM overlay root declared in index.html (shared host). */
+  _overlayRoot() {
+    if (typeof document === 'undefined') return null;
+    return document.getElementById('overlay-root');
+  }
+
+  /**
+   * Resume play after the "Level Complete!" dialog is dismissed (button / Enter
+   * / Space / Esc) or when it could not render. Tears the modal down, unfreezes
+   * the scene, and clears the once-only `_levelTransition` guard so gameplay
+   * continues and future clears can fire.
+   */
+  _onLevelClearDismissed() {
+    if (this._levelClearModal) {
+      try { this._levelClearModal.close(); } catch { /* ignore */ }
+      this._levelClearModal = null;
+    }
+    this._unfreeze();
+    this._levelTransition = false;
   }
 
   // --- Ghosts: thin wrapper around the EXISTING ghostAI (Req 9.1) ------------
@@ -1540,6 +2434,57 @@ export default class FP3DScene extends Phaser.Scene {
     }
   }
 
+  // --- Quit to menu ----------------------------------------------------------
+
+  /**
+   * Abandon the current run and return straight to the main `MenuScene`. This is
+   * the chosen "quit" behavior: NO game-over screen and NO high-score write — the
+   * run is simply discarded. Bound to the Escape key and to the discreet
+   * on-screen "return to menu" control, both of which route here.
+   *
+   * Stops any open quiz/lesson/pause overlays first so their DOM modals + scenes
+   * do not linger over the menu, clears any music duck / resets the tempo, then
+   * tears down FP3DScene and starts MenuScene through the game-level Scene
+   * Manager the SAME way `_onGameOver` hands off (with a scene-local fallback).
+   * Guarded by `_isSceneRegistered('MenuScene')` like the other handoffs.
+   */
+  _returnToMenu() {
+    // Stop overlays that may be open so nothing lingers over the menu.
+    if (this.scene.isActive('QuizScene')) this.scene.stop('QuizScene');
+    if (this.scene.isActive('LessonScene')) this.scene.stop('LessonScene');
+    if (this.scene.isActive('PauseScene')) this.scene.stop('PauseScene');
+
+    // Close the "Level Complete!" dialog if one is up so it never lingers over
+    // the menu (its own DOM panel, not a scene).
+    if (this._levelClearModal) {
+      try { this._levelClearModal.close(); } catch { /* ignore */ }
+      this._levelClearModal = null;
+    }
+
+    // Clear any overlay music duck and restore normal tempo before leaving.
+    if (this.audio) {
+      if (typeof this.audio.unduckMusic === 'function') this.audio.unduckMusic();
+      if (typeof this.audio.setMusicRate === 'function') this.audio.setMusicRate(1);
+    }
+
+    if (!this._isSceneRegistered('MenuScene')) return;
+
+    // Tear down this scene and boot the menu through the game-level Scene
+    // Manager (always live), matching the game-over handoff. Fall back to a
+    // scene-local start if the manager path is unavailable.
+    const manager = this.scene.manager;
+    try {
+      if (manager && typeof manager.stop === 'function') manager.stop('FP3DScene');
+      if (manager && typeof manager.start === 'function') {
+        manager.start('MenuScene');
+      } else {
+        this.scene.start('MenuScene');
+      }
+    } catch {
+      this.scene.start('MenuScene');
+    }
+  }
+
   // --- Fruit → extra life → lesson freeze flow (Req 4.2, 5.2, 6.7) -----------
 
   /**
@@ -1809,6 +2754,15 @@ export default class FP3DScene extends Phaser.Scene {
     this.scale?.off?.(Phaser.Scale.Events.RESIZE, this._syncRendererSize, this);
     // Remove the DOM touch-control overlay so it does not linger past the scene.
     this._destroyTouchControls();
+    // Remove the raw touch/pointer gesture listeners + the Fullscreen_Toggle.
+    this._destroyTouchGestures();
+    // Remove the discreet return-to-menu control.
+    this._destroyReturnToMenuButton();
+    // Tear down the "Level Complete!" dialog if the scene stops while it is up.
+    if (this._levelClearModal) {
+      try { this._levelClearModal.close(); } catch { /* ignore */ }
+      this._levelClearModal = null;
+    }
     this._destroyHud();
     if (this.renderer) {
       try { this.renderer.dispose(); } catch { /* ignore */ }

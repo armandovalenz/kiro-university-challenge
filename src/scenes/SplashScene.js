@@ -27,6 +27,13 @@ export default class SplashScene extends Phaser.Scene {
   }
 
   create() {
+    // Reset the one-shot advance guard on every (re)entry. The constructor
+    // runs only once, but Phaser reuses this scene instance if the splash is
+    // shown again. Without this, `_advanced` stays true from the first visit
+    // and `_advance()` early-returns forever, so neither a key/click nor the
+    // auto-advance timer can move on to the menu.
+    this._advanced = false;
+
     this.cameras.main.setBackgroundColor('#000000');
 
     const cx = GAME_WIDTH / 2;

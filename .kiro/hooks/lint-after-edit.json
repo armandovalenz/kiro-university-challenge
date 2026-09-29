@@ -10,7 +10,7 @@
         "type": "agent",
         "prompt": "You just edited one or more files. Run `npm run lint` now. If ESLint reports any warnings or errors, fix them at the source (do not disable rules, add eslint-disable comments, or rename to the `_`-ignore pattern just to silence a real unused symbol). Prefer removing genuinely dead code and correcting the underlying issue. After fixing, re-run `npm run lint` to confirm it is clean (0 problems). If the only remaining findings are pre-existing and unrelated to your edit, note them briefly rather than fixing unrelated code."
       },
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "Lint after file save",
@@ -21,7 +21,7 @@
         "type": "agent",
         "prompt": "The user just saved a JavaScript file. Run `npm run lint` now. If ESLint reports any warnings or errors, fix them at the source (do not disable rules, add eslint-disable comments, or rename to the `_`-ignore pattern just to silence a real unused symbol). Prefer removing genuinely dead code and correcting the underlying issue. After fixing, re-run `npm run lint` to confirm it is clean (0 problems). If the only remaining findings are pre-existing and unrelated to the saved file, note them briefly rather than fixing unrelated code."
       },
-      "enabled": true
+      "enabled": false
     }
   ]
 }

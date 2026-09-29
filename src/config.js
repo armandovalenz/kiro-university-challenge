@@ -227,5 +227,31 @@ export const FP3D = {
   ghostSpeedScale: 0.5,
 };
 
-/** Render mode used until the player opts into FP3D_Mode (Req 6.3, 6.6). */
+/**
+ * Render mode the game falls back to when FP3D_Mode can't run. The menu always
+ * launches '3d'; '2d' is reached only on a WebGL_Context or Maze_Data failure,
+ * so this now describes the fallback target, not a launch default (Req 10.3,
+ * 10.4).
+ */
 export const DEFAULT_RENDER_MODE = '2d';
+
+// --- Mobile gesture controls (FP3D_Mode) -------------------------------------
+// Finalized thresholds for the one-thumb touch scheme (Floating_Joystick drag,
+// Flick turn, Tap/Double_Tap/Long_Press). Kept here so the framework-agnostic
+// gesture classifier/resolver and the scene/renderer read tunable numbers from
+// config rather than hardcoding any gesture value. Distances in dip unless the
+// name says px. See .kiro/specs/mobile-gestures-fullscreen/design.md.
+
+export const GESTURE = {
+  movementDeadzonePx: 18, // Movement_Deadzone: below this a Drag is steer, not a move (Req 2.8, 11.3)
+  flickDurationMs: 150, // Flick_Duration_Threshold — at or below is a Flick candidate (Req 4.1, 11.6)
+  flickDistanceDip: 48, // Flick_Distance_Threshold — at or above (dip) (Req 4.1, 11.6)
+  flickAngleBandDeg: 30, // within 30° of horizontal to be a Flick, else Drag (Req 4.1, 4.5, 11.6)
+  forwardAssistConeDeg: 25, // Forward_Assist_Cone: ±25° from up, boundary inside (Req 3.1, 3.3, 11.4)
+  cardinalSectorDeg: 45, // Cardinal_Sectors: ±45° around up/down/left/right (Req 2.1–2.3)
+  tapDurationMs: 200, // Tap_Duration_Threshold — at or below is a Tap (Req 5.8)
+  tapMoveToleranceDip: 12, // Tap_Move_Tolerance — total movement below this (Req 5.8–5.10)
+  doubleTapIntervalMs: 300, // Double_Tap_Interval between two Tap starts (Req 5.9)
+  longPressMs: 500, // Long_Press_Duration — stationary hold (Req 5.10)
+  interactionRangeTiles: 3, // interaction activation range from the camera (Req 6.1, 6.5)
+};

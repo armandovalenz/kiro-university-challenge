@@ -24,7 +24,6 @@ import {
   IMAGE_ASSETS,
   GRADES,
   DEFAULT_GRADE,
-  DEFAULT_RENDER_MODE,
   BLUEPRINT,
   HALLOWEEN,
 } from '../config.js';
@@ -37,17 +36,20 @@ export default class MenuScene extends Phaser.Scene {
     super('MenuScene');
     /** @type {number} currently selected grade. */
     this._grade = DEFAULT_GRADE;
-    /** @type {'2d'|'3d'} currently selected render mode (Req 6.1–6.3). */
-    this._renderMode = DEFAULT_RENDER_MODE;
     /** Guard so we only start a game once. */
     this._started = false;
     /** @type {Phaser.GameObjects.Text[]} grade selector buttons. */
     this._gradeButtons = [];
-    /** @type {Phaser.GameObjects.Text[]} render-mode toggle buttons. */
-    this._renderModeButtons = [];
   }
 
   create() {
+    // Reset the one-shot start guard on every (re)entry. The constructor runs
+    // only once, but Phaser reuses this scene instance when the player returns
+    // to the menu (e.g. Escape / return-to-menu from FP3DScene). Without this,
+    // `_started` stays true from the previous run and `_startGame()` would
+    // early-return forever, leaving the Play button (and Enter/Space) dead.
+    this._started = false;
+
     this.cameras.main.setBackgroundColor('#000000');
 
     const cx = GAME_WIDTH / 2;
@@ -59,15 +61,11 @@ export default class MenuScene extends Phaser.Scene {
 
     // Restore the persisted grade (or default) so it preselects (Req 10.2, 10.5).
     this._grade = this._loadPersistedGrade();
-    // Restore the persisted render mode (or default '2d') so it preselects
-    // (Req 6.3, 6.6). Unavailable/invalid storage → '2d'.
-    this._renderMode = this._loadPersistedRenderMode();
 
     this._buildBackground();
     this._buildLogo(cx, GAME_HEIGHT * 0.16);
-    this._buildGradeSelector(cx, GAME_HEIGHT * 0.46);
-    this._buildRenderModeToggle(cx, GAME_HEIGHT * 0.63);
-    this._buildPlayButton(cx, GAME_HEIGHT * 0.78);
+    this._buildGradeSelector(cx, GAME_HEIGHT * 0.52);
+    this._buildPlayButton(cx, GAME_HEIGHT * 0.74);
     this._buildHighScore(cx, GAME_HEIGHT - 48);
     this._buildHint(cx, GAME_HEIGHT - 20);
 
@@ -96,23 +94,6 @@ export default class MenuScene extends Phaser.Scene {
       }
     }
     return DEFAULT_GRADE;
-  }
-
-  /**
-   * Read the persisted render mode, falling back to DEFAULT_RENDER_MODE ('2d')
-   * when storage is unavailable or the value is invalid (Req 6.3, 6.6).
-   * @returns {'2d'|'3d'}
-   */
-  _loadPersistedRenderMode() {
-    if (this._storage && typeof this._storage.get === 'function') {
-      try {
-        const { renderMode } = this._storage.get();
-        if (renderMode === '2d' || renderMode === '3d') return renderMode;
-      } catch {
-        /* fall through to default */
-      }
-    }
-    return DEFAULT_RENDER_MODE;
   }
 
   // --- Layout builders -------------------------------------------------------
@@ -248,55 +229,6 @@ export default class MenuScene extends Phaser.Scene {
   }
 
   /**
-   * Build the 2D / 3D Render_Mode toggle (Req 6.1, 6.2, 6.3). Styled to match
-   * the grade selector: two clickable chips, the selected one highlighted, with
-   * keyboard access (T toggles, and ←/→ also cycle when appropriate). The choice
-   * is persisted via `storage.setRenderMode` and preselected from storage. FP3D
-   * mode is strictly opt-in — the default chip is "2D".
-   */
-  _buildRenderModeToggle(cx, cy) {
-    this.add
-      .text(cx, cy - 40, 'RENDER MODE', {
-        fontFamily: 'monospace',
-        fontSize: '20px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5);
-
-    const modes = [
-      { mode: '2d', label: '2D' },
-      { mode: '3d', label: '3D (first-person)' },
-    ];
-    const spacing = 170;
-    const startX = cx - spacing / 2;
-    this._renderModeButtons = modes.map((m, i) => {
-      const x = startX + i * spacing;
-      const label = this.add
-        .text(x, cy, m.label, {
-          fontFamily: 'monospace',
-          fontSize: '22px',
-          fontStyle: 'bold',
-          color: '#ffffff',
-          backgroundColor: '#1b1b3a',
-          padding: { x: 14, y: 8 },
-        })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true });
-
-      label.on('pointerover', () => {
-        if (m.mode !== this._renderMode) label.setColor('#ffff88');
-      });
-      label.on('pointerout', () => this._refreshRenderModeButtons());
-      label.on('pointerdown', () => this._selectRenderMode(m.mode));
-
-      label.setData('mode', m.mode);
-      return label;
-    });
-
-    this._refreshRenderModeButtons();
-  }
-
-  /**
    * Build the Play button styled with UI-kit cues; falls back to a drawn chip.
    * (Req 7.3, 7.4, 13.3, 13.5)
    */
@@ -352,7 +284,7 @@ export default class MenuScene extends Phaser.Scene {
 
   _buildHint(cx, cy) {
     this.add
-      .text(cx, cy, 'Arrows/1-3: grade · T: 2D/3D · Enter/Space: play · M: mute', {
+      .text(cx, cy, 'Arrows/1-3: grade · Enter/Space: play · M: mute', {
         fontFamily: 'monospace',
         fontSize: '14px',
         color: '#ffffff',
@@ -377,9 +309,6 @@ export default class MenuScene extends Phaser.Scene {
     kb.on('keydown-ONE', () => this._selectGrade(GRADES[0]));
     kb.on('keydown-TWO', () => this._selectGrade(GRADES[1]));
     kb.on('keydown-THREE', () => this._selectGrade(GRADES[2]));
-
-    // Toggle the 2D/3D render mode (Req 6.1, 6.2).
-    kb.on('keydown-T', () => this._toggleRenderMode());
 
     // Confirm / start.
     kb.on('keydown-ENTER', () => this._startGame());
@@ -433,52 +362,17 @@ export default class MenuScene extends Phaser.Scene {
     }
   }
 
-  /**
-   * Select a render mode, persist it, refresh the UI, and play the selection
-   * cue. No-op (beyond a refresh) if unchanged (Req 6.2, 6.3, 6.6).
-   * @param {'2d'|'3d'} mode
-   */
-  _selectRenderMode(mode) {
-    if (mode !== '2d' && mode !== '3d') return;
-    const changed = mode !== this._renderMode;
-    this._renderMode = mode;
-
-    if (changed && this._storage && typeof this._storage.setRenderMode === 'function') {
-      try {
-        this._storage.setRenderMode(mode);
-      } catch {
-        /* persistence is best-effort; never crash the menu */
-      }
-    }
-
-    if (changed && this._audio && typeof this._audio.play === 'function') {
-      this._audio.play(AudioEvent.MENU_SELECT);
-    }
-
-    this._refreshRenderModeButtons();
-  }
-
-  /** Flip between the two render modes (keyboard T). */
-  _toggleRenderMode() {
-    this._selectRenderMode(this._renderMode === '3d' ? '2d' : '3d');
-  }
-
-  /** Highlight the selected render-mode chip and reset the other. */
-  _refreshRenderModeButtons() {
-    for (const button of this._renderModeButtons) {
-      const selected = button.getData('mode') === this._renderMode;
-      button.setColor(selected ? '#000000' : '#ffffff');
-      button.setBackgroundColor(selected ? '#00ffcc' : '#1b1b3a');
-    }
-  }
-
   // --- Transition ------------------------------------------------------------
 
   /**
-   * Start a game, passing the chosen grade to the render mode's scene (Req 6.2,
-   * 6.3, 7.4). When the selected render mode is '3d' this launches `FP3DScene`;
-   * otherwise it launches the 2D `GameScene`. Both launches are guarded the same
-   * way (only start when the scene is registered) so a missing scene shows a
+   * Start a game, passing the chosen grade to `FP3DScene` (Req 10.2, 10.3, 7.4).
+   * FP3D_Mode is now the only player-facing mode: the game always launches in
+   * '3d' using the current Grade, ignoring any persisted `renderMode` value. The
+   * internal 2D fallback to `GameScene` is not chosen here — it is reached only
+   * from within `FP3DScene` when a WebGL_Context or Maze_Data is unavailable,
+   * which preserves lives/score/Grade, shows the dismissible "3D unavailable"
+   * notice, and leaves Maze_Data unmodified (Req 10.4–10.9). The launch is
+   * guarded (only start when the scene is registered) so a missing scene shows a
    * placeholder instead of throwing — mirroring BootScene/SplashScene.
    */
   _startGame() {
@@ -489,23 +383,23 @@ export default class MenuScene extends Phaser.Scene {
       this._audio.play(AudioEvent.MENU_SELECT);
     }
 
-    // Pick the scene by render mode. FP3D is opt-in; if its scene ever fails to
-    // obtain a WebGL context it falls back to GameScene itself (Task 16 wiring
-    // in FP3DScene), so the menu simply honors the persisted choice here.
-    const nextKey = this._renderMode === '3d' ? 'FP3DScene' : 'GameScene';
-    if (this.scene.manager.keys[nextKey]) {
-      this.scene.start(nextKey, { grade: this._grade });
+    // Always launch FP3D_Mode in '3d' with the current Grade, regardless of any
+    // persisted renderMode (Req 10.2, 10.3). FP3DScene owns the automatic 2D
+    // fallback if it cannot obtain a WebGL context or the maze fails to validate
+    // (Req 10.5–10.9).
+    if (this.scene.manager.keys.FP3DScene) {
+      this.scene.start('FP3DScene', { grade: this._grade });
       return;
     }
 
-    // Selected scene not registered: show a placeholder so the menu flow is
+    // FP3DScene not registered: show a placeholder so the menu flow is
     // verifiable on its own (Req 13.5 spirit — never throw).
     this._started = false; // allow retry once the scene lands
     this.add
       .text(
         GAME_WIDTH / 2,
         GAME_HEIGHT * 0.88,
-        `${nextKey} not registered.\nWould start at grade ${this._grade} in ${this._renderMode.toUpperCase()} mode.`,
+        `FP3DScene not registered.\nWould start at grade ${this._grade} in 3D mode.`,
         {
           fontFamily: 'monospace',
           fontSize: '16px',
