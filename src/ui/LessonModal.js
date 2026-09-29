@@ -128,8 +128,28 @@ export default class LessonModal {
       background: '#ffe000',
       border: 'none',
       borderRadius: '8px',
+      touchAction: 'manipulation',
     });
-    button.addEventListener('click', () => this._dismiss());
+    // Belt-and-suspenders touch activation (BUG 1): respond to a direct
+    // pointer/touch so a tap dismisses even if the game surface interferes with
+    // the synthetic click; guard against a double-fire with the following click.
+    let handledByPointer = false;
+    const activate = (e) => {
+      handledByPointer = true;
+      if (e && typeof e.preventDefault === 'function') e.preventDefault();
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      this._dismiss();
+    };
+    if (typeof window !== 'undefined' && 'PointerEvent' in window) {
+      button.addEventListener('pointerdown', activate);
+    } else {
+      button.addEventListener('touchstart', activate, { passive: false });
+    }
+    button.addEventListener('click', (e) => {
+      if (handledByPointer) { handledByPointer = false; return; }
+      if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+      this._dismiss();
+    });
 
     const hint = this.doc.createElement('p');
     hint.textContent = 'Press Enter or Esc to continue';

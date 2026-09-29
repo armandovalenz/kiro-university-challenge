@@ -165,7 +165,31 @@ export default class QuizModal {
       // Number prefix cues the 1-N keyboard shortcut (Req 4.4).
       btn.textContent = `${i + 1}. ${choice}`;
       Object.assign(btn.style, this._optionBaseStyle());
-      btn.addEventListener('click', () => this._submit(i));
+      btn.style.touchAction = 'manipulation';
+      // Belt-and-suspenders touch activation (BUG 1): respond to a direct
+      // pointer/touch so a tap always submits even if something upstream on the
+      // game surface interferes with the synthetic click. A pointer-handled
+      // activation swallows the following click to avoid a double submit
+      // (mirrors the `handledByPointer` pattern in FP3DScene). The existing
+      // click + keyboard handlers stay intact; role=radio / aria-checked are
+      // unchanged (they are driven by `_submit`/`_highlight`).
+      let handledByPointer = false;
+      const activate = (e) => {
+        handledByPointer = true;
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        this._submit(i);
+      };
+      if (typeof window !== 'undefined' && 'PointerEvent' in window) {
+        btn.addEventListener('pointerdown', activate);
+      } else {
+        btn.addEventListener('touchstart', activate, { passive: false });
+      }
+      btn.addEventListener('click', (e) => {
+        if (handledByPointer) { handledByPointer = false; return; }
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        this._submit(i);
+      });
       btn.addEventListener('mouseenter', () => {
         if (!this._answered) this._highlight(i);
       });
@@ -295,8 +319,28 @@ export default class QuizModal {
         background: COLORS.accent,
         border: 'none',
         borderRadius: '8px',
+        touchAction: 'manipulation',
       });
-      cont.addEventListener('click', () => this._continue());
+      // Belt-and-suspenders touch activation for "Keep playing" (BUG 1): the
+      // same direct pointer/touch path as the answer buttons, guarded against a
+      // double-fire with the following click.
+      let contHandledByPointer = false;
+      const contActivate = (e) => {
+        contHandledByPointer = true;
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        this._continue();
+      };
+      if (typeof window !== 'undefined' && 'PointerEvent' in window) {
+        cont.addEventListener('pointerdown', contActivate);
+      } else {
+        cont.addEventListener('touchstart', contActivate, { passive: false });
+      }
+      cont.addEventListener('click', (e) => {
+        if (contHandledByPointer) { contHandledByPointer = false; return; }
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+        this._continue();
+      });
       this._feedbackEl.appendChild(cont);
       this._continueBtn = cont;
     }

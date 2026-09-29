@@ -54,6 +54,7 @@ import { isGhostVisible, hasLineOfSight } from '../systems/fp3d/lineOfSight.js';
 import { classifyGesture, movementVector } from '../systems/fp3d/gestureClassifier.js';
 import { resolveMovementVector, resolveFlickTurn } from '../systems/fp3d/gestureResolve.js';
 import { createFullscreenToggle } from '../ui/FullscreenToggle.js';
+import { createVirtualJoystick } from '../ui/VirtualJoystick.js';
 import LevelClearModal from '../ui/LevelClearModal.js';
 import {
   computeTargetTile,
@@ -235,6 +236,7 @@ export default class FP3DScene extends Phaser.Scene {
     this._setupInput();
     this._buildTouchControls();
     this._buildHud();
+    this._buildRotateHint();
 
     // One-thumb touch gesture input path (Req 1, 2, 4, 5) + the accessible
     // Fullscreen_Toggle (Req 9). Both are additive to the keyboard path above:
@@ -314,8 +316,12 @@ export default class FP3DScene extends Phaser.Scene {
     // duck/unduck is driven explicitly from `_freeze`/`_unfreeze` (the `frozen`
     // flag keeps the 3D frame drawing behind the DOM overlay).
 
-    // Live held move direction ('forward'|'back'|null) for continuous walking.
+    // Live held move direction ('forward'|'back'|null) for continuous keyboard
+    // walking, and the live held Virtual_Joystick step sequence (facing-relative
+    // cardinal legs) for continuous stick walking. Both are re-issued each tile
+    // by `_continueOrConsume` and cleared on release.
     this._heldMoveDir = null;
+    this._heldGestureSteps = null;
 
     // Frame delta + ghost step accumulator (ms), read by `_advanceGhosts`.
     this._lastDelta = 0;
@@ -734,6 +740,17 @@ export default class FP3DScene extends Phaser.Scene {
     if (!surface || typeof surface.addEventListener !== 'function') return;
     this._gestureSurface = surface;
 
+    // Cache the overlay layer (`#overlay-root`) — the host of the quiz/lesson/
+    // level-clear modals AND the on-screen controls. The gesture surface is
+    // `#app`, an ANCESTOR of `#overlay-root`, so a tap on a modal button bubbles
+    // up here. Without a guard the gesture handlers below `preventDefault()` the
+    // touchstart and the browser never fires the button's synthetic `click`
+    // (BUG 1). `_onTouchStart`/`_move`/`_end` short-circuit when the event
+    // target is inside this element so the DOM control receives its tap intact.
+    this._overlayRootEl = (typeof document !== 'undefined')
+      ? document.getElementById('overlay-root')
+      : null;
+
     // Floating_Joystick + sampling state for the active Touch_Hold (Req 1.1–1.6).
     //   origin        — anchored touch point ({x,y} in dip); null when no hold
     //   pointerId     — the id of the active touch so a 2nd concurrent touch is
@@ -816,6 +833,29 @@ export default class FP3DScene extends Phaser.Scene {
   }
 
   /**
+   * Whether a touch/pointer event originated inside the overlay layer
+   * (`#overlay-root`) — i.e. on a quiz/lesson/level-clear modal or an on-screen
+   * control. The gesture surface (`#app`) is an ancestor of the overlay root,
+   * so such events bubble up here; when they do, the gesture handlers must let
+   * the event proceed to the DOM control (NO `preventDefault`, no joystick
+   * anchoring) so the button's `click` fires (BUG 1). Robust for both
+   * `TouchEvent` and `PointerEvent` — both expose `e.target`.
+   * @param {TouchEvent|PointerEvent} e
+   * @returns {boolean}
+   */
+  _eventInOverlay(e) {
+    const root = this._overlayRootEl;
+    if (!root || !e || typeof root.contains !== 'function') return false;
+    const target = e.target;
+    if (!target) return false;
+    try {
+      return root.contains(target);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Whether a point (client coords) lands over an interactive on-screen control
    * we must not treat as a Floating_Joystick anchor — the Fullscreen_Toggle
    * (Req 1.1). Uses each control's bounding rect so a Touch_Hold that begins on
@@ -825,14 +865,28 @@ export default class FP3DScene extends Phaser.Scene {
    * @returns {boolean}
    */
   _pointOverInteractiveControl(clientX, clientY) {
-    const el = this._fullscreenToggle && this._fullscreenToggle.el;
-    if (!el || typeof el.getBoundingClientRect !== 'function') return false;
-    try {
-      const r = el.getBoundingClientRect();
-      return clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom;
-    } catch {
-      return false;
+    // Any of the on-screen controls: the Fullscreen_Toggle, the visible
+    // Virtual_Joystick base, and the turn buttons. A touch that STARTS on one of
+    // these must NOT also anchor the free-look / gesture origin on the surface,
+    // so the joystick and the invisible-gesture handlers never fight over the
+    // same finger.
+    const els = [
+      this._fullscreenToggle && this._fullscreenToggle.el,
+      this._joystick && this._joystick.el,
+      this._touchControls && typeof this._touchControls.querySelector === 'function'
+        ? this._touchControls.querySelector('.fp3d-turn-cluster')
+        : null,
+    ];
+    for (const el of els) {
+      if (!el || typeof el.getBoundingClientRect !== 'function') continue;
+      try {
+        const r = el.getBoundingClientRect();
+        if (clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom) {
+          return true;
+        }
+      } catch { /* skip this control */ }
     }
+    return false;
   }
 
   /**
@@ -845,6 +899,11 @@ export default class FP3DScene extends Phaser.Scene {
    */
   _onTouchStart(e) {
     if (!this._touch) return;
+    // Event originated inside the overlay layer (a modal button or on-screen
+    // control) → let it proceed to the DOM control untouched so its click fires
+    // (BUG 1). Return immediately WITHOUT preventDefault and without anchoring a
+    // Floating_Joystick.
+    if (this._eventInOverlay(e)) return;
     // A hold already active → a second concurrent touch changes nothing (Req 1.6).
     if (this._touch.origin) {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -881,6 +940,9 @@ export default class FP3DScene extends Phaser.Scene {
   _onTouchMove(e) {
     const touch = this._touch;
     if (!touch || !touch.origin) return;
+    // Defensive (BUG 1): if the finger has drifted over the overlay layer, do
+    // not preventDefault — let the DOM control keep the event.
+    if (this._eventInOverlay(e)) return;
     const p = this._samplePoint(e);
     if (!p) return;
     // Only the pointer that anchored the origin drives the vector (Req 1.6).
@@ -902,6 +964,16 @@ export default class FP3DScene extends Phaser.Scene {
   _onTouchEnd(e) {
     const touch = this._touch;
     if (!touch || !touch.origin) return;
+    // Defensive (BUG 1): a hold that began outside but is RELEASED over the
+    // overlay layer must not preventDefault, or the modal button's click would
+    // be suppressed. Clear the gesture state without dispatching a gesture.
+    if (this._eventInOverlay(e)) {
+      this._touch.origin = null;
+      this._touch.pointerId = null;
+      this._touch.samples = null;
+      this._touch.vector = null;
+      return;
+    }
     const p = this._samplePoint(e);
     // Release from a different pointer than the active hold → ignore (Req 1.6).
     if (p && touch.pointerId != null && p.id !== touch.pointerId) return;
@@ -1139,7 +1211,10 @@ export default class FP3DScene extends Phaser.Scene {
    * returns `null` when the Fullscreen API is unavailable, in which case no
    * control is added and gameplay continues (Req 9.5). A rejected request is
    * caught inside the helper; here we only log via the `onError` hook. The
-   * button is positioned top-right, clear of the compass/minimap HUD.
+   * button carries the `fp3d-fullscreen-btn` class so index.html positions it
+   * responsively (BUG 2): top-right on desktop, and — because the minimap moves
+   * to the top-right on coarse-pointer devices — relocated to the left edge
+   * below the "← Menu" button on touch, so it never hides under the minimap.
    */
   _buildFullscreenToggle() {
     if (typeof document === 'undefined') return; // headless / tests
@@ -1153,11 +1228,19 @@ export default class FP3DScene extends Phaser.Scene {
 
     const root = document.getElementById('overlay-root') || document.body;
     if (root && toggle.el) {
+      // Tag the element with a stable class so index.html owns its responsive
+      // placement (BUG 2): on desktop it keeps its top-right spot; on coarse-
+      // pointer (touch) devices — where the minimap moves to the top-right — the
+      // CSS relocates it to the LEFT edge below the "← Menu" button so it never
+      // hides under the minimap or the return-to-menu control, honors safe-area
+      // insets, and stays a comfortable tap size. Only z-index is kept inline as
+      // a floor so it always sits above the minimap.
+      toggle.el.classList.add('fp3d-fullscreen-btn');
       Object.assign(toggle.el.style, {
         position: 'absolute',
         top: '10px',
         right: '10px',
-        zIndex: '20',
+        zIndex: '25',
         pointerEvents: 'auto',
       });
       root.appendChild(toggle.el);
@@ -1292,6 +1375,7 @@ export default class FP3DScene extends Phaser.Scene {
     this._touchHandlers = null;
     this._pointerHandlers = null;
     this._gestureSurface = null;
+    this._overlayRootEl = null;
     this._touch = null;
 
     if (this._fullscreenToggle && typeof this._fullscreenToggle.destroy === 'function') {
@@ -1304,16 +1388,25 @@ export default class FP3DScene extends Phaser.Scene {
 
   /**
    * Build a DOM overlay of on-screen controls layered above the game canvas so
-   * FP3D_Mode is fully playable on a touch device (Req 2.6). The controls map to
-   * the SAME intent pipeline as the keyboard:
-   *   - Forward / Back  → `_queueMove('forward'|'back')` (buffered move intent).
-   *   - Turn ◀ / Turn ▶ → `_queueTurn('left'|'right')` (immediate/buffered turn).
-   * plus a labeled "Reduced motion" toggle (Req 7.4). Every control is a real
-   * `<button>` — keyboard-focusable (Tab/Enter/Space) and given an accessible
-   * name via `aria-label` — so the overlay is operable without a pointer too.
+   * FP3D_Mode is comfortably playable on a touch device (Req 2.6). The controls
+   * map to the SAME intent pipeline as the keyboard/gestures — no forked
+   * movement or turn logic:
+   *   - VISIBLE Virtual_Joystick (bottom-LEFT) → its normalized vector is
+   *     resolved by `resolveMovementVector` (screen up = -y ⇒ forward) and the
+   *     resulting move/steer feeds the existing `InputBuffer`/`_beginGestureStep`
+   *     seam, driving continuous forward/strafe stepping while held.
+   *   - Turn ◀ / ▶ (bottom-RIGHT), large buttons → `_queueTurn('left'|'right')`.
+   *   - a labeled "Reduced motion" toggle (Req 7.4).
+   * Turn buttons and the toggle are real `<button>`s — keyboard-focusable
+   * (Tab/Enter/Space) with an `aria-label` — so they are operable without a
+   * pointer too. The joystick is a pointer-only control (keyboard players keep
+   * the full keyboard scheme), so it stays out of the tab order.
+   *
    * The overlay lives on `#overlay-root` (same host as the quiz/lesson modals)
    * and is hidden while the scene is frozen so it never appears over or steals
-   * input from an open quiz/lesson overlay (Req 6.7).
+   * input from an open quiz/lesson overlay (Req 6.7). It is only SHOWN on touch
+   * / coarse-pointer devices; on a desktop mouse/keyboard setup it stays hidden
+   * so it does not clutter that experience.
    */
   _buildTouchControls() {
     if (typeof document === 'undefined') return; // headless / tests
@@ -1328,10 +1421,7 @@ export default class FP3DScene extends Phaser.Scene {
       position: 'absolute',
       inset: '0',
       pointerEvents: 'none', // children opt back in; empty gaps stay click-through
-      display: 'flex',
-      alignItems: 'flex-end',
-      justifyContent: 'space-between',
-      padding: '16px',
+      display: 'block',
       boxSizing: 'border-box',
     });
 
@@ -1357,11 +1447,14 @@ export default class FP3DScene extends Phaser.Scene {
       // Fire on pointerdown for snappy touch, and on click so keyboard
       // Enter/Space activation also works (click is synthesized by the browser
       // for keyboard activation). Guard against a double-fire from the same
-      // gesture by swallowing the click that follows a pointerdown.
+      // gesture by swallowing the click that follows a pointerdown. Stop
+      // propagation so a tap on a control never also anchors the free-look /
+      // gesture origin on the game surface.
       let handledByPointer = false;
       btn.addEventListener('pointerdown', (e) => {
         handledByPointer = true;
         e.preventDefault();
+        e.stopPropagation();
         onActivate();
       });
       btn.addEventListener('click', (e) => {
@@ -1370,59 +1463,145 @@ export default class FP3DScene extends Phaser.Scene {
           return;
         }
         e.preventDefault();
+        e.stopPropagation();
         onActivate();
       });
       return btn;
     };
 
-    // Left cluster: turn left / turn right.
-    const leftCluster = document.createElement('div');
-    Object.assign(leftCluster.style, { display: 'flex', alignItems: 'flex-end' });
-    leftCluster.appendChild(makeButton('\u25C0', 'Turn left', () => this._queueTurn('left')));
-    leftCluster.appendChild(makeButton('\u25B6', 'Turn right', () => this._queueTurn('right')));
-
-    // Right cluster: forward / back stacked, plus the reduced-motion toggle.
-    const rightCluster = document.createElement('div');
-    Object.assign(rightCluster.style, {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'flex-end',
+    // --- Visible Virtual_Joystick (bottom-LEFT) ------------------------------
+    // Feeds the SAME movement seam as gestures/keyboard: its analog vector is
+    // resolved by `resolveMovementVector` and pushed through the InputBuffer.
+    const joystick = createVirtualJoystick(container, {
+      ariaLabel: 'Movement joystick',
+      onChange: (v) => this._onJoystickChange(v),
+      onEnd: () => this._onJoystickEnd(),
+      document,
     });
+    this._joystick = joystick;
 
-    const moveRow = document.createElement('div');
-    Object.assign(moveRow.style, { display: 'flex' });
-    moveRow.appendChild(makeButton('\u25B2', 'Move forward', () => this._queueMove('forward')));
-    moveRow.appendChild(makeButton('\u25BC', 'Move back', () => this._queueMove('back')));
+    // --- Turn buttons (bottom-RIGHT) -----------------------------------------
+    const turnCluster = document.createElement('div');
+    turnCluster.className = 'fp3d-turn-cluster';
+    Object.assign(turnCluster.style, {
+      position: 'absolute',
+      display: 'flex',
+      alignItems: 'flex-end',
+      pointerEvents: 'none', // buttons opt back in individually
+    });
+    const turnLeftBtn = makeButton('\u25C0', 'Turn left', () => this._queueTurn('left'));
+    const turnRightBtn = makeButton('\u25B6', 'Turn right', () => this._queueTurn('right'));
+    turnLeftBtn.classList.add('fp3d-turn-btn');
+    turnRightBtn.classList.add('fp3d-turn-btn');
+    turnCluster.appendChild(turnLeftBtn);
+    turnCluster.appendChild(turnRightBtn);
+    container.appendChild(turnCluster);
 
+    // --- Reduced-motion toggle (top area of the right cluster) ---------------
     const motionBtn = makeButton(
       this._reducedMotion ? 'Motion: off' : 'Motion: on',
       'Toggle reduced motion',
       () => this._toggleReducedMotion(),
     );
+    motionBtn.classList.add('fp3d-motion-btn');
     motionBtn.setAttribute('aria-pressed', this._reducedMotion ? 'true' : 'false');
-    Object.assign(motionBtn.style, { minWidth: '120px', minHeight: '44px', fontSize: '14px' });
+    Object.assign(motionBtn.style, {
+      position: 'absolute',
+      minWidth: '120px',
+      minHeight: '44px',
+      fontSize: '14px',
+    });
     this._motionBtn = motionBtn;
-
-    rightCluster.appendChild(moveRow);
-    rightCluster.appendChild(motionBtn);
-
-    container.appendChild(leftCluster);
-    container.appendChild(rightCluster);
+    container.appendChild(motionBtn);
 
     root.appendChild(container);
     this._touchControls = container;
+
+    // Only surface the on-screen controls on touch / coarse-pointer devices;
+    // keep them hidden on a desktop mouse/keyboard setup so they don't clutter
+    // that experience. Full keyboard play remains available regardless.
+    this._touchControlsSupported = this._isTouchLikeDevice();
+    if (!this._touchControlsSupported) {
+      container.style.display = 'none';
+    }
+  }
+
+  /**
+   * Whether this device should show the on-screen touch controls: a touch
+   * capability or a coarse pointer (phones/tablets). Guarded for environments
+   * without `matchMedia`/`window` (tests) — defaults to false there.
+   * @returns {boolean}
+   */
+  _isTouchLikeDevice() {
+    try {
+      if (typeof window === 'undefined') return false;
+      if ('ontouchstart' in window) return true;
+      return typeof window.matchMedia === 'function'
+        && window.matchMedia('(pointer: coarse)').matches;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Handle a Virtual_Joystick update. Resolves the analog vector through the
+   * EXISTING framework-agnostic `resolveMovementVector` (screen convention up =
+   * -y ⇒ forward) and feeds the result into the SAME movement pipeline as the
+   * gestures and keyboard — no forked movement/turn logic (Req 7):
+   *   - a `steer` (sub-deadzone) result adjusts facing to the nearest cardinal
+   *     with NO tile move, via `_applyGestureFacing`;
+   *   - a `move` result becomes a continuously HELD gesture-step sequence
+   *     (`_heldGestureSteps`) that `_continueOrConsume` re-issues each tile so
+   *     holding the stick walks corridor to corridor, exactly like held-forward
+   *     keyboard walking.
+   * Ignored while frozen (overlay open) — the freeze contract is enforced here
+   * and again at consumption time.
+   * @param {{x:number, y:number, magnitude:number}} v normalized joystick vector
+   */
+  _onJoystickChange(v) {
+    if (!this.state || this.state.frozen || !v) return;
+    // Scale the normalized vector into the resolver's pixel space so magnitudes
+    // below the joystick deadzone (already zeroed) fall under the movement
+    // deadzone and above it clear the cardinal thresholds. The direction — not
+    // the exact length — determines the discrete intent.
+    const scale = (GESTURE.movementDeadzonePx || 18) * 4;
+    const outcome = resolveMovementVector({ x: v.x * scale, y: v.y * scale }, GESTURE);
+    if (outcome.kind === 'steer') {
+      // Below the deadzone: gentle facing nudge only, no continuous walking.
+      this._heldGestureSteps = null;
+      this._applyGestureFacing(setFacing(outcome.toward));
+      return;
+    }
+    // A move: hold this step sequence so the player keeps walking while the
+    // stick is pushed. `_continueOrConsume` re-issues it on each tile arrival.
+    this._heldGestureSteps = outcome.steps.slice();
+  }
+
+  /**
+   * Handle Virtual_Joystick release: stop continuous walking by clearing the
+   * held gesture-step sequence, mirroring how releasing a held forward key
+   * stops keyboard walking. Any in-flight tile traversal finishes normally.
+   */
+  _onJoystickEnd() {
+    this._heldGestureSteps = null;
   }
 
   /**
    * Show/hide the on-screen touch controls. Hidden while frozen so they never
    * appear over — or steal focus/input from — an open quiz/lesson overlay
-   * (Req 6.7). Called from `_freeze`/`_unfreeze`.
+   * (Req 6.7). Called from `_freeze`/`_unfreeze`. On desktop (no touch/coarse
+   * pointer) the controls stay hidden regardless, so a resume never reveals
+   * them there.
    * @param {boolean} visible
    */
   _setTouchControlsVisible(visible) {
-    if (this._touchControls) {
-      this._touchControls.style.display = visible ? 'flex' : 'none';
+    if (!this._touchControls) return;
+    const show = visible && this._touchControlsSupported !== false;
+    this._touchControls.style.display = show ? 'block' : 'none';
+    if (this._joystick && typeof this._joystick.setVisible === 'function') {
+      this._joystick.setVisible(show);
     }
+    if (!show) this._heldGestureSteps = null;
   }
 
   // --- Score HUD + 2D minimap (bottom-right) ---------------------------------
@@ -1668,8 +1847,15 @@ export default class FP3DScene extends Phaser.Scene {
     this._hudCompass = null;
   }
 
-  /** Remove the touch-control overlay from the DOM (scene teardown). */
+  /** Remove the touch-control overlay (incl. the joystick) from the DOM. */
   _destroyTouchControls() {
+    // Destroy the joystick first so its pointer listeners are removed even if
+    // the container removal below throws.
+    if (this._joystick && typeof this._joystick.destroy === 'function') {
+      try { this._joystick.destroy(); } catch { /* ignore */ }
+    }
+    this._joystick = null;
+    this._heldGestureSteps = null;
     if (this._touchControls) {
       try {
         this._touchControls.remove();
@@ -1680,6 +1866,105 @@ export default class FP3DScene extends Phaser.Scene {
       }
       this._touchControls = null;
       this._motionBtn = null;
+    }
+  }
+
+  // --- Portrait rotate hint (responsive; non-blocking) -----------------------
+
+  /**
+   * Build a subtle, non-blocking "rotate for the best view" hint shown only when
+   * a small screen is held in PORTRAIT — first-person play is more comfortable
+   * in landscape. It never blocks play: it is pointer-transparent, auto-hides
+   * after a few seconds, and re-appears on an orientation change back to
+   * portrait. Only created on touch-like devices; a no-op in headless/tests.
+   */
+  _buildRotateHint() {
+    if (typeof document === 'undefined') return; // headless / tests
+    if (!this._isTouchLikeDevice || !this._isTouchLikeDevice()) return;
+    const root = document.getElementById('overlay-root');
+    if (!root) return;
+
+    const hint = document.createElement('div');
+    hint.className = 'fp3d-rotate-hint';
+    hint.setAttribute('role', 'status');
+    hint.setAttribute('aria-live', 'polite');
+    hint.textContent = 'Rotate your device for the best view';
+    hint.hidden = true;
+    root.appendChild(hint);
+    this._rotateHint = hint;
+
+    // Re-evaluate on resize/orientationchange; also drives joystick geometry
+    // recompute (see `_onViewportChange`).
+    this._viewportChangeHandler = () => this._onViewportChange();
+    try {
+      window.addEventListener('resize', this._viewportChangeHandler);
+      window.addEventListener('orientationchange', this._viewportChangeHandler);
+    } catch { /* no window (tests) */ }
+
+    this._updateRotateHint();
+  }
+
+  /**
+   * React to a viewport resize / orientation change: recompute the joystick's
+   * cached geometry (so its normalized vector stays correct after a rotate) and
+   * re-evaluate the portrait rotate hint. The DOM controls themselves re-layout
+   * automatically because they are CSS-anchored/relative.
+   */
+  _onViewportChange() {
+    if (this._joystick && typeof this._joystick.resize === 'function') {
+      this._joystick.resize();
+    }
+    this._updateRotateHint();
+  }
+
+  /**
+   * Show the rotate hint when in portrait on a small screen; hide it otherwise.
+   * When shown it auto-hides after a short delay so it never lingers over play.
+   */
+  _updateRotateHint() {
+    const hint = this._rotateHint;
+    if (!hint || typeof window === 'undefined') return;
+    const w = window.innerWidth || 0;
+    const h = window.innerHeight || 0;
+    const isPortrait = h > w;
+    const isSmall = Math.min(w, h) <= 820; // phones / small tablets
+    const shouldShow = isPortrait && isSmall;
+
+    if (this._rotateHintTimer) {
+      clearTimeout(this._rotateHintTimer);
+      this._rotateHintTimer = null;
+    }
+    if (shouldShow) {
+      hint.hidden = false;
+      hint.style.opacity = '1';
+      // Auto-hide after ~4s; fade out first, then remove from layout.
+      this._rotateHintTimer = setTimeout(() => {
+        hint.style.opacity = '0';
+        this._rotateHintTimer = setTimeout(() => { hint.hidden = true; }, 450);
+      }, 4000);
+    } else {
+      hint.hidden = true;
+    }
+  }
+
+  /** Remove the rotate hint + its viewport listeners (scene teardown). */
+  _destroyRotateHint() {
+    if (this._rotateHintTimer) {
+      clearTimeout(this._rotateHintTimer);
+      this._rotateHintTimer = null;
+    }
+    if (this._viewportChangeHandler && typeof window !== 'undefined') {
+      try {
+        window.removeEventListener('resize', this._viewportChangeHandler);
+        window.removeEventListener('orientationchange', this._viewportChangeHandler);
+      } catch { /* ignore */ }
+    }
+    this._viewportChangeHandler = null;
+    if (this._rotateHint) {
+      try { this._rotateHint.remove(); } catch {
+        if (this._rotateHint.parentNode) this._rotateHint.parentNode.removeChild(this._rotateHint);
+      }
+      this._rotateHint = null;
     }
   }
 
@@ -1764,11 +2049,22 @@ export default class FP3DScene extends Phaser.Scene {
     const st = this.state;
     if (!st || st.traversal) return;
 
-    // Live held direction wins (continuous movement).
+    // Live held direction wins (continuous keyboard movement).
     if (this._heldMoveDir) {
       this._beginStep(this._heldMoveDir);
       if (st.traversal) return; // a step started; done
     }
+
+    // Held Virtual_Joystick direction: while the stick is pushed past the
+    // deadzone, `_heldGestureSteps` holds a facing-relative step sequence
+    // (single cardinal, or a diagonal fed one leg at a time). Re-issue it each
+    // tile so holding the stick walks corridor to corridor, mirroring held
+    // keyboard walking; a fully blocked sequence keeps the player put (Req 2.6).
+    if (Array.isArray(this._heldGestureSteps) && this._heldGestureSteps.length) {
+      this._runHeldGestureSteps(this._heldGestureSteps);
+      if (st.traversal) return; // a leg started; done
+    }
+
     // Otherwise honor a single buffered one-shot intent (touch button tap or a
     // resolved gesture). Turns apply in place; gesture moves may carry a
     // diagonal `steps` sequence resolved cardinal-relative to the CURRENT facing.
@@ -1821,6 +2117,27 @@ export default class FP3DScene extends Phaser.Scene {
       // Blocked leg → skip it and try the next (Req 2.7).
     }
     // Fully blocked: player stays put, facing preserved (Req 2.6).
+  }
+
+  /**
+   * Run a HELD Virtual_Joystick step sequence for one tile. Unlike
+   * `_runGestureSteps` (which re-buffers leftover legs into the `InputBuffer`
+   * for a one-shot diagonal), the held version does NOT re-buffer: the joystick
+   * re-issues `_heldGestureSteps` live from `_onJoystickChange`, so the current
+   * push direction is re-evaluated at every tile. Each tick it starts the FIRST
+   * non-blocked leg (skipping a blocked cardinal, Req 2.7) through the SAME
+   * `_beginGestureStep` → `resolveMove`/`resolveTunnel` seam; a fully blocked
+   * sequence keeps the player put with facing preserved (Req 2.6).
+   * @param {string[]} steps facing-relative legs ('forward'|'backward'|'strafe-left'|'strafe-right')
+   */
+  _runHeldGestureSteps(steps) {
+    const st = this.state;
+    if (!st || st.traversal || !Array.isArray(steps)) return;
+    for (const step of steps) {
+      if (this._beginGestureStep(step)) return; // first open leg starts a step
+      // Blocked leg → try the next (diagonal fallback to its open cardinal).
+    }
+    // Fully blocked: stay put, facing preserved (Req 2.6).
   }
 
   /**
@@ -2758,6 +3075,8 @@ export default class FP3DScene extends Phaser.Scene {
     this._destroyTouchGestures();
     // Remove the discreet return-to-menu control.
     this._destroyReturnToMenuButton();
+    // Remove the portrait rotate hint + its viewport listeners.
+    this._destroyRotateHint();
     // Tear down the "Level Complete!" dialog if the scene stops while it is up.
     if (this._levelClearModal) {
       try { this._levelClearModal.close(); } catch { /* ignore */ }

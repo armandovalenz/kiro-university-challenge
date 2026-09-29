@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
     <meta name="description" content="Math Man — an educational Pac-Man-style maze arcade game for grades 5-7." />
     <!-- Favicon / PWA icon (Req 11.5). Uses the runtime-optimized 256px copy;
          the full-resolution 03_app_icon.png remains the PWA/source icon. -->
@@ -17,21 +20,30 @@
       body {
         margin: 0;
         padding: 0;
-        height: 100%;
+        /* Fallback for browsers without dynamic viewport units, then the dvh
+           unit so the game fills the *actual* visible viewport on mobile even as
+           the URL bar shows/hides. */
+        height: 100vh;
+        height: 100dvh;
         background: #000;
         color: #fff;
         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
         overflow: hidden;
+        /* Never rubber-band / scroll the page while the joystick is dragged. */
+        overscroll-behavior: none;
       }
 
-      /* Centering wrapper so the FIT-scaled canvas sits in the middle of the viewport. */
+      /* Full-viewport wrapper. On desktop the FIT-scaled canvas is centered and
+         letterboxed; on mobile the surface fills the dynamic viewport. */
       #app {
         position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
         width: 100vw;
+        width: 100dvw;
         height: 100vh;
+        height: 100dvh;
       }
 
       /* Phaser mounts its canvas inside #game. */
@@ -39,7 +51,10 @@
         position: relative;
       }
 
-      /* Root for accessible DOM overlays (quiz + lesson modals) layered above the canvas. */
+      /* Root for accessible DOM overlays (quiz + lesson modals + FP3D controls)
+         layered above the canvas. It spans the full surface and honors device
+         safe-area insets (notches / home indicators) so on-screen controls are
+         never tucked under them. */
       #overlay-root {
         position: absolute;
         inset: 0;
@@ -48,11 +63,139 @@
         justify-content: center;
         pointer-events: none;
         z-index: 10;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right)
+          env(safe-area-inset-bottom) env(safe-area-inset-left);
+        box-sizing: border-box;
       }
 
       /* Individual overlays opt back into pointer events when shown. */
       #overlay-root > * {
         pointer-events: auto;
+      }
+
+      /* ---- FP3D_Mode on-screen touch controls (responsive) ---------------- */
+      /* The container spans the overlay; children are absolutely positioned
+         within the safe-area padding. */
+      .fp3d-touch-controls {
+        pointer-events: none;
+      }
+
+      /* Visible Virtual_Joystick — anchored bottom-LEFT, thumb-sized on phones,
+         capped on large screens. */
+      .fp3d-joystick {
+        left: max(16px, env(safe-area-inset-left));
+        bottom: max(16px, env(safe-area-inset-bottom));
+        width: clamp(96px, 28vmin, 180px);
+        height: clamp(96px, 28vmin, 180px);
+      }
+
+      /* Turn buttons — anchored bottom-RIGHT, large and thumb-friendly. */
+      .fp3d-turn-cluster {
+        right: max(16px, env(safe-area-inset-right));
+        bottom: max(16px, env(safe-area-inset-bottom));
+      }
+      .fp3d-turn-btn {
+        width: clamp(56px, 16vmin, 88px);
+        height: clamp(56px, 16vmin, 88px);
+        min-width: clamp(56px, 16vmin, 88px);
+        min-height: clamp(56px, 16vmin, 88px);
+        font-size: clamp(20px, 6vmin, 32px);
+      }
+
+      /* Reduced-motion toggle — top-right, clear of the compass/minimap. */
+      .fp3d-motion-btn {
+        top: max(52px, calc(env(safe-area-inset-top) + 44px));
+        right: max(10px, env(safe-area-inset-right));
+        min-width: clamp(96px, 30vw, 132px);
+        min-height: clamp(40px, 9vmin, 48px);
+        font-size: clamp(12px, 3.4vmin, 15px);
+      }
+
+      /* Fullscreen toggle — desktop default: top-right corner, clear of the
+         bottom-anchored HUD. On coarse-pointer devices it is relocated (below)
+         because the minimap moves to the top-right there. */
+      .fp3d-fullscreen-btn {
+        top: max(10px, env(safe-area-inset-top));
+        right: max(10px, env(safe-area-inset-right));
+      }
+
+      /* HUD score/lives readout + minimap scale down on small phones. */
+      .fp3d-hud-score {
+        font-size: clamp(13px, 4.2vmin, 20px) !important;
+      }
+      .fp3d-minimap {
+        width: clamp(96px, 30vmin, 220px) !important;
+        height: clamp(96px, 30vmin, 220px) !important;
+      }
+      .fp3d-compass {
+        width: clamp(96px, 30vmin, 220px) !important;
+        font-size: clamp(11px, 3.4vmin, 15px) !important;
+        /* Sit just above the (responsive) minimap, which is 10px from the
+           bottom with a clamped height. */
+        bottom: calc(16px + clamp(96px, 30vmin, 220px)) !important;
+      }
+
+      /* On touch / coarse-pointer devices the turn buttons live bottom-right,
+         so move the minimap + compass to the TOP-right to avoid overlap. */
+      @media (pointer: coarse) {
+        .fp3d-minimap {
+          top: max(10px, env(safe-area-inset-top)) !important;
+          bottom: auto !important;
+          right: max(10px, env(safe-area-inset-right)) !important;
+        }
+        .fp3d-compass {
+          top: calc(max(10px, env(safe-area-inset-top)) + clamp(96px, 30vmin, 220px) + 6px) !important;
+          bottom: auto !important;
+          right: max(10px, env(safe-area-inset-right)) !important;
+        }
+        /* Nudge the reduced-motion toggle to the LEFT so it clears the
+           top-right minimap. */
+        .fp3d-motion-btn {
+          right: auto !important;
+          left: max(84px, calc(env(safe-area-inset-left) + 84px)) !important;
+          top: max(10px, env(safe-area-inset-top)) !important;
+        }
+        /* The minimap now occupies the top-right, so move the Fullscreen toggle
+           to the LEFT edge, on its own row BELOW the top row (the "← Menu"
+           button at left:10px and the reduced-motion toggle at left:84px). This
+           keeps it visible and tappable — never under the minimap, the menu
+           button, or the reduced-motion toggle — and clear of the bottom-left
+           joystick. Comfortable ≥44px tap target with safe-area insets. */
+        .fp3d-fullscreen-btn {
+          right: auto !important;
+          left: max(10px, env(safe-area-inset-left)) !important;
+          top: calc(max(10px, env(safe-area-inset-top)) + 52px) !important;
+          min-width: 44px !important;
+          min-height: 44px !important;
+          padding: 10px 14px !important;
+        }
+      }
+
+      /* ---- Portrait rotate hint (small screens only) ---------------------- */
+      /* Non-blocking: a subtle banner suggesting landscape for first-person
+         play. Shown only in portrait on small screens; auto-hidden by JS. */
+      .fp3d-rotate-hint {
+        position: absolute;
+        left: 50%;
+        top: max(12px, env(safe-area-inset-top));
+        transform: translateX(-50%);
+        z-index: 30;
+        max-width: 90vw;
+        padding: 8px 14px;
+        font: 600 clamp(12px, 3.6vmin, 15px) / 1.3 system-ui, -apple-system,
+          "Segoe UI", Roboto, sans-serif;
+        color: #0d0d2b;
+        background: rgba(255, 224, 0, 0.92);
+        border: 2px solid #ffe000;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+        text-align: center;
+        pointer-events: none;
+        opacity: 1;
+        transition: opacity 400ms ease;
+      }
+      .fp3d-rotate-hint[hidden] {
+        display: none;
       }
     </style>
   </head>
