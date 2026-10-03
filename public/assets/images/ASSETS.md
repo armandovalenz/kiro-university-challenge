@@ -111,9 +111,17 @@ aspect on a 512×768 canvas (no stretching) at load time.
 | `einstein_photo1.jpg` | 782×1127 | Albert Einstein |
 | `copernicus_photo3.jpg` | 250×244 | Nicolaus Copernicus |
 | `beakman_photo2.jpg` | 450×359 | Beakman (Beakman's World) |
+| `tesla_photo4.png` | — | Nikola Tesla |
+| `asimov_photo5.jpg` | — | Isaac Asimov |
+
+Each portrait also gets an engraved gothic/blackletter nameplate under its frame
+in FP3D_Mode, naming the pictured scientist (`PORTRAIT.names` in `FP3DRenderer`,
+parallel to the photo list above).
 
 > **Provenance: TODO — source and license not yet recorded.** Unlike the
 > AI-generated art above, these are photographs/portraits added by the project
-> owner. Record each file's source URL and license here before any public
-> release. A photo of a real person or a TV character may carry copyright or
-> likeness rights; treat these as demo-only until verified.
+> owner. `tesla_photo4.png` and `asimov_photo5.jpg` were also added by the
+> project creator (Asimov's file was renamed from an extensionless original).
+> Record each file's source URL and license here before any public release. A
+> photo of a real person or a TV character may carry copyright or likeness
+> rights; treat these as demo-only until verified.

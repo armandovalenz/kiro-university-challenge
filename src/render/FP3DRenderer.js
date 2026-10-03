@@ -171,6 +171,20 @@ const PORTRAIT = {
     '/assets/images/einstein_photo1.jpg',
     '/assets/images/copernicus_photo3.jpg',
     '/assets/images/beakman_photo2.jpg',
+    '/assets/images/tesla_photo4.png',
+    '/assets/images/asimov_photo5.jpg',
+  ],
+  /**
+   * Scientist name shown on the nameplate under each portrait. Parallel to
+   * `pictures` (same order/length): indexed by the frame's `pictureIndex` so
+   * the plate always matches the photo above it.
+   */
+  names: [
+    'Albert Einstein',
+    'Nicolaus Copernicus',
+    'Beakman',
+    'Nikola Tesla',
+    'Isaac Asimov',
   ],
   /** Inner opening of the frame (raw GLB units: X width × Z height). */
   opening: { w: 7.68, h: 11.52 },
@@ -184,6 +198,36 @@ const PORTRAIT = {
   pictureFocusY: 0.3,
   /** Self-illumination so faces stay readable in the dim corridors. */
   pictureGlow: 0.12,
+
+  // --- Nameplate (engraved title plate under each portrait) ---------------
+  nameplate: {
+    /** Plate width as a fraction of the opening width (a touch narrower). */
+    widthFrac: 0.92,
+    /** Plate height in raw GLB units (a short title strip). */
+    height: 2.2,
+    /**
+     * Vertical gap (raw GLB units) between the opening's bottom edge and the
+     * TOP of the plate, so the plate sits just under the picture.
+     */
+    gapBelowOpening: 0.3,
+    /** Clearance past the moulding depth so the plate sits in the foreground. */
+    zAhead: 0.6,
+    /** Canvas resolution for crisp engraved text (wide title strip). */
+    tex: { w: 512, h: 128 },
+    /** Self-illumination so the plate stays legible in dim corridors. */
+    glow: 0.12,
+    /**
+     * Blackletter / gothic font stack. No web font is bundled, so the serif
+     * fallback must still read acceptably; it is drawn high-contrast so even
+     * the plain-serif fallback stays legible.
+     */
+    fontStack:
+      '"UnifrakturMaguntiaBlackletter", "Old English Text MT", "Cloister Black", "Blackadder ITC", "Luminari", serif',
+    /** Plaque background (deep brown/near-black). */
+    bgColor: '#140d07',
+    /** Thin gilt border + engraved text color. */
+    goldColor: '#d9b65a',
+  },
 };
 
 /**
@@ -1257,6 +1301,10 @@ export class FP3DRenderer {
     picture.receiveShadow = true;
     group.add(picture);
 
+    // Engraved title plate naming the pictured scientist (Req 8.2: skipped,
+    // never thrown, if there is no DOM/canvas or text rendering fails).
+    this._attachPortraitNameplate(group, idx);
+
     this._loadPortraitPicture(url).then((tex) => {
       // Failed load, or the maze was rebuilt and this material disposed.
       if (!tex || !this._materials.has(mat)) return;
@@ -1267,6 +1315,135 @@ export class FP3DRenderer {
       mat.emissiveIntensity = PORTRAIT.pictureGlow;
       mat.needsUpdate = true;
     });
+  }
+
+  /**
+   * Mount a small gothic (blackletter) nameplate just below the frame opening,
+   * naming the pictured scientist (`PORTRAIT.names[idx]`, matching the photo at
+   * the same `pictureIndex`). The plate is a plane in the group's local frame
+   * (X along the wall, Y up, +Z out), sitting under the picture and a hair
+   * further out so it is never occluded, with the name engraved onto a canvas
+   * texture (dark plaque, gilt border, embossed gold text).
+   *
+   * Graceful fallback (Req 8.2): with no `document`/canvas (headless/tests),
+   * no name for this index, or any text-rendering error, the plate is skipped —
+   * nothing throws and the portrait still shows. All of the plate's
+   * geometry/material/texture are tracked for disposal; the plate is a child of
+   * the portrait group, so a maze rebuild removes it with the group.
+   * @param {THREE.Group} group the portrait group (picture already attached)
+   * @param {number} idx the frame's picture index (also indexes `names`)
+   */
+  _attachPortraitNameplate(group, idx) {
+    const name = PORTRAIT.names?.[idx];
+    if (!name) return; // no name for this photo → skip (no plate)
+
+    const tex = this._buildNameplateTexture(name);
+    if (!tex) return; // headless / render failure → skip (Req 8.2)
+
+    const cfg = PORTRAIT.nameplate;
+    const w = PORTRAIT.opening.w * cfg.widthFrac;
+    const h = cfg.height;
+
+    const geo = this._trackGeometry(new THREE.PlaneGeometry(w, h));
+    const mat = this._trackMaterial(new THREE.MeshStandardMaterial({
+      map: tex,
+      emissive: 0xffffff,
+      emissiveMap: tex,
+      emissiveIntensity: cfg.glow,
+      roughness: 0.8,
+      metalness: 0.0,
+    }));
+
+    const plate = new THREE.Mesh(geo, mat);
+    plate.name = 'portrait-nameplate';
+    // Sit the plate on the frame's lower rail (just below the opening).
+    plate.position.y = -(PORTRAIT.opening.h / 2) - cfg.gapBelowOpening - h / 2;
+    // Keep NORMAL depth testing so walls and other geometry correctly occlude
+    // the plate (depthTest:false made it show THROUGH walls). It stays in the
+    // foreground purely by its physical z: pushed OUT past the moulding depth so
+    // it sits in front of the gilded lip, not behind it.
+    plate.position.z = PORTRAIT.authoredDepth + cfg.zAhead;
+    plate.receiveShadow = false;
+    group.add(plate);
+  }
+
+  /**
+   * Draw a scientist's name as an engraved gilt-on-dark plaque onto a canvas
+   * and return it as an sRGB CanvasTexture (mipmapped, max anisotropy — matching
+   * the picture texture). Uses a blackletter/gothic font stack with a plain
+   * serif fallback (no web font is bundled), kept high-contrast so even the
+   * fallback stays legible, plus a subtle shadow/emboss so it reads engraved.
+   *
+   * Graceful fallback (Req 8.2): returns null (no throw) when `document` or the
+   * 2D canvas context is unavailable, or if any drawing call fails.
+   * @param {string} name the scientist's name to engrave
+   * @returns {THREE.Texture|null}
+   */
+  _buildNameplateTexture(name) {
+    if (typeof document === 'undefined' || !document.createElement) return null;
+    try {
+      const cfg = PORTRAIT.nameplate;
+      const { w: tw, h: th } = cfg.tex;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = tw;
+      canvas.height = th;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      // Plaque background.
+      ctx.fillStyle = cfg.bgColor;
+      ctx.fillRect(0, 0, tw, th);
+
+      // Thin gilt border inset from the edge.
+      const inset = Math.round(th * 0.08);
+      ctx.lineWidth = Math.max(2, Math.round(th * 0.03));
+      ctx.strokeStyle = cfg.goldColor;
+      ctx.strokeRect(inset, inset, tw - inset * 2, th - inset * 2);
+
+      // Engraved name: fit the font to the plate width, blackletter/gothic with
+      // a serif fallback, centered, with a subtle emboss (dark offset + glow).
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // Base font ~65% of the plate height (30% larger than the previous 0.5);
+      // the auto-shrink loop below still prevents a long name from overflowing.
+      let fontPx = Math.round(th * 0.65);
+      const maxTextW = tw - inset * 2 - Math.round(tw * 0.06);
+      const setFont = (px) => { ctx.font = `${px}px ${cfg.fontStack}`; };
+      setFont(fontPx);
+      while (fontPx > 10 && ctx.measureText(name).width > maxTextW) {
+        fontPx -= 2;
+        setFont(fontPx);
+      }
+
+      const cx = tw / 2;
+      const cy = th / 2;
+      // Dark emboss shadow under the glyphs.
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillText(name, cx + 2, cy + 2);
+      // Soft gold glow + the gold face on top.
+      ctx.shadowColor = cfg.goldColor;
+      ctx.shadowBlur = Math.round(th * 0.06);
+      ctx.fillStyle = cfg.goldColor;
+      ctx.fillText(name, cx, cy);
+      ctx.shadowBlur = 0;
+
+      const tex = new THREE.CanvasTexture(canvas);
+      if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = THREE.ClampToEdgeWrapping;
+      tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.generateMipmaps = true;
+      tex.minFilter = THREE.LinearMipmapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.anisotropy = this.renderer?.capabilities?.getMaxAnisotropy?.() || 1;
+      this._trackTexture(tex);
+      return tex;
+    } catch {
+      return null; // skip the plate, keep the portrait (Req 8.2)
+    }
   }
 
   /**
