@@ -1,0 +1,292 @@
+{
+  "plants": {
+    "file": "plants.png",
+    "license": "CC BY-SA 4.0",
+    "licenseCode": "cc-by-sa-4.0",
+    "artist": "Nishānt Omm",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Leaf_Structure-hi.png",
+    "commonsTitle": "File:Leaf Structure-hi.png",
+    "description": "Leaf Structure in Hindi",
+    "bytes": 423567
+  },
+  "earth-systems": {
+    "file": "earth-systems.png",
+    "license": "CC BY-SA 4.0",
+    "licenseCode": "cc-by-sa-4.0",
+    "artist": "Sémhur (talk)",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Rock_shelter_formation_by_frost_weathering.svg",
+    "commonsTitle": "File:Rock shelter formation by frost weathering.svg",
+    "description": "Rock shelter formation by frost weathering.",
+    "bytes": 494115
+  },
+  "water-cycle": {
+    "file": "water-cycle.png",
+    "license": "CC BY-SA 4.0",
+    "licenseCode": "cc-by-sa-4.0",
+    "artist": "Tttrung",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Water_cycle_diagram-vi.svg",
+    "commonsTitle": "File:Water cycle diagram-vi.svg",
+    "description": "Giản đồ chu trình nước. Dịch từ Hình:Water cycle diagram-uk.svg",
+    "bytes": 198033
+  },
+  "solar-system": {
+    "file": "solar-system.png",
+    "license": "Public domain",
+    "licenseCode": "pd",
+    "artist": "Reynolds, James Emslie, John",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Diagram_illustrating_the_earth%27s_annual_revolution_round_the_sun,_and_its_diurnal_rotation_on_its_axis._showing_its_position_(IA_dr_diagram-illustrating-the-earths-annual-revolution-round-the-sun-and-its-d-3432014).jpg",
+    "commonsTitle": "File:Diagram illustrating the earth's annual revolution round the sun, and its diurnal rotation on its axis. showing its position (IA dr diagram-illustrating-the-earths-annual-revolution-round-the-sun-and-its-d-3432014).jpg",
+    "description": "Zoomable full resolution image available at davidrumsey.com.This image 3432.014 is a part of image group 3432.000.Hand colored engraved view. Shows the mechanism responsible for the Earth's seasons as it makes it yearly passage around the Sun. Includes explanatory text.See note field above.None found. Subjects: Astronomy; Celestial",
+    "bytes": 241896
+  },
+  "ecosystems": {
+    "file": "ecosystems.png",
+    "license": "CC BY 4.0",
+    "licenseCode": "cc-by-4.0",
+    "artist": "Heymans, J.J., Coll, M., Libralato, S., Morissette, L. and Christensen, V.",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Food_web_of_the_Venice_lagoon.png",
+    "commonsTitle": "File:Food web of the Venice lagoon.png",
+    "description": "Food web diagram of the Venice lagoon with 27 nodes or functional groups. Colors of flows depict different fishing target (artisanal fisheries in blue, and clam fishery in red) and non-target species (for clam harvesting, in green). Modified from: Pranovi, F., Libralato, S., Raicevich, S., Granzotto, A., Pastres, R. and Giovanardi, O. (2003).\" Mechanical clam dredging in Venice lagoon: ecosystem effects evaluated with a trophic mass-balance model\". Marine Biology, 143(2): 393–403. doi:10.1007/s00227-003-1072-1.",
+    "bytes": 319753
+  },
+  "adaptations": {
+    "file": "adaptations.png",
+    "license": "CC BY 3.0",
+    "licenseCode": "cc-by-3.0",
+    "artist": "Fccardiff",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Pincushion_cactus_plants_at_the_Arizona-Sonora_Desert_Museum.jpg",
+    "commonsTitle": "File:Pincushion cactus plants at the Arizona-Sonora Desert Museum.jpg",
+    "description": "Mammillaria standleyi, Pincushion cactus plants, native to the the Chihuahuan Desert. At the Arizona-Sonora Desert Museum garden, Tuscon AZ. (Beach in Avon, NC ?)",
+    "bytes": 353259
+  },
+  "matter": {
+    "file": "matter.png",
+    "license": "Public domain",
+    "licenseCode": "pd",
+    "artist": "Thomas Andrews",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:PV_diagram_of_CO2,_from_%22On_the_Continuity_of_the_Gaseous_and_Liquid_States_of_Matter%22.png",
+    "commonsTitle": "File:PV diagram of CO2, from \"On the Continuity of the Gaseous and Liquid States of Matter\".png",
+    "description": "pV diagram of CO2, from \"On the Continuity of the Gaseous and Liquid States of Matter\"., at p. 583. This diagram shows for the first time clearly the critical temperature of carbon dioxide. Andrews estimated using this diagram that the triple point of CO2 is 30.92 C (modern value is 30.98 C). Andrews, Thomas. \"The Bakerian lecture: On the continuity of the gaseous and liquid states of matter.\" Philosophical Transactions of the Royal Society of London 159 (1869): 575-590.",
+    "bytes": 109540
+  },
+  "human-body": {
+    "file": "human-body.png",
+    "license": "Public domain",
+    "licenseCode": "pd",
+    "artist": "LadyofHats, Jmarchn",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Respiratory_system_complete_en.svg",
+    "commonsTitle": "File:Respiratory system complete en.svg",
+    "description": "the respiratory system consists of the airways, the lungs, and the respiratory muscles that mediate the movement of air into and out of the body. Image renamed from Respiratory system complete.svg",
+    "bytes": 488650
+  },
+  "scientific-practice": {
+    "file": "scientific-practice.png",
+    "license": "Public domain",
+    "licenseCode": "pd",
+    "artist": "Phillipe Rekacewicz",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atmosphere_composition_diagram-en.svg",
+    "commonsTitle": "File:Atmosphere composition diagram-en.svg",
+    "description": "Composition diagram showing the evolution/cycles of various elements in Earth's atmosphere. Original subscript: Schematic of chemical and transport processes related to atmospheric composition. These processes link the atmosphere with other components of the Earth system, including the oceans, land, and terrestrial and marine plants and animals.",
+    "bytes": 373607
+  },
+  "cells": {
+    "file": "cells.png",
+    "license": "CC0",
+    "licenseCode": "cc0",
+    "artist": "Kelvinsong",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Animal_cell_cycle-en.svg",
+    "commonsTitle": "File:Animal cell cycle-en.svg",
+    "description": "Diagram of the animal cell cycle.",
+    "bytes": 354709
+  },
+  "photosynthesis": {
+    "file": "photosynthesis.png",
+    "license": "CC BY-SA 3.0",
+    "licenseCode": "cc-by-sa-3.0",
+    "artist": "Kelvinsong",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:C4_photosynthesis_is_less_complicated.svg",
+    "commonsTitle": "File:C4 photosynthesis is less complicated.svg",
+    "description": "Less complicated version of File:C4 photosynthesis is really complicated.svg, without scary molecules and arrows and chemistry.",
+    "bytes": 288961
+  },
+  "food-webs": {
+    "file": "food-webs.png",
+    "license": "CC BY-SA 4.0",
+    "licenseCode": "cc-by-sa-4.0",
+    "artist": "Swiggity.Swag.YOLO.Bro",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Ecological_Pyramid.svg",
+    "commonsTitle": "File:Ecological Pyramid.svg",
+    "description": "An energy pyramid is a presentation of the trophic levels in an ecosystem. Energy from the sun is transferred through the ecosystem by passing through various trophic levels. Roughly 10% of the energy is transferred from one trophic level to the next, thus preventing large amounts of trophic levels. There must be higher amounts of biomass at the bottom of the pyramid to support the energy and biomass requirements of the higher trophic levels.",
+    "bytes": 134043
+  },
+  "chemical-changes": {
+    "file": "chemical-changes.png",
+    "license": "Public domain",
+    "licenseCode": "pd",
+    "artist": "Barr, William M. (William Miller)",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:A_catechism_on_the_combustion_of_coal_and_the_prevention_of_smoke;_a_practical_treatise_by_William_M._Barr.djvu",
+    "commonsTitle": "File:A catechism on the combustion of coal and the prevention of smoke; a practical treatise by William M. Barr.djvu",
+    "description": "A completely revised edition of the author's A practical treatise on the combustion of coal",
+    "bytes": 24336
+  },
+  "thermal-energy": {
+    "file": "thermal-energy.png",
+    "license": "Public domain",
+    "licenseCode": "pd",
+    "artist": "Chcastan",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Heat_conduction.png",
+    "commonsTitle": "File:Heat conduction.png",
+    "description": "Diagram Illustrating Heat Conduction and Thermal Conductivity",
+    "bytes": 15828
+  },
+  "waves": {
+    "file": "waves.png",
+    "license": "CC BY 4.0",
+    "licenseCode": "cc-by-4.0",
+    "artist": "BobORourke",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sound_Wave_-_A_Major_Chord_-_Ratios_Separated.png",
+    "commonsTitle": "File:Sound Wave - A Major Chord - Ratios Separated.png",
+    "description": "Numerical relationships among the three notes of the A Major Chord.",
+    "bytes": 185791
+  },
+  "motion": {
+    "file": "motion.png",
+    "license": "Public domain",
+    "licenseCode": "pd",
+    "artist": "Sjlegg at English Wikibooks",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Distance-time_graph_example.svg",
+    "commonsTitle": "File:Distance-time graph example.svg",
+    "description": "An example distance-time graph",
+    "bytes": 34653
+  },
+  "gravity": {
+    "file": "gravity.png",
+    "license": "CC0",
+    "licenseCode": "cc0",
+    "artist": "Noleander",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Gravity_Dam_Cross_Section_Diagram.svg",
+    "commonsTitle": "File:Gravity Dam Cross Section Diagram.svg",
+    "description": "Gravity Dam Cross Section Diagram",
+    "bytes": 49345
+  },
+  "earth-structure": {
+    "file": "earth-structure.png",
+    "license": "CC BY-SA 3.0",
+    "licenseCode": "cc-by-sa-3.0",
+    "artist": "Kelvinsong",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Earth_poster.svg",
+    "commonsTitle": "File:Earth poster.svg",
+    "description": "Diagram of the Earth.",
+    "bytes": 270845
+  },
+  "plate-tectonics": {
+    "file": "plate-tectonics.png",
+    "license": "CC BY 4.0",
+    "licenseCode": "cc-by-4.0",
+    "artist": "domdomegg",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Continental-continental_constructive_plate_boundary.svg",
+    "commonsTitle": "File:Continental-continental constructive plate boundary.svg",
+    "description": "A constructive/divergent plate margin/boundary with continental plates creating a rift valley. No labels, only arrows now, so it's language neutral, but someone may want to add them, or I might if I can be bothered to get round to it. A 3D orthogonal projection (at 10 degrees), 'flat colours' style, which I like the look of (and is easier for me to do).",
+    "bytes": 40790
+  },
+  "weather": {
+    "file": "weather.png",
+    "license": "CC BY-SA 4.0",
+    "licenseCode": "cc-by-sa-4.0",
+    "artist": "Franz van Duns",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Mercury_barometer_-_Pariser_Maasz_-_Germany_-_19th_century.jpg",
+    "commonsTitle": "File:Mercury barometer - Pariser Maasz - Germany - 19th century.jpg",
+    "description": "Historic mercury barometer, heirloom from Ohligs, North Rhine-Westphalia, Germany, 19th century. Top scale states 'Barometer / Pariser Maasz (old German style: Maaſs)'. i.e. 'Parisian Scale' and artisan's name 'verfertigt Peter Franken' (manufactured by Peter Franken). Lid of lower casing raised to enable view of mercury receptacle and wooden stopper at the upturned end of the glass tube. Height without hook: 950 mm.",
+    "bytes": 592819
+  },
+  "climate": {
+    "file": "climate.png",
+    "license": "CC BY-SA 3.0",
+    "licenseCode": "cc-by-sa-3.0",
+    "artist": "File:World Köppen Map.png: Original file by Peel, M. C., Finlayson, B. L., and McMahon, T. A. (University of Melbourne). Derivative work: Modifications by user Br-Sc-94, (User talk). Cropping &amp; addition of map legend-color box-to summary info by 2know4power, (User talk).",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:India_and_South_Asia_K%C3%B6ppen_climate_map_with_legend.jpg",
+    "commonsTitle": "File:India and South Asia Köppen climate map with legend.jpg",
+    "description": "South Asia- Köppen-Geiger climate classification map is based on native vegetation, temperature, precipitation and their seasonality. (Af) Tropical rainforest (Am) Tropical monsoon (Aw) Tropical savanna, wet &amp; dry (BWh) Hot desert (BWk) Cold desert (BSh) Hot semi arid (BSk) Cold semi arid (Csa) Mediterr. dry, hot summ. (Cwa) Subtropical humid summ, dry winter (Cwb) Subtropical highland, dry wint (Cfa) Subtropical humid summ (no dry)",
+    "bytes": 61875
+  },
+  "body-systems": {
+    "file": "body-systems.png",
+    "license": "Public domain",
+    "licenseCode": "pd",
+    "artist": "LadyofHats, Mariana Ruiz Villarreal",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Circulatory_System_en.svg",
+    "commonsTitle": "File:Circulatory System en.svg",
+    "description": "Simplified diagram of the human Circulatory system in anterior view.",
+    "bytes": 614606
+  },
+  "homeostasis": {
+    "file": "homeostasis.png",
+    "license": "CC BY-SA 4.0",
+    "licenseCode": "cc-by-sa-4.0",
+    "artist": "E L Yekutiel",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Biological_thermoregulation_categories,_Hebrew.svg",
+    "commonsTitle": "File:Biological thermoregulation categories, Hebrew.svg",
+    "description": "Hebrew-labeled sorting of various animal groups into the different thermoregulation categories (poikiloterms, homeotherms, ectotherms, endotherms). This diagram demonstrates the fact that the \"thermal steadiness\" categories (homeotherms - steady temperature, marked by a smooth color background at the bottom half, vs. poikilotherms - varying temperature, marked by a zig-zag pattern at the top half), do not overlap with the \"thermal control\" categories (ectotherms - externally controlled, marked by the blue background at the right half, vs. endotherms - internally controlled, marked by the red background at the left half). Based on a similar diagram appearing in Encyclopedia of Ecology by Brian D. Fath, p. 3511. To place this image in a wiki page and activate the four words surrounding the circle into links to the corresponding hewiki articles, use the following code, generated using the ImageMapEdit tool: &lt;imagemap&gt; File:Biological_thermoregulation_categories,_Hebrew.svg|300px| rect 168 511 398 548 [[w:he:הומיאותרמיות]] rect 160 17 406 61 [[w:he:פויקילותרמיות]] rect 510 171 551 393 [[w:he:בעלי דם קר]] rect 16 180 52 386 [[w:he:בעלי דם חם]] circle 280 285 222 [[#/media/File:Biological_thermoregulation_categories,_Hebrew.svg]] desc none &lt;/imagemap&gt;",
+    "bytes": 114695
+  },
+  "atoms": {
+    "file": "atoms.png",
+    "license": "CC BY-SA 3.0",
+    "licenseCode": "cc-by-sa-3.0",
+    "artist": "Zamby",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atomic_folding_structure_illustration.png",
+    "commonsTitle": "File:Atomic folding structure illustration.png",
+    "description": "Structure Primary",
+    "bytes": 134775
+  },
+  "kinetic-energy": {
+    "file": "kinetic-energy.png",
+    "license": "CC0",
+    "licenseCode": "cc0",
+    "artist": "SCHolar44",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Diagram_comparing_kinetic_energy_applicable_to_conventional_and_high-speed_trains.png",
+    "commonsTitle": "File:Diagram comparing kinetic energy applicable to conventional and high-speed trains.png",
+    "description": "The diagram compares the kinetic energy applicable to conventional and high-speed trains respectively. The upper diagram shows that a conventional, low-speed train travelling at 100 kilometres per hour (62 miles per hour), cutting off its power at the foot of a hill about 40 metres (about 130 feet) high, and \"coasting\" up the grade will come to a stop at the summit – i.e., it loses 100 km/h in the process. The lower diagram poses the same criteria applied to a high-speed train travelling at 350 km/h (about 220 mph) before it cuts off power and coasts up the hill. It will pass the summit at 335 km/h (208 mph) – i.e., it loses only 15 km/h (9 mph) in the process. The source of this phenomenon is kinetic energy, a principle of classical mechanics: it is equal to half the product of the mass and the square of the speed. In formula form: Ek=12mv2 where m is the mass and v is the speed (magnitude of the velocity) of the body. Kinetic energy increases in proportion to the square of the speed: doubling the speed, for example, increases the kinetic energy four times. This phenomenon is important for train performance since it allows high-speed trains to climb much steeper gradients (as steep as 5%, 1 in 20) compared with a 2.5% maximum for conventional trains. It is the reason why track must be as straight as possible to allow maximum utilisation of kinetic energy without being forced to waste it by braking. A side benefit is that earthwork costs on high-speed lines are lower than on conventional lines because the quantities of earth and rock needing to be moved in cut-and-fill earthworks are smaller. Source: VFT Joint Venture (1990). VFT Project Evaluation Report. Canberra. Ch. 4, Performance criteria. p. 2.",
+    "bytes": 176446
+  },
+  "heat-transfer": {
+    "file": "heat-transfer.png",
+    "license": "CC BY-SA 3.0",
+    "licenseCode": "cc-by-sa-3.0",
+    "artist": "The original uploader was Harroschmeling at German Wikipedia.",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Convection-snapshot.png",
+    "commonsTitle": "File:Convection-snapshot.png",
+    "description": "Bildbeschreibung: Numerisches Modell von Mantelkonvektion Quelle: H. Schmeling, Uni Frankfurt Fotograf/Zeichner: H. Scmeling Datum: ca 2002 andere Versionen: ...",
+    "bytes": 65667
+  },
+  "astronomy": {
+    "file": "astronomy.png",
+    "license": "CC BY 2.0",
+    "licenseCode": "cc-by-2.0",
+    "artist": "Steve Jurvetson from Los Altos, USA",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:The_Future_Physics_of_Planet_Earth_(40217810733).jpg",
+    "commonsTitle": "File:The Future Physics of Planet Earth (40217810733).jpg",
+    "description": "Designed by Danny Hillis, this solid metal prototype cam just arrived from the Long Now Foundation. She has a lovely, lithe and sinuous shape that emerges from the precise encoding of a fundamental future for Earth’s next 10,000 years. In the design of a clock that will run for 10,000 years, the Long Now Foundation decided to use the passage of the sun as a feedback loop on the precision of the mechanical mechanism. Every year, the timing of the sun varies with the seasons; the solar clock repeats an annual pattern as the Earth, with its tilted axis of rotation, circles the Sun. But over thousands of years, it changes in two major ways: 1) the Earth’s rotation slows by 1.8 msec/day, and this adds up to a 16 hour error over 10,000 years. 2) the axis of rotation itself wobbles over a 26,000 cycle. In 8,000 years, we will have a new North Star — Deneb instead of Polaris. So, the cam encodes both, the steady lengthening of the day and the cyclical shift of Earth’s axial angle. Here is a &lt;a href=\"http://blog.longnow.org/02018/12/05/the-equation-of-time-cam-keeping-good-time-for-10000-years\" rel=\"noreferrer nofollow\"&gt;writeup&lt;/a&gt; with more details and diagrams of the curves: “The equation of time cam is a piece of the clock that converts solar noon to absolute noon. The cam represents 12,000 years of this equation, with one rotation per year. While the Clock’s day to day time-keeper is a slow pendulum, a solar synchronizer and cam like this one are needed to correct drift over the long haul. On any sunny day, when the sun lines up with this mechanism, light is focused onto a piece of nickel-titanium wire that reacts when heated by the sun. This motion is used to synchronize the Clock to solar noon. The synchronization is also modified slightly by the equation of time cam, which accounts for the +/- 15 minute difference of solar to absolute time. Due to meteor impacts and volcanic eruptions, the clock may not see the sun for several years, so it must be accurate enough to stay within the range of this correction during those times.”",
+    "bytes": 152939
+  },
+  "mixtures": {
+    "file": "mixtures.png",
+    "license": "CC BY-SA 4.0",
+    "licenseCode": "cc-by-sa-4.0",
+    "artist": "Encik Tekateki",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Aliran_Proses_Untuk_Pembuatan_Insulin.png",
+    "commonsTitle": "File:Aliran Proses Untuk Pembuatan Insulin.png",
+    "description": "8 different *major steps of producing insulins starting from using human pancreas cells until the insulin itself.",
+    "bytes": 200737
+  },
+  "genetics": {
+    "file": "genetics.png",
+    "license": "Public domain",
+    "licenseCode": "pd",
+    "artist": "Unknown",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:DNA-structure-and-bases.png",
+    "commonsTitle": "File:DNA-structure-and-bases.png",
+    "description": "",
+    "bytes": 36605
+  }
+}

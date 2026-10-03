@@ -89,14 +89,46 @@ export function isValidRecord(rec) {
 }
 
 /**
- * Filter an arbitrary array down to the records that pass {@link isValidRecord}.
- * Non-array input yields an empty array.
+ * Normalize an optional per-question visual aid. The `image` field is OPTIONAL:
+ * a record is valid with or without one. A well-formed image is an object with
+ * a non-empty string `file` and a non-empty string `alt`; the remaining fields
+ * (`attribution`, `license`, `sourceUrl`) are carried through verbatim when
+ * present. If `image` is present but malformed, it is treated as absent (the
+ * image is dropped) rather than invalidating the whole question — a bad image
+ * never removes a usable question (graceful fallback, Property 10 intact).
+ *
+ * The `file` is a bare filename (e.g. `plants.png`); the UI builds the runtime
+ * path (`assets/questions/images/<file>`), mirroring QUESTION_BANK_PATH.
+ * @param {*} rec a record that has already passed {@link isValidRecord}.
+ * @returns {object} the same record, or a shallow copy with a bad `image` removed.
+ */
+export function sanitizeImage(rec) {
+  if (!rec || typeof rec !== 'object' || !('image' in rec)) return rec;
+  const img = rec.image;
+  const ok =
+    img &&
+    typeof img === 'object' &&
+    typeof img.file === 'string' &&
+    img.file.trim() !== '' &&
+    typeof img.alt === 'string' &&
+    img.alt.trim() !== '';
+  if (ok) return rec;
+  // Malformed image → drop just the image, keep the question.
+  const copy = { ...rec };
+  delete copy.image;
+  return copy;
+}
+
+/**
+ * Filter an arbitrary array down to the records that pass {@link isValidRecord},
+ * then normalize each kept record's optional `image` (dropping a malformed one
+ * without discarding the question). Non-array input yields an empty array.
  * @param {*} records
  * @returns {object[]}
  */
 export function validateRecords(records) {
   if (!Array.isArray(records)) return [];
-  return records.filter(isValidRecord);
+  return records.filter(isValidRecord).map(sanitizeImage);
 }
 
 /**

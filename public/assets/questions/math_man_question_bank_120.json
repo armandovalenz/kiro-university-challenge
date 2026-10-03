@@ -973,7 +973,14 @@
       "Seed"
     ],
     "answer": "Leaf",
-    "explanation": "Leaves contain chlorophyll and are shaped to capture light for photosynthesis."
+    "explanation": "Leaves contain chlorophyll and are shaped to capture light for photosynthesis.",
+    "image": {
+      "file": "plants.png",
+      "alt": "Labeled diagram of the internal structure of a plant leaf.",
+      "attribution": "Nishānt Omm / CC BY-SA 4.0 (Wikimedia Commons)",
+      "license": "CC BY-SA 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Leaf_Structure-hi.png"
+    }
   },
   {
     "id": "MM-G5-SCI-002",
@@ -989,7 +996,14 @@
       "Anchor the plant"
     ],
     "answer": "Make seeds possible",
-    "explanation": "Flowers contain reproductive structures that help the plant produce seeds."
+    "explanation": "Flowers contain reproductive structures that help the plant produce seeds.",
+    "image": {
+      "file": "plants.png",
+      "alt": "Labeled diagram of the internal structure of a plant leaf.",
+      "attribution": "Nishānt Omm / CC BY-SA 4.0 (Wikimedia Commons)",
+      "license": "CC BY-SA 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Leaf_Structure-hi.png"
+    }
   },
   {
     "id": "MM-G5-SCI-003",
@@ -1005,7 +1019,14 @@
       "Snail"
     ],
     "answer": "Algae",
-    "explanation": "Algae use sunlight to make their own food, so they are producers."
+    "explanation": "Algae use sunlight to make their own food, so they are producers.",
+    "image": {
+      "file": "ecosystems.png",
+      "alt": "Food web diagram showing feeding links among many species in a lagoon ecosystem.",
+      "attribution": "Heymans, J.J., Coll, M., Libralato, S., Morissette, L. and Christensen, V. / CC BY 4.0 (Wikimedia Commons)",
+      "license": "CC BY 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Food_web_of_the_Venice_lagoon.png"
+    }
   },
   {
     "id": "MM-G5-SCI-004",
@@ -1021,7 +1042,14 @@
       "A tree that uses sunlight"
     ],
     "answer": "An insect-eating bird",
-    "explanation": "An animal that depends directly on insects for food would lose its main energy source first."
+    "explanation": "An animal that depends directly on insects for food would lose its main energy source first.",
+    "image": {
+      "file": "ecosystems.png",
+      "alt": "Food web diagram showing feeding links among many species in a lagoon ecosystem.",
+      "attribution": "Heymans, J.J., Coll, M., Libralato, S., Morissette, L. and Christensen, V. / CC BY 4.0 (Wikimedia Commons)",
+      "license": "CC BY 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Food_web_of_the_Venice_lagoon.png"
+    }
   },
   {
     "id": "MM-G5-SCI-005",
@@ -1037,7 +1065,14 @@
       "To absorb salt"
     ],
     "answer": "To reduce water loss",
-    "explanation": "A waxy surface slows evaporation and helps conserve water."
+    "explanation": "A waxy surface slows evaporation and helps conserve water.",
+    "image": {
+      "file": "adaptations.png",
+      "alt": "Photo of pincushion cacti, desert plants adapted to survive with little water.",
+      "attribution": "Fccardiff / CC BY 3.0 (Wikimedia Commons)",
+      "license": "CC BY 3.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Pincushion_cactus_plants_at_the_Arizona-Sonora_Desert_Museum.jpg"
+    }
   },
   {
     "id": "MM-G5-SCI-006",
@@ -1053,7 +1088,14 @@
       "Solid"
     ],
     "answer": "Solid",
-    "explanation": "A solid has a definite shape and a definite volume."
+    "explanation": "A solid has a definite shape and a definite volume.",
+    "image": {
+      "file": "matter.png",
+      "alt": "Pressure-volume graph showing how carbon dioxide changes between gas and liquid states.",
+      "attribution": "Thomas Andrews / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:PV_diagram_of_CO2,_from_%22On_the_Continuity_of_the_Gaseous_and_Liquid_States_of_Matter%22.png"
+    }
   },
   {
     "id": "MM-G5-SCI-007",
@@ -1069,7 +1111,14 @@
       "It disappears"
     ],
     "answer": "It condenses",
-    "explanation": "Cooling water vapor causes it to change from gas into liquid droplets."
+    "explanation": "Cooling water vapor causes it to change from gas into liquid droplets.",
+    "image": {
+      "file": "matter.png",
+      "alt": "Pressure-volume graph showing how carbon dioxide changes between gas and liquid states.",
+      "attribution": "Thomas Andrews / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:PV_diagram_of_CO2,_from_%22On_the_Continuity_of_the_Gaseous_and_Liquid_States_of_Matter%22.png"
+    }
   },
   {
     "id": "MM-G5-SCI-008",
@@ -1085,7 +1134,14 @@
       "Use a ruler"
     ],
     "answer": "Use a magnet",
-    "explanation": "A magnet attracts the iron but not the sand."
+    "explanation": "A magnet attracts the iron but not the sand.",
+    "image": {
+      "file": "mixtures.png",
+      "alt": "Process-flow diagram of the steps used to produce insulin, separating and purifying a mixture.",
+      "attribution": "Encik Tekateki / CC BY-SA 4.0 (Wikimedia Commons)",
+      "license": "CC BY-SA 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Aliran_Proses_Untuk_Pembuatan_Insulin.png"
+    }
   },
   {
     "id": "MM-G5-SCI-009",
@@ -1165,7 +1221,14 @@
       "Photosynthesis"
     ],
     "answer": "Weathering",
-    "explanation": "Weathering breaks rock into smaller pieces through physical or chemical processes."
+    "explanation": "Weathering breaks rock into smaller pieces through physical or chemical processes.",
+    "image": {
+      "file": "earth-systems.png",
+      "alt": "Diagram showing how frost weathering slowly breaks apart rock to form a shelter.",
+      "attribution": "Sémhur (talk) / CC BY-SA 4.0 (Wikimedia Commons)",
+      "license": "CC BY-SA 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Rock_shelter_formation_by_frost_weathering.svg"
+    }
   },
   {
     "id": "MM-G5-SCI-014",
@@ -1181,7 +1244,14 @@
       "Magnetism"
     ],
     "answer": "Moving water",
-    "explanation": "Flowing water transports sediment downstream."
+    "explanation": "Flowing water transports sediment downstream.",
+    "image": {
+      "file": "earth-systems.png",
+      "alt": "Diagram showing how frost weathering slowly breaks apart rock to form a shelter.",
+      "attribution": "Sémhur (talk) / CC BY-SA 4.0 (Wikimedia Commons)",
+      "license": "CC BY-SA 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Rock_shelter_formation_by_frost_weathering.svg"
+    }
   },
   {
     "id": "MM-G5-SCI-015",
@@ -1197,7 +1267,14 @@
       "Ocean water becoming salty"
     ],
     "answer": "Water falling from clouds",
-    "explanation": "Rain, snow, sleet, and hail are forms of precipitation."
+    "explanation": "Rain, snow, sleet, and hail are forms of precipitation.",
+    "image": {
+      "file": "water-cycle.png",
+      "alt": "Diagram of the water cycle: evaporation, condensation, precipitation, and runoff.",
+      "attribution": "Tttrung / CC BY-SA 4.0 (Wikimedia Commons)",
+      "license": "CC BY-SA 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Water_cycle_diagram-vi.svg"
+    }
   },
   {
     "id": "MM-G5-SCI-016",
@@ -1213,7 +1290,14 @@
       "Clouds blocking the Sun"
     ],
     "answer": "Earth rotating",
-    "explanation": "As Earth rotates, locations move into and out of sunlight."
+    "explanation": "As Earth rotates, locations move into and out of sunlight.",
+    "image": {
+      "file": "solar-system.png",
+      "alt": "Diagram of Earth orbiting the Sun and spinning on its tilted axis through the seasons.",
+      "attribution": "Reynolds, James Emslie, John / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Diagram_illustrating_the_earth%27s_annual_revolution_round_the_sun,_and_its_diurnal_rotation_on_its_axis._showing_its_position_(IA_dr_diagram-illustrating-the-earths-annual-revolution-round-the-sun-and-its-d-3432014).jpg"
+    }
   },
   {
     "id": "MM-G5-SCI-017",
@@ -1229,7 +1313,14 @@
       "Other stars produce no light"
     ],
     "answer": "It is much closer to Earth",
-    "explanation": "The Sun appears larger because it is far closer to us than other stars."
+    "explanation": "The Sun appears larger because it is far closer to us than other stars.",
+    "image": {
+      "file": "solar-system.png",
+      "alt": "Diagram of Earth orbiting the Sun and spinning on its tilted axis through the seasons.",
+      "attribution": "Reynolds, James Emslie, John / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Diagram_illustrating_the_earth%27s_annual_revolution_round_the_sun,_and_its_diurnal_rotation_on_its_axis._showing_its_position_(IA_dr_diagram-illustrating-the-earths-annual-revolution-round-the-sun-and-its-d-3432014).jpg"
+    }
   },
   {
     "id": "MM-G5-SCI-018",
@@ -1245,7 +1336,14 @@
       "Nervous system"
     ],
     "answer": "Respiratory system",
-    "explanation": "The respiratory system moves air into and out of the lungs."
+    "explanation": "The respiratory system moves air into and out of the lungs.",
+    "image": {
+      "file": "human-body.png",
+      "alt": "Labeled diagram of the human respiratory system, including the lungs and airways.",
+      "attribution": "LadyofHats, Jmarchn / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Respiratory_system_complete_en.svg"
+    }
   },
   {
     "id": "MM-G5-SCI-019",
@@ -1261,7 +1359,14 @@
       "They pump air"
     ],
     "answer": "They protect organs",
-    "explanation": "Bones such as the skull and ribs shield delicate organs."
+    "explanation": "Bones such as the skull and ribs shield delicate organs.",
+    "image": {
+      "file": "human-body.png",
+      "alt": "Labeled diagram of the human respiratory system, including the lungs and airways.",
+      "attribution": "LadyofHats, Jmarchn / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Respiratory_system_complete_en.svg"
+    }
   },
   {
     "id": "MM-G5-SCI-020",
@@ -1277,7 +1382,14 @@
       "To make every object identical"
     ],
     "answer": "To make the test fair",
-    "explanation": "Controlling other variables helps show whether the tested variable caused the result."
+    "explanation": "Controlling other variables helps show whether the tested variable caused the result.",
+    "image": {
+      "file": "scientific-practice.png",
+      "alt": "Diagram of chemical and transport processes that cycle elements through Earth's atmosphere.",
+      "attribution": "Phillipe Rekacewicz / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atmosphere_composition_diagram-en.svg"
+    }
   },
   {
     "id": "MM-G6-SCI-001",
@@ -1293,7 +1405,14 @@
       "Vacuole"
     ],
     "answer": "Cell membrane",
-    "explanation": "The cell membrane regulates the movement of materials into and out of the cell."
+    "explanation": "The cell membrane regulates the movement of materials into and out of the cell.",
+    "image": {
+      "file": "cells.png",
+      "alt": "Diagram of the animal cell cycle, showing the stages a cell goes through as it divides.",
+      "attribution": "Kelvinsong / CC0 (Wikimedia Commons)",
+      "license": "CC0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Animal_cell_cycle-en.svg"
+    }
   },
   {
     "id": "MM-G6-SCI-002",
@@ -1309,7 +1428,14 @@
       "Cell membrane"
     ],
     "answer": "Nucleus",
-    "explanation": "The nucleus stores most of the cell’s DNA."
+    "explanation": "The nucleus stores most of the cell’s DNA.",
+    "image": {
+      "file": "cells.png",
+      "alt": "Diagram of the animal cell cycle, showing the stages a cell goes through as it divides.",
+      "attribution": "Kelvinsong / CC0 (Wikimedia Commons)",
+      "license": "CC0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Animal_cell_cycle-en.svg"
+    }
   },
   {
     "id": "MM-G6-SCI-003",
@@ -1325,7 +1451,14 @@
       "Sugar and minerals"
     ],
     "answer": "Carbon dioxide and water",
-    "explanation": "Plants combine carbon dioxide and water using light energy to make sugar."
+    "explanation": "Plants combine carbon dioxide and water using light energy to make sugar.",
+    "image": {
+      "file": "photosynthesis.png",
+      "alt": "Simplified diagram of C4 photosynthesis, how some plants capture carbon dioxide.",
+      "attribution": "Kelvinsong / CC BY-SA 3.0 (Wikimedia Commons)",
+      "license": "CC BY-SA 3.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:C4_photosynthesis_is_less_complicated.svg"
+    }
   },
   {
     "id": "MM-G6-SCI-004",
@@ -1341,7 +1474,14 @@
       "Top predator only"
     ],
     "answer": "Decomposer",
-    "explanation": "Many fungi break down dead material and recycle nutrients."
+    "explanation": "Many fungi break down dead material and recycle nutrients.",
+    "image": {
+      "file": "ecosystems.png",
+      "alt": "Food web diagram showing feeding links among many species in a lagoon ecosystem.",
+      "attribution": "Heymans, J.J., Coll, M., Libralato, S., Morissette, L. and Christensen, V. / CC BY 4.0 (Wikimedia Commons)",
+      "license": "CC BY 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Food_web_of_the_Venice_lagoon.png"
+    }
   },
   {
     "id": "MM-G6-SCI-005",
@@ -1357,7 +1497,14 @@
       "It stays exactly equal"
     ],
     "answer": "It generally decreases",
-    "explanation": "Organisms use much of their energy, so less is transferred to the next level."
+    "explanation": "Organisms use much of their energy, so less is transferred to the next level.",
+    "image": {
+      "file": "food-webs.png",
+      "alt": "Energy pyramid showing how energy decreases at each higher level of a food chain.",
+      "attribution": "Swiggity.Swag.YOLO.Bro / CC BY-SA 4.0 (Wikimedia Commons)",
+      "license": "CC BY-SA 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Ecological_Pyramid.svg"
+    }
   },
   {
     "id": "MM-G6-SCI-006",
@@ -1373,7 +1520,14 @@
       "Nucleus"
     ],
     "answer": "Electron",
-    "explanation": "Electrons carry a negative charge."
+    "explanation": "Electrons carry a negative charge.",
+    "image": {
+      "file": "matter.png",
+      "alt": "Pressure-volume graph showing how carbon dioxide changes between gas and liquid states.",
+      "attribution": "Thomas Andrews / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:PV_diagram_of_CO2,_from_%22On_the_Continuity_of_the_Gaseous_and_Liquid_States_of_Matter%22.png"
+    }
   },
   {
     "id": "MM-G6-SCI-007",
@@ -1389,7 +1543,14 @@
       "A material without particles"
     ],
     "answer": "A substance made from one kind of atom",
-    "explanation": "An element contains atoms with the same number of protons."
+    "explanation": "An element contains atoms with the same number of protons.",
+    "image": {
+      "file": "matter.png",
+      "alt": "Pressure-volume graph showing how carbon dioxide changes between gas and liquid states.",
+      "attribution": "Thomas Andrews / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:PV_diagram_of_CO2,_from_%22On_the_Continuity_of_the_Gaseous_and_Liquid_States_of_Matter%22.png"
+    }
   },
   {
     "id": "MM-G6-SCI-008",
@@ -1405,7 +1566,14 @@
       "Salt dissolves in water"
     ],
     "answer": "A new gas forms",
-    "explanation": "Unexpected gas production can indicate that new substances formed."
+    "explanation": "Unexpected gas production can indicate that new substances formed.",
+    "image": {
+      "file": "chemical-changes.png",
+      "alt": "Historical illustration about the combustion of coal, an example of a chemical change.",
+      "attribution": "Barr, William M. (William Miller) / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:A_catechism_on_the_combustion_of_coal_and_the_prevention_of_smoke;_a_practical_treatise_by_William_M._Barr.djvu"
+    }
   },
   {
     "id": "MM-G6-SCI-009",
@@ -1421,7 +1589,14 @@
       "Away from all metals"
     ],
     "answer": "From warmer to cooler matter",
-    "explanation": "Thermal energy moves from higher-temperature matter to lower-temperature matter."
+    "explanation": "Thermal energy moves from higher-temperature matter to lower-temperature matter.",
+    "image": {
+      "file": "thermal-energy.png",
+      "alt": "Diagram illustrating how heat conducts through a material (thermal conductivity).",
+      "attribution": "Chcastan / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Heat_conduction.png"
+    }
   },
   {
     "id": "MM-G6-SCI-010",
@@ -1437,7 +1612,14 @@
       "Empty space only"
     ],
     "answer": "A medium",
-    "explanation": "Sound travels through vibrating particles in matter."
+    "explanation": "Sound travels through vibrating particles in matter.",
+    "image": {
+      "file": "waves.png",
+      "alt": "Diagram comparing the sound waves of the three notes in an A major chord.",
+      "attribution": "BobORourke / CC BY 4.0 (Wikimedia Commons)",
+      "license": "CC BY 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sound_Wave_-_A_Major_Chord_-_Ratios_Separated.png"
+    }
   },
   {
     "id": "MM-G6-SCI-011",
@@ -1453,7 +1635,14 @@
       "Volume of the room"
     ],
     "answer": "Frequency",
-    "explanation": "Higher-frequency vibrations are heard as higher pitches."
+    "explanation": "Higher-frequency vibrations are heard as higher pitches.",
+    "image": {
+      "file": "waves.png",
+      "alt": "Diagram comparing the sound waves of the three notes in an A major chord.",
+      "attribution": "BobORourke / CC BY 4.0 (Wikimedia Commons)",
+      "license": "CC BY 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sound_Wave_-_A_Major_Chord_-_Ratios_Separated.png"
+    }
   },
   {
     "id": "MM-G6-SCI-012",
@@ -1485,7 +1674,14 @@
       "The force of gravity"
     ],
     "answer": "Distance traveled per unit of time",
-    "explanation": "Speed compares the distance traveled with the time taken."
+    "explanation": "Speed compares the distance traveled with the time taken.",
+    "image": {
+      "file": "motion.png",
+      "alt": "Example distance-time graph used to describe the motion of an object.",
+      "attribution": "Sjlegg at English Wikibooks / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Distance-time_graph_example.svg"
+    }
   },
   {
     "id": "MM-G6-SCI-014",
@@ -1501,7 +1697,14 @@
       "Spacesuits remove gravity"
     ],
     "answer": "The Moon’s gravity is weaker",
-    "explanation": "Weight depends on gravitational pull, which is weaker on the Moon."
+    "explanation": "Weight depends on gravitational pull, which is weaker on the Moon.",
+    "image": {
+      "file": "gravity.png",
+      "alt": "Cross-section diagram of a gravity dam, which uses its own weight to hold back water.",
+      "attribution": "Noleander / CC0 (Wikimedia Commons)",
+      "license": "CC0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Gravity_Dam_Cross_Section_Diagram.svg"
+    }
   },
   {
     "id": "MM-G6-SCI-015",
@@ -1517,7 +1720,14 @@
       "Upper mantle"
     ],
     "answer": "Outer core",
-    "explanation": "Earth’s outer core is a liquid metallic layer."
+    "explanation": "Earth’s outer core is a liquid metallic layer.",
+    "image": {
+      "file": "earth-structure.png",
+      "alt": "Labeled cutaway diagram of Earth's internal layers from crust to core.",
+      "attribution": "Kelvinsong / CC BY-SA 3.0 (Wikimedia Commons)",
+      "license": "CC BY-SA 3.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Earth_poster.svg"
+    }
   },
   {
     "id": "MM-G6-SCI-016",
@@ -1533,7 +1743,14 @@
       "Gravity reverses"
     ],
     "answer": "New crust forms",
-    "explanation": "Magma can rise and cool, creating new crust at divergent boundaries."
+    "explanation": "Magma can rise and cool, creating new crust at divergent boundaries.",
+    "image": {
+      "file": "plate-tectonics.png",
+      "alt": "Diagram of a divergent plate boundary where continental plates pull apart to form a rift.",
+      "attribution": "domdomegg / CC BY 4.0 (Wikimedia Commons)",
+      "license": "CC BY 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Continental-continental_constructive_plate_boundary.svg"
+    }
   },
   {
     "id": "MM-G6-SCI-017",
@@ -1549,7 +1766,14 @@
       "Anemometer"
     ],
     "answer": "Barometer",
-    "explanation": "A barometer measures atmospheric pressure."
+    "explanation": "A barometer measures atmospheric pressure.",
+    "image": {
+      "file": "weather.png",
+      "alt": "Photo of a 19th-century mercury barometer, an instrument that measures air pressure.",
+      "attribution": "Franz van Duns / CC BY-SA 4.0 (Wikimedia Commons)",
+      "license": "CC BY-SA 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Mercury_barometer_-_Pariser_Maasz_-_Germany_-_19th_century.jpg"
+    }
   },
   {
     "id": "MM-G6-SCI-018",
@@ -1565,7 +1789,14 @@
       "They mean exactly the same thing"
     ],
     "answer": "Climate describes long-term patterns",
-    "explanation": "Climate summarizes typical weather conditions over long periods."
+    "explanation": "Climate summarizes typical weather conditions over long periods.",
+    "image": {
+      "file": "climate.png",
+      "alt": "Köppen climate classification map of South Asia, color-coded by climate type.",
+      "attribution": "File:World Köppen Map.png: Original file by Peel, M. C., Finlayson, B. L., and McMahon, T. A. (University of Melbourne). Derivative work: Modifications by user Br-Sc-94, (User talk). Cropping &amp; addition of map legend-color box-to summary info by 2know4power, (User talk). / CC BY-SA 3.0 (Wikimedia Commons)",
+      "license": "CC BY-SA 3.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:India_and_South_Asia_K%C3%B6ppen_climate_map_with_legend.jpg"
+    }
   },
   {
     "id": "MM-G6-SCI-019",
@@ -1581,7 +1812,14 @@
       "They follow light beams"
     ],
     "answer": "Gravity pulls them inward as they move forward",
-    "explanation": "Gravity continually bends each planet’s motion into an orbit."
+    "explanation": "Gravity continually bends each planet’s motion into an orbit.",
+    "image": {
+      "file": "solar-system.png",
+      "alt": "Diagram of Earth orbiting the Sun and spinning on its tilted axis through the seasons.",
+      "attribution": "Reynolds, James Emslie, John / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Diagram_illustrating_the_earth%27s_annual_revolution_round_the_sun,_and_its_diurnal_rotation_on_its_axis._showing_its_position_(IA_dr_diagram-illustrating-the-earths-annual-revolution-round-the-sun-and-its-d-3432014).jpg"
+    }
   },
   {
     "id": "MM-G6-SCI-020",
@@ -1597,7 +1835,14 @@
       "The scientist’s opinion"
     ],
     "answer": "The outcome that is measured",
-    "explanation": "The dependent variable is the response measured after changing the independent variable."
+    "explanation": "The dependent variable is the response measured after changing the independent variable.",
+    "image": {
+      "file": "scientific-practice.png",
+      "alt": "Diagram of chemical and transport processes that cycle elements through Earth's atmosphere.",
+      "attribution": "Phillipe Rekacewicz / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atmosphere_composition_diagram-en.svg"
+    }
   },
   {
     "id": "MM-G7-SCI-001",
@@ -1613,7 +1858,14 @@
       "Vacuole"
     ],
     "answer": "Mitochondrion",
-    "explanation": "Mitochondria carry out cellular respiration to release usable energy."
+    "explanation": "Mitochondria carry out cellular respiration to release usable energy.",
+    "image": {
+      "file": "cells.png",
+      "alt": "Diagram of the animal cell cycle, showing the stages a cell goes through as it divides.",
+      "attribution": "Kelvinsong / CC0 (Wikimedia Commons)",
+      "license": "CC0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Animal_cell_cycle-en.svg"
+    }
   },
   {
     "id": "MM-G7-SCI-002",
@@ -1629,7 +1881,14 @@
       "Break down all waste"
     ],
     "answer": "Build proteins",
-    "explanation": "Ribosomes assemble amino acids into proteins."
+    "explanation": "Ribosomes assemble amino acids into proteins.",
+    "image": {
+      "file": "cells.png",
+      "alt": "Diagram of the animal cell cycle, showing the stages a cell goes through as it divides.",
+      "attribution": "Kelvinsong / CC0 (Wikimedia Commons)",
+      "license": "CC0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Animal_cell_cycle-en.svg"
+    }
   },
   {
     "id": "MM-G7-SCI-003",
@@ -1645,7 +1904,14 @@
       "A mineral inside bone"
     ],
     "answer": "A segment of DNA with inherited information",
-    "explanation": "Genes are DNA sequences that influence inherited traits."
+    "explanation": "Genes are DNA sequences that influence inherited traits.",
+    "image": {
+      "file": "genetics.png",
+      "alt": "Diagram of the structure of DNA and its four base pairs.",
+      "attribution": "Unknown / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:DNA-structure-and-bases.png"
+    }
   },
   {
     "id": "MM-G7-SCI-004",
@@ -1661,7 +1927,14 @@
       "Environment has no effect at all"
     ],
     "answer": "They inherit different combinations of alleles",
-    "explanation": "Each child can receive a different combination of parental alleles."
+    "explanation": "Each child can receive a different combination of parental alleles.",
+    "image": {
+      "file": "genetics.png",
+      "alt": "Diagram of the structure of DNA and its four base pairs.",
+      "attribution": "Unknown / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:DNA-structure-and-bases.png"
+    }
   },
   {
     "id": "MM-G7-SCI-005",
@@ -1693,7 +1966,14 @@
       "Muscular and reproductive"
     ],
     "answer": "Respiratory and circulatory",
-    "explanation": "The respiratory system brings in oxygen, and the circulatory system transports it."
+    "explanation": "The respiratory system brings in oxygen, and the circulatory system transports it.",
+    "image": {
+      "file": "body-systems.png",
+      "alt": "Simplified diagram of the human circulatory system and its path of blood flow.",
+      "attribution": "LadyofHats, Mariana Ruiz Villarreal / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Circulatory_System_en.svg"
+    }
   },
   {
     "id": "MM-G7-SCI-007",
@@ -1709,7 +1989,14 @@
       "Produce more bones"
     ],
     "answer": "Maintain a stable temperature",
-    "explanation": "Evaporation of sweat removes thermal energy and helps cool the body."
+    "explanation": "Evaporation of sweat removes thermal energy and helps cool the body.",
+    "image": {
+      "file": "homeostasis.png",
+      "alt": "Diagram sorting animals into thermoregulation groups by how they control body temperature.",
+      "attribution": "E L Yekutiel / CC BY-SA 4.0 (Wikimedia Commons)",
+      "license": "CC BY-SA 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Biological_thermoregulation_categories,_Hebrew.svg"
+    }
   },
   {
     "id": "MM-G7-SCI-008",
@@ -1757,7 +2044,14 @@
       "Molecules"
     ],
     "answer": "Protons",
-    "explanation": "An element is identified by its number of protons."
+    "explanation": "An element is identified by its number of protons.",
+    "image": {
+      "file": "atoms.png",
+      "alt": "Illustration of atomic structure, showing how particles fold into a larger shape.",
+      "attribution": "Zamby / CC BY-SA 3.0 (Wikimedia Commons)",
+      "license": "CC BY-SA 3.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atomic_folding_structure_illustration.png"
+    }
   },
   {
     "id": "MM-G7-SCI-011",
@@ -1789,7 +2083,14 @@
       "It stays the same"
     ],
     "answer": "It becomes four times as great",
-    "explanation": "Kinetic energy depends on speed squared, so doubling speed multiplies it by four."
+    "explanation": "Kinetic energy depends on speed squared, so doubling speed multiplies it by four.",
+    "image": {
+      "file": "kinetic-energy.png",
+      "alt": "Diagram comparing the kinetic energy of a slow train and a fast high-speed train.",
+      "attribution": "SCHolar44 / CC0 (Wikimedia Commons)",
+      "license": "CC0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Diagram_comparing_kinetic_energy_applicable_to_conventional_and_high-speed_trains.png"
+    }
   },
   {
     "id": "MM-G7-SCI-013",
@@ -1821,7 +2122,14 @@
       "Reflection"
     ],
     "answer": "Convection",
-    "explanation": "Convection transfers thermal energy through movement within a fluid."
+    "explanation": "Convection transfers thermal energy through movement within a fluid.",
+    "image": {
+      "file": "heat-transfer.png",
+      "alt": "Model of heat transfer by convection, showing warm material rising and cool material sinking.",
+      "attribution": "The original uploader was Harroschmeling at German Wikipedia. / CC BY-SA 3.0 (Wikimedia Commons)",
+      "license": "CC BY-SA 3.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Convection-snapshot.png"
+    }
   },
   {
     "id": "MM-G7-SCI-015",
@@ -1837,7 +2145,14 @@
       "The wave stops"
     ],
     "answer": "Wavelength decreases",
-    "explanation": "At constant speed, frequency and wavelength vary inversely."
+    "explanation": "At constant speed, frequency and wavelength vary inversely.",
+    "image": {
+      "file": "waves.png",
+      "alt": "Diagram comparing the sound waves of the three notes in an A major chord.",
+      "attribution": "BobORourke / CC BY 4.0 (Wikimedia Commons)",
+      "license": "CC BY 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sound_Wave_-_A_Major_Chord_-_Ratios_Separated.png"
+    }
   },
   {
     "id": "MM-G7-SCI-016",
@@ -1869,7 +2184,14 @@
       "A coral atoll only"
     ],
     "answer": "A deep-ocean trench",
-    "explanation": "Subduction bends the descending plate and creates a deep trench."
+    "explanation": "Subduction bends the descending plate and creates a deep trench.",
+    "image": {
+      "file": "plate-tectonics.png",
+      "alt": "Diagram of a divergent plate boundary where continental plates pull apart to form a rift.",
+      "attribution": "domdomegg / CC BY 4.0 (Wikimedia Commons)",
+      "license": "CC BY 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Continental-continental_constructive_plate_boundary.svg"
+    }
   },
   {
     "id": "MM-G7-SCI-018",
@@ -1885,7 +2207,14 @@
       "Precipitation"
     ],
     "answer": "Transpiration",
-    "explanation": "Plants release water vapor through small openings in their leaves."
+    "explanation": "Plants release water vapor through small openings in their leaves.",
+    "image": {
+      "file": "water-cycle.png",
+      "alt": "Diagram of the water cycle: evaporation, condensation, precipitation, and runoff.",
+      "attribution": "Tttrung / CC BY-SA 4.0 (Wikimedia Commons)",
+      "license": "CC BY-SA 4.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Water_cycle_diagram-vi.svg"
+    }
   },
   {
     "id": "MM-G7-SCI-019",
@@ -1901,7 +2230,14 @@
       "Daily cloud cover"
     ],
     "answer": "Earth’s tilted axis as it orbits the Sun",
-    "explanation": "Axial tilt changes sunlight angle and day length during Earth’s orbit."
+    "explanation": "Axial tilt changes sunlight angle and day length during Earth’s orbit.",
+    "image": {
+      "file": "astronomy.png",
+      "alt": "Photo of a precision cam encoding Earth motion over thousands of years for a long-term clock.",
+      "attribution": "Steve Jurvetson from Los Altos, USA / CC BY 2.0 (Wikimedia Commons)",
+      "license": "CC BY 2.0",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:The_Future_Physics_of_Planet_Earth_(40217810733).jpg"
+    }
   },
   {
     "id": "MM-G7-SCI-020",
@@ -1917,6 +2253,13 @@
       "The tallest plant proves causation everywhere"
     ],
     "answer": "A moderate amount worked best in this test",
-    "explanation": "The observed peak indicates that the middle range produced the greatest height under these conditions."
+    "explanation": "The observed peak indicates that the middle range produced the greatest height under these conditions.",
+    "image": {
+      "file": "scientific-practice.png",
+      "alt": "Diagram of chemical and transport processes that cycle elements through Earth's atmosphere.",
+      "attribution": "Phillipe Rekacewicz / Public domain (Wikimedia Commons)",
+      "license": "Public domain",
+      "sourceUrl": "https://commons.wikimedia.org/wiki/File:Atmosphere_composition_diagram-en.svg"
+    }
   }
 ]

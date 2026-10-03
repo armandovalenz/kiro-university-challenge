@@ -43,6 +43,10 @@ require code changes.
   wired in. The same demo-only terms apply.
 - `twilight_zone_x.wav` (tunnel / teleport cue, `sfx_tunnel`) was added by the
   project creator with no recorded source. The same demo-only terms apply.
+- `knowledge_power.m4a` (book-throw sting, `sfx_knowledge_power` key —
+  the preferred cue for `AudioEvent.BOOK_THROW`, the Knowledge Power attack) was added by the project
+  creator with no recorded source. The same demo-only terms apply unless it
+  is the creator's own audio; confirm its license before any public release.
 - `score.mp3` and `jeopardy.mp3` also come from third parties and have no
   recorded source. The same demo-only terms apply. `score.mp3` is no longer
   wired in.

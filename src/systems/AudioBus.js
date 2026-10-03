@@ -64,6 +64,8 @@ export const AudioEvent = Object.freeze({
   HIGH_SCORE: 'highScore', // new high score (Req 12.2)
   MENU_SELECT: 'menuSelect', // menu navigation / selection (Req 12.2)
   PAUSE: 'pause', // pause / unpause (Req 12.2)
+  BOOK_THROW: 'bookThrow', // Knowledge Power: a book is thrown (FP3D_Mode)
+  BOOK_HIT: 'bookHit', // Knowledge Power: a thrown book hits a ghost (FP3D_Mode)
 });
 
 /**
@@ -122,6 +124,10 @@ export const EVENT_SOUND = Object.freeze({
   [AudioEvent.CAUGHT]: { type: AudioType.SFX, keys: ['sfx_caught'] },
   // Correct answer: the ~5 s "12. Stage Clear.mp3" jingle (quiz music is
   // stopped first in QuizScene), falling back to the old cue if it's missing.
+  // Correct answer: the ~5 s "12. Stage Clear.mp3" jingle (quiz music is
+  // stopped first in QuizScene), falling back to the old intermission cue if
+  // it's missing (the _hasAudio filter picks the first that loaded, so this
+  // degrades gracefully — Property 22).
   [AudioEvent.CORRECT]: { type: AudioType.SFX, keys: ['music_stage_clear', 'sfx_correct'] },
   [AudioEvent.WRONG]: { type: AudioType.SFX, keys: ['sfx_wrong'] },
   [AudioEvent.LIFE_LOST]: {
@@ -141,6 +147,12 @@ export const EVENT_SOUND = Object.freeze({
   [AudioEvent.HIGH_SCORE]: { type: AudioType.SFX, keys: ['sfx_highscore'] },
   [AudioEvent.MENU_SELECT]: { type: AudioType.SFX, keys: ['sfx_select'] },
   [AudioEvent.PAUSE]: { type: AudioType.SFX, keys: ['sfx_pause'] },
+  // Knowledge Power (FP3D_Mode): REUSE already-loaded sfx keys so no new assets
+  // are added. Throwing a book reuses the short fruit-spawn blip; a hit reuses
+  // the "caught" sting. Both degrade to a silent no-op if the key is missing
+  // (Property 22), and the map stays total over MINIMUM_EVENT_SET (Property 20).
+  [AudioEvent.BOOK_THROW]: { type: AudioType.SFX, keys: ['sfx_knowledge_power', 'sfx_fruit_spawn'] },
+  [AudioEvent.BOOK_HIT]: { type: AudioType.SFX, keys: ['sfx_caught'] },
 });
 
 /**

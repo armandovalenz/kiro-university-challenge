@@ -205,6 +205,15 @@ export const MASCOT_FRAMES = {
 /** Path to the bundled question bank (Req 4.2). */
 export const QUESTION_BANK_PATH = 'assets/questions/math_man_question_bank_120.json';
 
+/**
+ * Base path (web-root-relative, like QUESTION_BANK_PATH) for the optional
+ * per-question visual-aid images. A question's `image.file` is a bare filename
+ * (e.g. `plants.png`); the quiz UI joins it onto this base to build the runtime
+ * URL `assets/questions/images/<file>`. Vite serves `public/` at `/`, so the
+ * leading slash is omitted to match every other asset reference in the app.
+ */
+export const QUESTION_IMAGE_BASE_PATH = 'assets/questions/images/';
+
 /** Base path for audio clips (WAV; keys defined with AudioBus in a later task). */
 export const AUDIO_BASE_PATH = 'assets/audio/';
 
@@ -254,4 +263,25 @@ export const GESTURE = {
   doubleTapIntervalMs: 300, // Double_Tap_Interval between two Tap starts (Req 5.9)
   longPressMs: 500, // Long_Press_Duration — stationary hold (Req 5.10)
   interactionRangeTiles: 3, // interaction activation range from the camera (Req 6.1, 6.5)
+};
+
+// --- Knowledge Power (FP3D_Mode book projectile) ------------------------------
+// The "Knowledge Power" charge meter + thrown-book projectile. The meter is a
+// framework-agnostic integer in [0, max] owned by `systems/KnowledgePower.js`;
+// these are the only tunable gameplay numbers (no hardcoded values in the scene
+// or renderer). Projectile fields drive the renderer's cosmetic parabolic arc;
+// the authoritative hit test runs over the pure tile path (`systems/bookThrow.js`).
+
+export const KNOWLEDGE = {
+  max: 10, // full charge = ten books (the HUD book bar has this many slots)
+  throwCost: 1, // charge spent per throw; a throw at < this cannot fire
+  maxRangeTiles: 8, // how many tiles the thrown book can travel before landing
+  projectileSpeed: TILE_SIZE * 10, // horizontal travel speed (world units/sec) along the facing axis
+  projectileGravity: TILE_SIZE * 40, // downward acceleration (world units/sec²) for the arc
+  projectileArcHeight: TILE_SIZE * 0.9, // initial upward lift so the book rises then falls
+  // On a hit, the struck ghost DIMS OUT over this window before being sent home.
+  // Deferring the hit cue + send-home by this long also lets the knowledge-power
+  // throw sting finish instead of being cut off by the hit cue (AudioBus plays
+  // one sfx at a time). Under reduced motion the dim is instant (hide now).
+  hitDimMs: 300,
 };

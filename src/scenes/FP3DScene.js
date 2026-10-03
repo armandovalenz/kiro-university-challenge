@@ -33,7 +33,7 @@
 import Phaser from 'phaser';
 
 import {
-  DEFAULT_GRADE, GRADES, GHOST_PERSONALITIES, FP3D, TIMINGS, FRUIT_MIN_DISTANCE, PRESSURE, GESTURE,
+  DEFAULT_GRADE, GRADES, GHOST_PERSONALITIES, FP3D, TIMINGS, FRUIT_MIN_DISTANCE, PRESSURE, GESTURE, KNOWLEDGE,
 } from '../config.js';
 import { nearestGhostPathDistance, pressureTargetRate, approachRate } from '../systems/pressure.js';
 import {
@@ -68,6 +68,8 @@ import {
 import { FP3DRenderer, NoWebGLContextError } from '../render/FP3DRenderer.js';
 import ScoreSystem from '../systems/ScoreSystem.js';
 import LessonBank from '../systems/LessonBank.js';
+import KnowledgePower from '../systems/KnowledgePower.js';
+import { resolveBookThrow } from '../systems/bookThrow.js';
 import { AudioEvent } from '../systems/AudioBus.js';
 
 /**
@@ -145,6 +147,12 @@ export default class FP3DScene extends Phaser.Scene {
     // Per-run bank of tagged micro-lessons for fruit collection (Task 15 uses
     // the freeze + overlay; here it is constructed and ready).
     this.lessonBank = new LessonBank();
+
+    // Knowledge Power charge meter (FP3D_Mode): starts FULL. A thrown book costs
+    // one charge; eating a fruit refills it to max; a new level resets it. The
+    // meter is a framework-agnostic integer system — this scene only reads/
+    // mutates it and renders the book bar HUD (no forked rules).
+    this.knowledge = new KnowledgePower();
 
     // --- Maze: the single source of truth (Req 1.5) --------------------------
     // Build a pure MazeGrid straight from getLevelLayout(); a malformed layout
@@ -558,6 +566,11 @@ export default class FP3DScene extends Phaser.Scene {
     // game-over / high-score write) — the chosen "quit to menu" behavior.
     kb.on('keydown-ESC', () => this._returnToMenu(), this);
 
+    // Spacebar throws a Knowledge Power book. `_throwBook` is gated to the
+    // unfrozen, scene-owned state, so pressing Space while a quiz/lesson/level-
+    // clear overlay is open (which also listens for Space) does nothing here.
+    kb.on('keydown-SPACE', () => this._throwBook(), this);
+
     this._setupMouseLook();
   }
 
@@ -714,6 +727,107 @@ export default class FP3DScene extends Phaser.Scene {
   _queueMove(dir) {
     if (!this.state || this.state.frozen) return;
     this.state.buffer.push({ type: 'move', dir });
+  }
+
+  // --- Knowledge Power: throw a book (Spacebar / on-screen FIRE button) -------
+
+  /**
+   * Throw a Knowledge Power book in the player's current facing. Gated to the
+   * unfrozen, scene-owned state so it never fires while an overlay (quiz/lesson/
+   * level-clear) is open. When the meter is empty it is a soft no-op.
+   *
+   * The hit decision is DETERMINISTIC and runs here over the pure tile path
+   * (`resolveBookThrow`): the nearest ghost on the straight line of tiles ahead
+   * (up to `KNOWLEDGE.maxRangeTiles`, stopping at the first wall) is sent back
+   * to its ghost-house spawn — the SAME per-ghost reset `_buildGhostStates`/
+   * `resetPositions` use (col/row ← spawn, dir = null, exited = false). A hit
+   * never changes score or lives. The renderer's arced book is purely cosmetic.
+   */
+  _throwBook() {
+    if (!this.state || this.state.frozen || !this.knowledge) return;
+    if (!this.knowledge.canThrow()) {
+      // Empty meter: no throw, no charge spent. (Soft no-op — no error.)
+      return;
+    }
+
+    // Spend one charge (always succeeds here since canThrow() was true).
+    this.knowledge.throw();
+
+    // Throw cue (silent no-op if audio/asset is unavailable — Property 22).
+    if (this.audio && typeof this.audio.play === 'function') {
+      this.audio.play(AudioEvent.BOOK_THROW);
+    }
+
+    const player = { col: this.state.player.col, row: this.state.player.row };
+    const facing = this.state.player.facing;
+
+    // Cosmetic arced book from the renderer (guarded; no-op in headless/tests).
+    if (this.renderer && typeof this.renderer.throwBook === 'function') {
+      this.renderer.throwBook(player, facing, { maxRangeTiles: KNOWLEDGE.maxRangeTiles });
+    }
+
+    // Authoritative hit test over the pure tile path.
+    const { hit } = resolveBookThrow(
+      this.grid, player, facing, this.state.ghosts, KNOWLEDGE.maxRangeTiles,
+    );
+    if (hit && hit.ghost) {
+      const ghost = hit.ghost;
+      const dimMs = KNOWLEDGE.hitDimMs;
+
+      // Start the hit ghost DIMMING OUT right as the book lands (guarded no-op
+      // in headless/tests). The send-home + hit cue are DEFERRED until the dim
+      // finishes: this makes the ghost visibly fade before it vanishes, and —
+      // because AudioBus plays one sfx at a time — holding the BOOK_HIT cue back
+      // past the dim lets the knowledge-power throw sting above play out instead
+      // of being cut off in the same tick (so the "knowledge is power" sound is
+      // heard on every throw).
+      if (this.renderer && typeof this.renderer.dimGhost === 'function') {
+        this.renderer.dimGhost(ghost.key, { durationMs: dimMs });
+      }
+
+      // After the dim: play the hit cue, send the ghost home, and re-place it —
+      // `_renderGhosts` → `setGhosts` restores the group's solid opacity so the
+      // re-homed ghost reappears at the house. Guarded so it no-ops if the scene
+      // is shutting down or the ghost was already reset/invalidated meanwhile.
+      this.time?.delayedCall?.(dimMs, () => {
+        // No-op if the scene is shutting down or state was torn down.
+        if (!this.scene || (this.scene.isActive && !this.scene.isActive())) return;
+        if (!this.state || !ghost) return;
+        // Already home/invalid (e.g. reset by a capture cycle in the meantime):
+        // the dim already hid it and setGhosts will restore it — skip the hit
+        // cue + redundant send-home.
+        const spawn = ghost.spawn;
+        const alreadyHome = spawn && ghost.col === spawn.col && ghost.row === spawn.row && !ghost.exited;
+        if (alreadyHome) {
+          this._renderGhosts();
+          return;
+        }
+        if (this.audio && typeof this.audio.play === 'function') {
+          this.audio.play(AudioEvent.BOOK_HIT);
+        }
+        this._sendGhostHome(ghost);
+        // Re-place the ghost at home; setGhosts restores its normal opacity.
+        this._renderGhosts();
+      }, [], this);
+    }
+
+    // Reflect the spent charge in the HUD immediately.
+    this._updateKnowledgeHud();
+  }
+
+  /**
+   * Send a single ghost back to its ghost-house spawn — the SAME per-ghost
+   * reset used elsewhere (col/row ← its `spawn`, heading cleared, and
+   * `exited = false` so it must re-exit the house). Does NOT touch score/lives.
+   * @param {{col:number,row:number,spawn?:{col:number,row:number},dir:?string,exited:boolean}} ghost
+   */
+  _sendGhostHome(ghost) {
+    if (!ghost) return;
+    const spawn = ghost.spawn || { col: ghost.col, row: ghost.row };
+    ghost.col = spawn.col;
+    ghost.row = spawn.row;
+    ghost.dir = null;
+    ghost.exited = false;
   }
 
   // --- One-thumb touch gestures (Req 1, 2, 4, 5, 7, 8) -----------------------
@@ -1514,6 +1628,27 @@ export default class FP3DScene extends Phaser.Scene {
     this._motionBtn = motionBtn;
     container.appendChild(motionBtn);
 
+    // --- Knowledge Power FIRE button (bottom-center) -------------------------
+    // Throws a book, same action as the Spacebar. A real <button> so it is
+    // keyboard-focusable/operable; `makeButton` already stops propagation so a
+    // tap here never also anchors the free-look / joystick origin.
+    const fireBtn = makeButton('\uD83D\uDCDA', 'Throw book', () => this._throwBook());
+    fireBtn.classList.add('fp3d-fire-btn');
+    Object.assign(fireBtn.style, {
+      position: 'absolute',
+      left: '50%',
+      bottom: '18px',
+      transform: 'translateX(-50%)',
+      minWidth: '72px',
+      minHeight: '72px',
+      fontSize: '30px',
+      background: 'rgba(120, 90, 255, 0.85)', // distinct from the yellow move/turn buttons
+      border: '2px solid #b9a8ff',
+      color: '#fff',
+    });
+    this._fireBtn = fireBtn;
+    container.appendChild(fireBtn);
+
     root.appendChild(container);
     this._touchControls = container;
 
@@ -1638,6 +1773,45 @@ export default class FP3DScene extends Phaser.Scene {
     root.appendChild(score);
     this._hudScore = score;
 
+    // Knowledge Power book bar: a labeled row of 10 book glyphs under the score,
+    // filled books = current charge, dim books = spent slots. Updated per frame
+    // in `_updateKnowledgeHud`.
+    const knowledge = document.createElement('div');
+    knowledge.className = 'fp3d-hud-knowledge';
+    knowledge.setAttribute('role', 'status');
+    knowledge.setAttribute('aria-label', 'Knowledge ammo');
+    Object.assign(knowledge.style, {
+      position: 'absolute',
+      top: '46px',
+      left: '10px',
+      padding: '5px 10px',
+      font: '700 13px/1 monospace',
+      color: '#ffe000',
+      background: 'rgba(0, 0, 20, 0.55)',
+      border: '1px solid rgba(255, 224, 0, 0.5)',
+      borderRadius: '8px',
+      pointerEvents: 'none',
+      textShadow: '0 1px 2px #000',
+      whiteSpace: 'nowrap',
+      letterSpacing: '1px',
+    });
+
+    const label = document.createElement('span');
+    label.textContent = 'KNOWLEDGE AMMO ';
+    label.style.verticalAlign = 'middle';
+    knowledge.appendChild(label);
+
+    const books = document.createElement('span');
+    books.className = 'fp3d-hud-books';
+    books.style.verticalAlign = 'middle';
+    books.style.fontSize = '16px';
+    knowledge.appendChild(books);
+
+    root.appendChild(knowledge);
+    this._hudKnowledge = knowledge;
+    this._hudBooks = books;
+    this._updateKnowledgeHud();
+
     // Compass badge (N/E/S/W of the current facing), sitting above the minimap.
     const compass = document.createElement('div');
     compass.className = 'fp3d-compass';
@@ -1700,7 +1874,34 @@ export default class FP3DScene extends Phaser.Scene {
         .map((c) => (c === f ? `[${letter[c]}]` : letter[c]))
         .join('   ');
     }
+    this._updateKnowledgeHud();
     this._drawMinimap();
+  }
+
+  /**
+   * Refresh the Knowledge Power book bar: `level` filled book glyphs (📚) and
+   * the rest dim empty slots, out of `max`. No-op in headless/tests (no HUD) or
+   * before the meter exists.
+   */
+  _updateKnowledgeHud() {
+    if (!this._hudBooks || !this.knowledge) return;
+    const level = this.knowledge.level;
+    const max = this.knowledge.max;
+    // Filled books are the bright 📚 glyph; spent slots are the same glyph dimmed.
+    // The whole row shows exactly `max` glyphs so the bar width is stable. Built
+    // from DOM nodes (not innerHTML) so there is no unsafe HTML assignment.
+    const doc = this._hudBooks.ownerDocument || (typeof document !== 'undefined' ? document : null);
+    if (!doc) return;
+    while (this._hudBooks.firstChild) this._hudBooks.removeChild(this._hudBooks.firstChild);
+    for (let i = 0; i < max; i++) {
+      const span = doc.createElement('span');
+      span.textContent = '\uD83D\uDCDA';
+      span.style.opacity = i < level ? '1' : '0.22';
+      this._hudBooks.appendChild(span);
+    }
+    if (this._hudKnowledge) {
+      this._hudKnowledge.setAttribute('aria-label', `Knowledge ammo ${level} of ${max}`);
+    }
   }
 
   /**
@@ -1838,13 +2039,15 @@ export default class FP3DScene extends Phaser.Scene {
 
   /** Remove the HUD + minimap DOM nodes (scene teardown). */
   _destroyHud() {
-    for (const el of [this._hudScore, this._minimapCanvas, this._hudCompass]) {
+    for (const el of [this._hudScore, this._minimapCanvas, this._hudCompass, this._hudKnowledge]) {
       if (!el) continue;
       try { el.remove(); } catch { if (el.parentNode) el.parentNode.removeChild(el); }
     }
     this._hudScore = null;
     this._minimapCanvas = null;
     this._hudCompass = null;
+    this._hudKnowledge = null;
+    this._hudBooks = null;
   }
 
   /** Remove the touch-control overlay (incl. the joystick) from the DOM. */
@@ -1866,6 +2069,7 @@ export default class FP3DScene extends Phaser.Scene {
       }
       this._touchControls = null;
       this._motionBtn = null;
+      this._fireBtn = null;
     }
   }
 
@@ -2369,6 +2573,9 @@ export default class FP3DScene extends Phaser.Scene {
     this.scoreSystem.nextLevel();
     this.grid.reset(this.scoreSystem.level);
 
+    // Knowledge Power: each fresh level starts with a full book meter.
+    if (this.knowledge) this.knowledge.reset();
+
     // Refresh the ghost-house release setup against the rebuilt grid so the
     // exit/re-entry rules match the new level's layout.
     this._house = houseRegionFromGrid(this.grid);
@@ -2821,6 +3028,9 @@ export default class FP3DScene extends Phaser.Scene {
     // Extra life, capped at LIVES_MAX = 10 by ScoreSystem (Req 5.2). Same shared
     // ScoreSystem — never forked.
     this.scoreSystem.gainLife();
+
+    // Knowledge Power: a fruit tops the book meter back up to full (not +1).
+    if (this.knowledge) this.knowledge.refillToMax();
 
     if (this.renderer) this.renderer.setFruit(fruit.col, fruit.row, false, fruit.slot);
     if (this.audio && typeof this.audio.play === 'function') {

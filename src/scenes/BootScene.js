@@ -60,6 +60,7 @@ const AUDIO_ASSETS = [
   { key: 'sfx_1up', file: 'extend.wav' },
   { key: 'sfx_caught', file: 'eat_ghost.wav' },
   { key: 'sfx_correct', file: 'intermission.wav' },
+  { key: 'sfx_knowledge_power', file: 'knowledge_power.m4a' },
   { key: 'sfx_wrong', file: 'death_0.wav' },
   { key: 'sfx_death_0', file: 'death_0.wav' },
   { key: 'sfx_death_1', file: 'death_1.wav' },

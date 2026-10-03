@@ -27,7 +27,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
-import { FP3D, GHOST_COLORS } from '../config.js';
+import { FP3D, GHOST_COLORS, KNOWLEDGE } from '../config.js';
 import { TILE } from '../maze/mazeData.js';
 import { tileToWorld3D, eyePosition } from '../systems/fp3d/fp3dLogic.js';
 import { coverCropRect } from '../systems/fp3d/imageCrop.js';
@@ -335,6 +335,15 @@ export class FP3DRenderer {
     this._fruitAnims = new Map();
     /** Ghost meshes keyed by ghost `key`. @type {Map<string, THREE.Mesh>} */
     this._ghostMeshes = new Map();
+
+    /**
+     * Live thrown-book projectiles (Knowledge Power). Each entry is a small
+     * flat book mesh animated along a cosmetic parabolic arc in `_stepProjectiles`
+     * and removed+disposed when it lands or exceeds its range. Tracked here so
+     * `dispose()`/`_disposeDynamic()` release every live projectile.
+     * @type {Set<{ mesh: THREE.Mesh, geo: THREE.BufferGeometry, mat: THREE.Material, x0:number, y0:number, z0:number, vx:number, vz:number, vy:number, g:number, floorY:number, startMs:number, maxDist:number }>}
+     */
+    this._projectiles = new Set();
 
     // Animation state for the camera (position + yaw). `animateMove`/
     // `animateTurn` set these; `render` advances them each frame. When
@@ -1375,6 +1384,134 @@ export class FP3DRenderer {
   }
 
   /**
+   * Spawn a thrown "book" projectile (Knowledge Power) that flies in a COSMETIC
+   * parabolic arc from the player's eye position in `facing`, then lands and
+   * disposes itself. This is visual only — the authoritative hit decision is
+   * made by the scene over the pure tile path (`systems/bookThrow.js`), so this
+   * method takes no gameplay decision and returns nothing meaningful.
+   *
+   * A small flat brown box (a thin "page slab") is tracked in `_projectiles`
+   * and advanced each frame in `_stepProjectiles`; when it drops to the floor
+   * or exceeds its max horizontal range it is removed and its geometry/material
+   * disposed. Safe in headless/tests: with no scene/grid it no-ops.
+   *
+   * @param {{ col: number, row: number }} fromTile player's current tile
+   * @param {'north'|'east'|'south'|'west'} facing current cardinal facing
+   * @param {object} [opts]
+   * @param {number} [opts.maxRangeTiles] tiles the book may travel (defaults to KNOWLEDGE.maxRangeTiles)
+   */
+  throwBook(fromTile, facing, opts = {}) {
+    // Graceful no-op without a live scene/grid (headless/tests, Req 8).
+    if (!this.scene || !this.grid || !fromTile) return;
+
+    const tile = this.grid.tileSize;
+    // Launch from the player's eye position so the book arcs from "in hand".
+    const eye = eyePosition(this.grid, fromTile.col, fromTile.row, this.eyeHeight);
+
+    // Horizontal direction unit vector along the cardinal facing (X=east,
+    // Z=south), matching the renderer's world convention.
+    const dir = {
+      north: { x: 0, z: -1 },
+      south: { x: 0, z: 1 },
+      west: { x: -1, z: 0 },
+      east: { x: 1, z: 0 },
+    }[facing] || { x: 0, z: -1 };
+
+    const speed = KNOWLEDGE.projectileSpeed;
+    const g = KNOWLEDGE.projectileGravity;
+    // Initial upward velocity so the book rises then falls (parabolic arc).
+    const vy0 = Math.sqrt(Math.max(0, 2 * g * KNOWLEDGE.projectileArcHeight));
+
+    // A thin flat book — wide/tall page slab, shallow depth — tinted brown.
+    let geo;
+    let mat;
+    let mesh;
+    try {
+      geo = this._trackGeometry(new THREE.BoxGeometry(tile * 0.34, tile * 0.24, tile * 0.06));
+      mat = this._trackMaterial(new THREE.MeshStandardMaterial({
+        color: 0x8a5a2b, // leather-brown cover
+        emissive: 0x2a1707,
+        emissiveIntensity: 0.4,
+        roughness: 0.7,
+        metalness: 0.0,
+      }));
+      mesh = new THREE.Mesh(geo, mat);
+    } catch {
+      // Three primitive construction failed (stub/headless) → nothing to show.
+      if (geo) this._geometries.delete(geo);
+      if (mat) this._materials.delete(mat);
+      return;
+    }
+    mesh.frustumCulled = false;
+    mesh.position.set(eye.x, eye.y, eye.z);
+    this.scene.add(mesh);
+
+    this._projectiles.add({
+      mesh,
+      geo,
+      mat,
+      x0: eye.x,
+      y0: eye.y,
+      z0: eye.z,
+      vx: dir.x * speed,
+      vz: dir.z * speed,
+      vy: vy0,
+      g,
+      floorY: tile * 0.08, // "ground" the book lands on (just above the floor)
+      startMs: this._now(),
+      // Max horizontal distance before it despawns, in world units.
+      maxDist: tile * (Number.isFinite(opts.maxRangeTiles) ? opts.maxRangeTiles : KNOWLEDGE.maxRangeTiles),
+    });
+  }
+
+  /**
+   * Advance every live book projectile along its parabolic arc and remove any
+   * that have landed (dropped to the floor on the way down) or exceeded their
+   * horizontal range. Purely cosmetic; called from `_stepAnimations`.
+   * @param {number} now current time in ms
+   */
+  _stepProjectiles(now) {
+    if (!this._projectiles || this._projectiles.size === 0) return;
+    for (const p of Array.from(this._projectiles)) {
+      const t = Math.max(0, (now - p.startMs) / 1000); // seconds since launch
+      const x = p.x0 + p.vx * t;
+      const z = p.z0 + p.vz * t;
+      const y = p.y0 + p.vy * t - 0.5 * p.g * t * t;
+
+      const dist = Math.hypot(x - p.x0, z - p.z0);
+      // Despawn once it falls back to the floor (after rising) or outranges.
+      const landed = y <= p.floorY && t > 0;
+      if (landed || dist >= p.maxDist) {
+        this._removeProjectile(p);
+        continue;
+      }
+      if (p.mesh) {
+        p.mesh.position.set(x, y, z);
+        // Tumble as it flies, for a bit of life.
+        p.mesh.rotation.x += 0.3;
+        p.mesh.rotation.y += 0.12;
+      }
+    }
+  }
+
+  /** Remove a projectile from the scene and release its GPU resources. */
+  _removeProjectile(p) {
+    if (!p) return;
+    this._projectiles.delete(p);
+    if (p.mesh && this.scene) {
+      try { this.scene.remove(p.mesh); } catch { /* ignore */ }
+    }
+    if (p.geo) {
+      this._geometries.delete(p.geo);
+      try { p.geo.dispose(); } catch { /* ignore */ }
+    }
+    if (p.mat) {
+      this._materials.delete(p.mat);
+      try { p.mat.dispose(); } catch { /* ignore */ }
+    }
+  }
+
+  /**
    * Set the free-look offset (Google-Street-View-style mouse drag). `yaw` is an
    * offset added to the grid-facing yaw; `pitch` tilts the view up/down. Both
    * are applied on top of the discrete cardinal facing without changing it, so
@@ -1461,6 +1598,86 @@ export class FP3DRenderer {
         group.userData.targetY = group.position.y;
         group.userData.targetZ = group.position.z;
         group.userData.savedPos = null;
+      }
+    }
+  }
+
+  /**
+   * Set the opacity of every material under a ghost group (the placeholder
+   * sphere and any loaded GLB model meshes), keeping each material
+   * `transparent` so the fade actually shows. Used by the dim-out animation.
+   * @param {THREE.Group} group
+   * @param {number} opacity 0..GHOST_OPACITY
+   */
+  _setGhostGroupOpacity(group, opacity) {
+    if (!group || typeof group.traverse !== 'function') return;
+    group.traverse((obj) => {
+      if (!obj || !obj.material) return;
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+      for (const m of mats) {
+        if (!m) continue;
+        m.transparent = true;
+        m.opacity = opacity;
+        m.needsUpdate = true;
+      }
+    });
+  }
+
+  /**
+   * Begin DIMMING OUT a hit ghost: fade its group opacity from `GHOST_OPACITY`
+   * toward ~0 over `durationMs`, then hide the group. The scene sends the ghost
+   * home after the same window; the next `setGhosts` restores the group's solid
+   * opacity + visibility, so a re-homed ghost reappears normally (the dim does
+   * NOT permanently alter the materials).
+   *
+   * Reduced motion (Req 7.4/7.5): skip the fade and hide instantly. Guarded
+   * (no scene/group → no-op) so it is safe in headless/tests (Req 8).
+   * @param {string} key ghost key ('red'|'pink'|'cyan'|'orange')
+   * @param {{ durationMs?: number }} [opts]
+   */
+  dimGhost(key, { durationMs = 300 } = {}) {
+    if (!key || !this._ghostMeshes) return;
+    const group = this._ghostMeshes.get(key);
+    if (!group) return;
+
+    // Reduced motion → instant hide (no fade). setGhosts restores it later.
+    if (this.reducedMotion) {
+      this._setGhostGroupOpacity(group, 0);
+      group.visible = false;
+      if (group.userData) group.userData.dimming = null;
+      return;
+    }
+
+    const durMs = Number.isFinite(durationMs) && durationMs > 0 ? durationMs : 300;
+    const startMs = (typeof performance !== 'undefined' && performance.now)
+      ? performance.now()
+      : Date.now();
+    // Advanced each frame in `_stepGhostDims`, hooked into the shared animation
+    // path alongside `_stepGhosts`.
+    group.userData.dimming = { startMs, durMs };
+  }
+
+  /**
+   * Advance any in-flight ghost dim-out animations: fade each dimming group's
+   * opacity from `GHOST_OPACITY` toward 0 over its window, hiding the group when
+   * complete. Runs inside the same per-frame animation path as `_stepGhosts`.
+   * @param {number} now current time in ms
+   */
+  _stepGhostDims(now) {
+    if (!this._ghostMeshes || this._ghostMeshes.size === 0) return;
+    for (const group of this._ghostMeshes.values()) {
+      const ud = group.userData;
+      if (!ud || !ud.dimming) continue;
+      const { startMs, durMs } = ud.dimming;
+      let frac = durMs > 0 ? (now - startMs) / durMs : 1;
+      if (frac < 0) frac = 0;
+      if (frac > 1) frac = 1;
+      // Ease-out so the fade starts quick and settles softly.
+      const eased = 1 - (1 - frac) * (1 - frac);
+      this._setGhostGroupOpacity(group, GHOST_OPACITY * (1 - eased));
+      if (frac >= 1) {
+        group.visible = false;
+        ud.dimming = null;
       }
     }
   }
@@ -2052,6 +2269,12 @@ export class FP3DRenderer {
       if (ghost.dir && group.userData.model) {
         group.userData.targetYaw = DIR_YAW[ghost.dir] ?? group.userData.targetYaw ?? 0;
       }
+      // A ghost that was DIMMED OUT by a book hit is sent home and re-placed
+      // through here, so RESTORE its solid opacity and clear any dimming state —
+      // otherwise a re-homed ghost would stay stuck transparent/invisible.
+      if (group.userData.dimming) group.userData.dimming = null;
+      this._setGhostGroupOpacity(group, GHOST_OPACITY);
+
       // Visibility is decided by the injected LOS/FOV function only — NOT by
       // raycasting (Req 3.7, 3.8). `personality` on the state is left intact.
       group.visible = !!visibilityFn(ghost);
@@ -2305,6 +2528,8 @@ export class FP3DRenderer {
     this._stepTorchFlames(now);
     this._stepPellets(now);
     this._stepGhosts(now);
+    this._stepGhostDims(now);
+    this._stepProjectiles(now);
   }
 
   /**
@@ -2499,6 +2724,12 @@ export class FP3DRenderer {
     this._fruitAnims.clear();
     for (const mesh of this._ghostMeshes.values()) this._removeMarker(mesh);
     this._ghostMeshes.clear();
+    // Release any live book projectiles (Knowledge Power) so a rebuild/teardown
+    // never leaks their geometry/material.
+    if (this._projectiles) {
+      for (const p of Array.from(this._projectiles)) this._removeProjectile(p);
+      this._projectiles.clear();
+    }
     this._moveAnim = null;
     this._turnAnim = null;
   }
