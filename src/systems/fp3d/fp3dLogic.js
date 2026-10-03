@@ -184,47 +184,64 @@ export class InputBuffer {
 // --- Tunnel-wrap resolution ---------------------------------------------------
 
 /**
- * Resolve a horizontal tunnel wrap for a first-person player, mirroring the 2D
+ * Resolve a tunnel wrap for a first-person player, mirroring the 2D
  * `MazeGrid.attemptMove` / `wrapIfTunnel` rule in tile space so the two modes
- * never diverge (Req 2.5, 9.1). Validates Property 4.
+ * never diverge (Req 2.5, 9.1). Handles BOTH wrap axes. Validates Property 4.
  *
  * Contract:
- * - Only a WEST or EAST step can leave the horizontal bounds; on a tunnel row
- *   (`grid.tunnelRows.has(row)`) such a step wraps to the opposite in-bounds
- *   edge — off the LEFT edge (west, `col === 0`) wraps to `grid.cols - 1`; off
- *   the RIGHT edge (east, `col === grid.cols - 1`) wraps to `0`. This matches
- *   `MazeGrid.attemptMove`, which maps `targetCol < 0 -> cols - 1` and
- *   `targetCol >= cols -> 0` on a tunnel row.
- * - The entry `row` and the entry `facing` are preserved.
- * - Any position/facing that does NOT step off a horizontal edge — a non-tunnel
- *   row, a north/south facing, or a west/east step that stays in bounds — is
+ * - Horizontal (E↔W): only a WEST or EAST step can leave the horizontal bounds;
+ *   on a tunnel ROW (`grid.tunnelRows.has(row)`) such a step wraps to the
+ *   opposite in-bounds edge — off the LEFT edge (west, `col === 0`) wraps to
+ *   `grid.cols - 1`; off the RIGHT edge (east, `col === grid.cols - 1`) wraps to
+ *   `0`. This matches `MazeGrid.attemptMove` mapping `targetCol < 0 -> cols - 1`
+ *   and `targetCol >= cols -> 0` on a tunnel row.
+ * - Vertical (N↔S): only a NORTH or SOUTH step can leave the vertical bounds; on
+ *   a tunnel COLUMN (`grid.tunnelCols.has(col)`) such a step wraps to the
+ *   opposite in-bounds edge — off the TOP edge (north, `row === 0`) wraps to
+ *   `grid.rows - 1`; off the BOTTOM edge (south, `row === grid.rows - 1`) wraps
+ *   to `0`. This matches `MazeGrid.attemptMove` mapping `targetRow < 0 ->
+ *   rows - 1` and `targetRow >= rows -> 0` on a tunnel column.
+ * - The entry coordinates and the entry `facing` are preserved apart from the
+ *   wrapped axis.
+ * - Any position/facing that does NOT step off a wrap edge — not on a tunnel
+ *   row/column for the relevant axis, or a step that stays in bounds — is
  *   returned unchanged (`{ col, row, facing }` verbatim). Callers use
  *   {@link resolveMove} for the ordinary in-bounds case; `resolveTunnel` only
- *   rewrites the column when a genuine edge wrap occurs.
+ *   rewrites a coordinate when a genuine edge wrap occurs.
  *
- * @param {MazeGrid} grid maze grid (owns tunnel rows / column count)
+ * @param {MazeGrid} grid maze grid (owns tunnel rows/cols and grid extents)
  * @param {number} col start column
  * @param {number} row start row
  * @param {'north'|'east'|'south'|'west'} facing current cardinal facing
  * @returns {{ col: number, row: number, facing: 'north'|'east'|'south'|'west' }}
  */
 export function resolveTunnel(grid, col, row, facing) {
-  // Not a tunnel row -> no wrap possible; return unchanged.
-  if (!grid.tunnelRows.has(row)) {
-    return { col, row, facing };
-  }
-
-  // Only a horizontal step can leave the left/right bounds.
   const dir = CARDINAL_TO_DIR[facing];
-  if (dir === 'left' && col === 0) {
-    // Stepping off the left edge wraps to the rightmost in-bounds column.
-    return { col: grid.cols - 1, row, facing };
-  }
-  if (dir === 'right' && col === grid.cols - 1) {
-    // Stepping off the right edge wraps to the leftmost in-bounds column.
-    return { col: 0, row, facing };
+
+  // Horizontal E↔W wrap: a west/east step off a left/right edge on a tunnel row.
+  if (grid.tunnelRows.has(row)) {
+    if (dir === 'left' && col === 0) {
+      // Off the left edge wraps to the rightmost in-bounds column.
+      return { col: grid.cols - 1, row, facing };
+    }
+    if (dir === 'right' && col === grid.cols - 1) {
+      // Off the right edge wraps to the leftmost in-bounds column.
+      return { col: 0, row, facing };
+    }
   }
 
-  // Vertical step, or a horizontal step that stays in bounds: no wrap.
+  // Vertical N↔S wrap: a north/south step off a top/bottom edge on a tunnel col.
+  if (grid.tunnelCols.has(col)) {
+    if (dir === 'up' && row === 0) {
+      // Off the top edge wraps to the bottommost in-bounds row.
+      return { col, row: grid.rows - 1, facing };
+    }
+    if (dir === 'down' && row === grid.rows - 1) {
+      // Off the bottom edge wraps to the topmost in-bounds row.
+      return { col, row: 0, facing };
+    }
+  }
+
+  // No edge wrap applies (wrong axis, not a tunnel edge, or stays in bounds).
   return { col, row, facing };
 }

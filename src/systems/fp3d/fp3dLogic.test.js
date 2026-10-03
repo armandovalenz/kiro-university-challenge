@@ -189,4 +189,77 @@ describe('fp3dLogic — Property 4: Tunnel-wrap resolution', () => {
       { numRuns: 100 },
     );
   });
+
+  it('wraps a tunnel-column edge step to the opposite in-bounds edge row, same column, facing preserved', () => {
+    // Levels 2/3 carry vertical ('|') tunnel columns; use one that has them.
+    const layout = getLevelLayout(2);
+    const grid = new MazeGrid({ layout });
+
+    const tunnelCols = [...grid.tunnelCols];
+    expect(tunnelCols.length).toBeGreaterThan(0);
+
+    fc.assert(
+      fc.property(
+        // Pick a tunnel column and an edge to step off:
+        //  - 'north' from row 0        -> should wrap to rows - 1
+        //  - 'south' from row rows - 1 -> should wrap to 0
+        fc.constantFrom(...tunnelCols),
+        fc.constantFrom('north', 'south'),
+        (col, facing) => {
+          const startRow = facing === 'north' ? 0 : grid.rows - 1;
+          const result = resolveTunnel(grid, col, startRow, facing);
+
+          // Column unchanged (entry column) and facing preserved.
+          expect(result.col).toBe(col);
+          expect(result.facing).toBe(facing);
+
+          // Row equals the opposite in-bounds edge per MazeGrid wrap logic.
+          const expectedRow = facing === 'north' ? grid.rows - 1 : 0;
+          expect(result.row).toBe(expectedRow);
+
+          // Cross-check against MazeGrid.attemptMove: it computes the wrapped
+          // target row identically; when that tile is enterable it moves there.
+          const wrapped = grid.attemptMove(col, startRow, CARDINAL_TO_DIR[facing]);
+          if (wrapped.moved) {
+            expect(result.col).toBe(wrapped.col);
+            expect(result.row).toBe(wrapped.row);
+          }
+
+          // The resolved row is always in bounds.
+          expect(result.row).toBeGreaterThanOrEqual(0);
+          expect(result.row).toBeLessThan(grid.rows);
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
+
+  it('a step that does not leave a wrap edge is returned unchanged', () => {
+    const layout = getLevelLayout(2);
+    const grid = new MazeGrid({ layout });
+
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: grid.cols - 1 }),
+        fc.integer({ min: 0, max: grid.rows - 1 }),
+        fc.constantFrom(...CARDINALS),
+        (col, row, facing) => {
+          const onTunnelRowEdge =
+            grid.tunnelRows.has(row) &&
+            ((facing === 'west' && col === 0) ||
+              (facing === 'east' && col === grid.cols - 1));
+          const onTunnelColEdge =
+            grid.tunnelCols.has(col) &&
+            ((facing === 'north' && row === 0) ||
+              (facing === 'south' && row === grid.rows - 1));
+          // Only exercise the non-wrapping cases here.
+          fc.pre(!onTunnelRowEdge && !onTunnelColEdge);
+
+          const result = resolveTunnel(grid, col, row, facing);
+          expect(result).toEqual({ col, row, facing });
+        },
+      ),
+      { numRuns: 100 },
+    );
+  });
 });

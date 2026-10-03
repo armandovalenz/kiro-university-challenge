@@ -122,7 +122,13 @@ export function isHouseTile(house, col, row) {
  */
 export function ghostHouseExitTile(house) {
   if (!house) return { ...GHOST_HOUSE_EXIT };
-  return { col: GHOST_HOUSE_DOOR_COL, row: house.minRow - 1 };
+  // Derive the door column from the house CENTER so the exit is correct for any
+  // maze size (the door sits in the middle of the house top). For the base
+  // 28x31 house (cols 11..16) this floors to 13 — matching GHOST_HOUSE_DOOR_COL
+  // — and for a wider maze (e.g. the 36-wide level-3 Overlook maze, house cols
+  // 15..20) it is 17, so the ghosts path out through the actual door.
+  const doorCol = Math.floor((house.minCol + house.maxCol) / 2);
+  return { col: doorCol, row: house.minRow - 1 };
 }
 
 /**

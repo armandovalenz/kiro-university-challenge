@@ -17,7 +17,8 @@ export const TILE = {
   MATH_MAN_SPAWN: 'M',
   GHOST_SPAWN: 'G',
   FRUIT_SPAWN: 'F',
-  TUNNEL: '-',
+  TUNNEL: '-', // horizontal (East↔West) wrap edge, on a tunnel ROW
+  TUNNEL_V: '|', // vertical (North↔South) wrap edge, on a tunnel COLUMN
 };
 
 /** Codes that block movement (collision tiles). */
@@ -31,7 +32,8 @@ export const PELLET_CODES = new Set([TILE.PELLET, TILE.POWER_PELLET]);
 // A Pac-Man-style symmetric maze:
 //   #  wall          .  pellet         (space) empty path
 //   o  power pellet   M  Math Man spawn  G  ghost-house spawn
-//   F  fruit spawn    -  tunnel / horizontal wrap edge
+//   F  fruit spawn    -  horizontal (E↔W) wrap edge
+//   |  vertical (N↔S) wrap edge
 //
 // The central box (rows 12-16) is the ghost house; the door (row 12, cols
 // 13-14) opens upward and the four ghosts spawn inside the interior (rows 13
@@ -74,6 +76,132 @@ export const BASE_MAZE = [
   '############################', // 30
 ];
 
+// --- Level 2 (6th grade): CIRCULAR maze -------------------------------------
+// Concentric square 'rings' (as circular as a tile grid allows) with staggered
+// doorway gaps so the path spirals between rings. Same 28x31 size and the same
+// central ghost house / door / spawns as BASE_MAZE, so every consumer (2D Maze,
+// FP3D MazeGrid, ghost-house helpers) works unchanged. Validated connected:
+// every pellet is reachable from the Math Man spawn and the house exit is open.
+// Four wrap tunnels: a vertical '|' at the TOP and BOTTOM of the central column
+// (N↔S wrap), and a horizontal '-' at the LEFT and RIGHT of a mid row (E↔W
+// wrap).
+export const CIRCULAR_MAZE = [
+  "#############|##############",
+  "#..........................#",
+  "#.o......................o.#",
+  "#..........................#",
+  "#.###########.###########..#",
+  "#.#.....................#..#",
+  "#.#.#########.#########.#..#",
+  "#.#.#.................#.#..#",
+  "#.#.#.#######.#######.#.#..#",
+  "#.#.#.#.............#.#.#..#",
+  "#.#.#.#.#####.#####.#.#.#..#",
+  "#.#.#.#.#.........#.#.#.#..#",
+  "#.#.#.#.#.###  ##.#.#.#.#..#",
+  "#.#.#.#.#.##G  G#.#.#.#.#..#",
+  "#.#.#.#.#.##    #.#.#.#.#..#",
+  "-..........#G  G#....MM....-",
+  "#.#.#.#.#.#######.#.#.#.#..#",
+  "#.#.#.#.#.#.....#.#.#.#.#..#",
+  "#.#.#.#.#.###.###.#.#.#.#..#",
+  "#.#.#.#.#....F....#.#.#.#..#",
+  "#.#.#.#.#####.#####.#.#.#..#",
+  "#.#.#.#.............#.#.#..#",
+  "#.#.#.#######.#######.#.#..#",
+  "#.#.#.................#.#..#",
+  "#.#.#########.#########.#..#",
+  "#.#.....................#..#",
+  "#.###########.###########..#",
+  "#..........................#",
+  "#.o......................o.#",
+  "#..........................#",
+  "#############|##############",
+];
+
+// --- Level 3+ (7th grade): THE SHINING / Overlook hedge maze ----------------
+// A LARGER 39x59 grid (bigger than the 28x31 base/circular mazes) so the dense
+// Overlook-style hedge detail fits: a bordered rectangular hedge with blocky
+// right-angle corridors, a strong central vertical aisle running top→bottom
+// (the iconic middle path), flanking chambers, and a bottom-center entrance
+// approaching the central clearing. It is an ORIGINAL tile layout evoking the
+// Overlook hotel hedge maze — not a trace of any specific artwork.
+//
+// Spawns sit on existing corridor tiles (NO walls moved, size unchanged): the
+// four ghosts (G) spawn in the central chamber at cols 18 & 20, rows 18 & 19,
+// flanking the open col-19 exit aisle. The grid-relative ghost-house helpers
+// (houseRegionFromGrid / ghostHouseExitTile) derive the house from those spawns
+// — bounding box cols 18..20 / rows 18..19, expanded to cols 17..21 /
+// rows 17..20, door col 19 — and the ghosts path straight UP col 19 through the
+// (19,16) exit tile. Math Man (M) spawns lower-center at (19,26); a fruit (F)
+// sits just below the chamber at (19,21); four power pellets (o) mark the
+// corners (rows 1 & 57, cols 2 & 36). FP3D sizes its world from the grid so the
+// bigger maze renders fine in first person. Validated connected: all pellets
+// reachable from the Math Man spawn and the house exit open. The top/bottom
+// central gaps ('...'/'..') are the N↔S wrap corridor.
+export const SHINING_MAZE = [
+  "#################|||###################",
+  "#.o..............MM.................o.#",
+  "#.....................................#",
+  "#..############.#...#.##############..#",
+  "#..#............#...#..............#..#",
+  "#..#.#############################.#..#",
+  "#..#.#............#.#............#.#..#",
+  "#..#.#.##########.#.#.##########.#.#..#",
+  "#..#.#.#..........#.#.#........#.#.#..#",
+  "#..#.#.#.########.#.#.#.######.#.#.#..#",
+  "#..#.#.#.#......#.#.#.#.#....#.#.#.#..#",
+  "#..#.#.#.#.####.#.#.#.######.#.#.#.#..#",
+  "#..#.#.#...#....#...#......#.#.#.#.#..#",
+  "#..#.#.#####.#############.#.#.#.#.#..#",
+  "#............#...........#...#.#.#.#..#",
+  "#..#.#########.#########.#####.#.#.#..#",
+  "#..#.#.........................#......#",
+  "#..#.#.#########.##.##.###########.#..#",
+  "#..#.#.#.......#.#G.G#.........#...#..#",
+  "#..#.#.#.#####.#.#G.G#.#.#####.#.#.#..#",
+  "#..#.#.#.#...#.#.#...#.#.....#.#.#.#..#",
+  "#..#.#.#.#.#.#.#...F...#.#.#.#.#.#.#..#",
+  "#..#.#.#.#.#...#.#...#.#.#.#.#.#.#.#..#",
+  "#..#.#.#.#.#.#.#.#...#.#.#.#.#.#.#.#..#",
+  "#..#.#.#...#.#.#.#...#.#.#.#.#.#.#.#..#",
+  "#..#.#.#####.#.#.#...#.#.#...#.#.#.#..#",
+  "#....#.......#...........#####.#.#.#..#",
+  "#..###########.#.#...#.#.......#...#..#",
+  "#............#.#.#...#.#########.#.#..#",
+  "############.#.#.#...#.#.........#....#",
+  "#........#...#.#.#...#.#.##############",
+  "#..#####.#.###.#.......#.#.......#....#",
+  "#..#...#.#.#...#.#...#.#.#.#####.#.#..#",
+  "#..#.#.#.#.#.#.#.#...#.#.#.#...#.#.#..#",
+  "#..#.#.#.#.#.#...#...#.#.#.#.#.#.#.#..#",
+  "#..#.#.#.#.#.#.#.#...#.#.#.#.#.#.#.#..#",
+  "#..#.#.#.#.#...#.......#...#.#.#.#.#..#",
+  "#..#.#.#.#.###.#.#...#.#####.#.#.#.#..#",
+  "#..#.#.#.#...#.#.#...#.#.....#.#.#.#..#",
+  "#..#.###.###.#.#.#...#.#.#####.#.#.#..#",
+  "#........#...#.#.#...#.........#.#.#..#",
+  "#..#####.#.###.#.#####.#########.#.####",
+  "#..#...#.#.#...........#.......#.#....#",
+  "#..#.#.#.#.#.#.#######.#.#####.#.#.#..#",
+  "#..#.#.#.#.#.#.........#.#...#.#.#.#..#",
+  "#..#.#.#.#.#.#####.#.###.#.#.#.#.#.#..#",
+  "#..#.#.#.#.#.....#.#.#...#.#.#.#.#.#..#",
+  "#..#.#.#.#.#####.#.#.#.###.#.#.#.#.#..#",
+  "#..#.#.#.#.....#.#.#.#.....#.#.#.#.#..#",
+  "#..#.#.#.#####.#.#.#.#######.#.#.#.#..#",
+  "#..#.#.#.......#.#.#.........#.#.#.#..#",
+  "#..#.#.#########.#.###########.#.#.#..#",
+  "#..#.#.............#.............#.#..#",
+  "#..#.###############.#############.#..#",
+  "#..#...............#.#.............#..#",
+  "#..###############.#.#.#############..#",
+  "#..................#..................#",
+  "#.o................#................o.#",
+  "#####################||################"
+];
+
+
 /**
  * Return the tile-code rows for a given (1-based) level. The layout is shared
  * across levels for now; `level` is accepted so callers/`Maze.reset(level)` can
@@ -82,10 +210,18 @@ export const BASE_MAZE = [
  * @returns {string[]} array of equal-length tile-code rows
  */
 export function getLevelLayout(level = 1) {
-  // Currently one shared layout; kept as a function so future levels can vary
-  // the maze while preserving the API.
-  void level;
-  return BASE_MAZE;
+  // Per-level maze variety, tied to the grade progression (level 1 = 5th grade,
+  // level 2 = 6th, level 3+ = 7th):
+  //   level 1  -> BASE_MAZE     (the classic Pac-Man-style layout)
+  //   level 2  -> CIRCULAR_MAZE (concentric rings for 6th grade)
+  //   level 3+ -> SHINING_MAZE  (the Overlook hedge maze for 7th grade; the
+  //               grade caps at 7, so every level beyond 3 reuses it).
+  // All three are 28x31 with the same central ghost house, so every consumer
+  // (2D Maze, FP3D MazeGrid, ghost-house helpers, pellet logic) is unchanged.
+  const n = Number.isFinite(level) ? Math.trunc(level) : 1;
+  if (n <= 1) return BASE_MAZE;
+  if (n === 2) return CIRCULAR_MAZE;
+  return SHINING_MAZE;
 }
 
 /**

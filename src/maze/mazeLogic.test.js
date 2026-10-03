@@ -69,6 +69,86 @@ describe('MazeGrid — Property 5: Movement respects walls', () => {
   });
 });
 
+describe('MazeGrid — Property 5 (vertical tunnels): Movement wraps on tunnel columns', () => {
+  // **Validates: Requirements 1.2, 1.3**
+  // Levels 2 and 3 add vertical ('|') wrap edges on a central column. For any
+  // tile+direction, when the target leaves the top/bottom edge on a tunnelCols
+  // column the mover wraps to the opposite edge row (symmetric to the existing
+  // horizontal row-wrap); every other target still obeys the wall/edge rules.
+  it('attemptMove wraps off top/bottom edges on tunnel columns and respects walls elsewhere', () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom(2, 3), // levels whose layouts carry vertical tunnels
+        (level) => {
+          const grid = new MazeGrid({ level });
+          // The layout must actually have vertical tunnel columns for this to
+          // be meaningful.
+          expect(grid.tunnelCols.size).toBeGreaterThan(0);
+
+          fc.assert(
+            fc.property(anyTile(grid), anyDirection, ({ col, row }, direction) => {
+              const result = grid.attemptMove(col, row, direction);
+              const delta = DIRECTIONS[direction];
+
+              // Compute the (possibly wrapped) target exactly as the grid does:
+              // horizontal wrap on a tunnel row, then vertical wrap on a tunnel
+              // column.
+              let targetCol = col + delta.dx;
+              let targetRow = row + delta.dy;
+              if (grid.tunnelRows.has(targetRow)) {
+                if (targetCol < 0) targetCol = grid.cols - 1;
+                else if (targetCol >= grid.cols) targetCol = 0;
+              }
+              if (grid.tunnelCols.has(targetCol)) {
+                if (targetRow < 0) targetRow = grid.rows - 1;
+                else if (targetRow >= grid.rows) targetRow = 0;
+              }
+
+              if (grid.canEnter(targetCol, targetRow)) {
+                expect(result.moved).toBe(true);
+                expect(result.col).toBe(targetCol);
+                expect(result.row).toBe(targetRow);
+              } else {
+                expect(result.moved).toBe(false);
+                expect(result.col).toBe(col);
+                expect(result.row).toBe(row);
+              }
+
+              // A mover never ends on a wall (unless it began on one, which the
+              // layout never does for in-bounds path tiles).
+              if (!grid.isWall(col, row)) {
+                expect(grid.isWall(result.col, result.row)).toBe(false);
+              }
+            }),
+            { numRuns: 150 },
+          );
+        },
+      ),
+      { numRuns: 2 },
+    );
+  });
+
+  it('a step off the top edge on a tunnel column lands on the bottom edge row (and vice versa)', () => {
+    const grid = new MazeGrid({ level: 2 });
+    const tunnelCols = [...grid.tunnelCols];
+    expect(tunnelCols.length).toBeGreaterThan(0);
+
+    fc.assert(
+      fc.property(fc.constantFrom(...tunnelCols), fc.constantFrom('up', 'down'), (col, direction) => {
+        const startRow = direction === 'up' ? 0 : grid.rows - 1;
+        const expectedRow = direction === 'up' ? grid.rows - 1 : 0;
+        const result = grid.attemptMove(col, startRow, direction);
+        // The opposite-edge target is a path tile in these layouts, so the move
+        // succeeds and lands on the wrapped row, same column.
+        expect(result.moved).toBe(true);
+        expect(result.col).toBe(col);
+        expect(result.row).toBe(expectedRow);
+      }),
+      { numRuns: 100 },
+    );
+  });
+});
+
 describe('MazeGrid — Property 6: Tile and world coordinates round-trip', () => {
   // **Validates: Requirements 1.2, 1.3**
   // For any valid tile, converting it to world coordinates and back yields the
@@ -161,10 +241,18 @@ describe('MazeGrid — Property 8: Clearing all pellets advances the level', () 
         expect(g.pelletCount()).toBe(0);
         expect(g.isLevelCleared()).toBe(true);
 
-        // Advancing rebuilds the pellet layer and increments the level.
+        // Advancing rebuilds the pellet layer and increments the level. The
+        // layout now varies by level (level 1 = base, 2 = circular, 3+ = the
+        // Shining maze), so the rebuilt pellet count matches a FRESH grid at the
+        // new level — a non-empty, level-appropriate pellet layer — rather than
+        // the previous level's count. The invariant that matters: clearing all
+        // pellets flips isLevelCleared, and reset() bumps the level and rebuilds
+        // a fresh, non-empty pellet layer (Req 1.5).
         g.reset();
         expect(g.level).toBe(startLevel + 1);
-        expect(g.pelletCount()).toBe(startingPellets);
+        const fresh = new MazeGrid({ level: startLevel + 1 });
+        expect(g.pelletCount()).toBe(fresh.pelletCount());
+        expect(g.pelletCount()).toBeGreaterThan(0);
         expect(g.isLevelCleared()).toBe(false);
       }),
     );

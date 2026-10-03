@@ -126,6 +126,19 @@ export default class FP3DScene extends Phaser.Scene {
     this.renderer = null;
   }
 
+  /**
+   * Map the selected grade to the starting maze level so each grade opens its
+   * own maze: 5th → 1 (base), 6th → 2 (circular), 7th → 3 (the Shining maze).
+   * Falls back to level 1 for an unknown grade. `getLevelLayout(level)` keys the
+   * maze off this level, and winning advances it (and the grade) to the next.
+   * @param {number} grade
+   * @returns {number}
+   */
+  _levelForGrade(grade) {
+    const i = GRADES.indexOf(grade);
+    return i >= 0 ? i + 1 : 1;
+  }
+
   create() {
     // --- Shared systems from the registry (populated by BootScene) -----------
     // These are the SAME instances GameScene reads; FP3D_Mode never forks them.
@@ -140,8 +153,12 @@ export default class FP3DScene extends Phaser.Scene {
     this.storage = this.registry.get('storage') || null;
 
     // Fresh score/lives/level tracker for this run, published on the registry so
-    // UIScene and later tasks share the one instance (Req 5.1, 5.4).
-    this.scoreSystem = new ScoreSystem();
+    // UIScene and later tasks share the one instance (Req 5.1, 5.4). The STARTING
+    // LEVEL is derived from the chosen grade so each grade opens its own maze
+    // immediately: 5th → level 1 (base), 6th → level 2 (circular), 7th → level 3
+    // (the Shining maze) — see getLevelLayout. Winning still advances the level
+    // (and grade) to the next maze.
+    this.scoreSystem = new ScoreSystem({ level: this._levelForGrade(this.grade) });
     this.registry.set('scoreSystem', this.scoreSystem);
 
     // Per-run bank of tagged micro-lessons for fruit collection (Task 15 uses
@@ -160,7 +177,12 @@ export default class FP3DScene extends Phaser.Scene {
     // records the 2D fallback intent instead of crashing (Task 16 wires the
     // actual GameScene handoff + notice, Req 1.6).
     try {
-      this.grid = new MazeGrid({ layout: getLevelLayout(1), level: 1 });
+      // Build the maze for the RUN'S CURRENT LEVEL (set from the chosen grade in
+      // the ScoreSystem above) — NOT a hardcoded level 1 — so 5th grade opens the
+      // base maze, 6th the circular maze, and 7th the Shining maze. MazeGrid reads
+      // getLevelLayout(level) internally, so passing the level is enough.
+      const startLevel = this.scoreSystem ? this.scoreSystem.level : 1;
+      this.grid = new MazeGrid({ level: startLevel });
     } catch (err) {
       // Malformed maze data → fall back to 2D (Task 16), leaving Maze_Data
       // untouched. Record the intent and stop building the 3D scene.

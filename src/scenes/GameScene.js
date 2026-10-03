@@ -70,7 +70,10 @@ export default class GameScene extends Phaser.Scene {
     if (this._preserveScore && existing) {
       this.scoreSystem = existing;
     } else {
-      this.scoreSystem = new ScoreSystem();
+      // Starting level follows the chosen grade so each grade opens its own
+      // maze (5th→1 base, 6th→2 circular, 7th→3 Shining); see getLevelLayout.
+      const gi = GRADES.indexOf(this.grade);
+      this.scoreSystem = new ScoreSystem({ level: gi >= 0 ? gi + 1 : 1 });
       this.registry.set('scoreSystem', this.scoreSystem);
     }
 

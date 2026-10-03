@@ -51,8 +51,10 @@ export class MazeGrid {
 
     /** Tiles that started as pellets (for reset), keyed by "col,row" -> code. */
     this._initialPellets = new Map();
-    /** Rows that contain a tunnel edge (enable horizontal wrap). */
+    /** Rows that contain a '-' tunnel edge (enable horizontal E↔W wrap). */
     this.tunnelRows = new Set();
+    /** Columns that contain a '|' tunnel edge (enable vertical N↔S wrap). */
+    this.tunnelCols = new Set();
     /** Spawn points discovered while parsing. */
     this.mathManSpawn = null;
     this.ghostSpawns = [];
@@ -67,7 +69,14 @@ export class MazeGrid {
         }
         switch (code) {
           case TILE.TUNNEL:
+            // Horizontal wrap edge. Treated as PATH otherwise (not a wall,
+            // not a pellet) since it is neither in WALL_CODES nor PELLET_CODES.
             this.tunnelRows.add(row);
+            break;
+          case TILE.TUNNEL_V:
+            // Vertical wrap edge, mirror of TILE.TUNNEL. Also PATH-like: not a
+            // wall and not a pellet (absent from WALL_CODES / PELLET_CODES).
+            this.tunnelCols.add(col);
             break;
           case TILE.MATH_MAN_SPAWN:
             if (!this.mathManSpawn) this.mathManSpawn = { col, row };
@@ -102,16 +111,21 @@ export class MazeGrid {
   }
 
   /**
-   * True when a tile blocks movement. Out-of-bounds counts as a wall unless the
-   * row is a tunnel row (where entities wrap horizontally rather than hit a
-   * wall). Validates Property 5.
+   * True when a tile blocks movement. Out-of-bounds counts as a wall unless it
+   * sits off a wrap edge: off the left/right edge on a tunnel ROW (horizontal
+   * E↔W wrap) or off the top/bottom edge on a tunnel COLUMN (vertical N↔S
+   * wrap), where entities wrap rather than hit a wall. Validates Property 5.
    */
   isWall(col, row) {
     if (this.inBounds(col, row)) {
       return WALL_CODES.has(this.grid[row][col]);
     }
-    // Off the left/right edge on a tunnel row is not a wall (it wraps).
+    // Off the left/right edge on a tunnel row is not a wall (it wraps E↔W).
     if ((col < 0 || col >= this.cols) && this.tunnelRows.has(row)) {
+      return false;
+    }
+    // Off the top/bottom edge on a tunnel column is not a wall (it wraps N↔S).
+    if ((row < 0 || row >= this.rows) && this.tunnelCols.has(col)) {
       return false;
     }
     return true;
@@ -125,8 +139,10 @@ export class MazeGrid {
   /**
    * Attempt to move one tile from (col,row) in a direction. Returns the new
    * tile when the target is enterable, otherwise the original tile unchanged.
-   * Directions: 'left' | 'right' | 'up' | 'down'. On a tunnel row, stepping off
-   * an edge wraps to the opposite side. Validates Property 5.
+   * Directions: 'left' | 'right' | 'up' | 'down'. On a tunnel ROW, stepping off
+   * a left/right edge wraps to the opposite side (horizontal E↔W); on a tunnel
+   * COLUMN, stepping off a top/bottom edge wraps to the opposite side (vertical
+   * N↔S). Validates Property 5.
    * @returns {{ col: number, row: number, moved: boolean }}
    */
   attemptMove(col, row, direction) {
@@ -134,12 +150,18 @@ export class MazeGrid {
     if (!delta) return { col, row, moved: false };
 
     let targetCol = col + delta.dx;
-    const targetRow = row + delta.dy;
+    let targetRow = row + delta.dy;
 
-    // Horizontal tunnel wrap.
+    // Horizontal tunnel wrap: stepping off a left/right edge onto a tunnel row.
     if (this.tunnelRows.has(targetRow)) {
       if (targetCol < 0) targetCol = this.cols - 1;
       else if (targetCol >= this.cols) targetCol = 0;
+    }
+
+    // Vertical tunnel wrap: stepping off a top/bottom edge onto a tunnel column.
+    if (this.tunnelCols.has(targetCol)) {
+      if (targetRow < 0) targetRow = this.rows - 1;
+      else if (targetRow >= this.rows) targetRow = 0;
     }
 
     if (this.canEnter(targetCol, targetRow)) {
@@ -196,22 +218,48 @@ export class MazeGrid {
   }
 
   /**
-   * Wrap an object's world x when it is on a tunnel row and has crossed an
-   * edge. Mutates and returns the given position-like object ({ x, y }); the
-   * Phaser wrapper passes a sprite. Returns null-safe.
+   * Pure vertical wrap for a world y-coordinate given the maze height. Returns
+   * the wrapped y. Mirror of {@link wrapX}; used by {@link wrapIfTunnel}.
+   */
+  wrapY(y) {
+    const height = this.rows * this.tileSize;
+    if (y < 0) return y + height;
+    if (y >= height) return y - height;
+    return y;
+  }
+
+  /**
+   * Wrap an object's world position when it sits on a wrap edge and has crossed
+   * it: horizontal x-wrap on a tunnel ROW, vertical y-wrap on a tunnel COLUMN.
+   * Mutates and returns the given position-like object ({ x, y }); the Phaser
+   * wrapper passes a sprite. Returns null-safe.
    */
   wrapIfTunnel(entity) {
     if (!entity) return entity;
-    const { row } = this.worldToTile(entity.x, entity.y);
+    const { col, row } = this.worldToTile(entity.x, entity.y);
+    let wrapped = false;
+
+    // Horizontal E↔W wrap on a tunnel row.
     if (this.tunnelRows.has(row)) {
-      const wrapped = this.wrapX(entity.x);
-      // Flag the actual edge crossing (x moved) so callers can react, e.g. play
-      // the teleport SFX. Cleared to false whenever no wrap happened this call.
-      entity.tunnelWrapped = wrapped !== entity.x;
-      entity.x = wrapped;
-      return entity;
+      const wx = this.wrapX(entity.x);
+      if (wx !== entity.x) {
+        entity.x = wx;
+        wrapped = true;
+      }
     }
-    entity.tunnelWrapped = false;
+
+    // Vertical N↔S wrap on a tunnel column.
+    if (this.tunnelCols.has(col)) {
+      const wy = this.wrapY(entity.y);
+      if (wy !== entity.y) {
+        entity.y = wy;
+        wrapped = true;
+      }
+    }
+
+    // Flag the actual edge crossing (x or y moved) so callers can react, e.g.
+    // play the teleport SFX. Cleared to false whenever no wrap happened.
+    entity.tunnelWrapped = wrapped;
     return entity;
   }
 
