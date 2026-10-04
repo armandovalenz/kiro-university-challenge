@@ -393,13 +393,13 @@ flowchart TD
 
 These Core Properties cover the **framework-agnostic** gesture logic only — the vector-to-direction resolver (`gestureResolve`) and the Gesture_Classifier (`gestureClassifier`). Purely visual, DOM/ARIA, browser-API, and scene-flow criteria — the Floating_Joystick anchoring and touch wiring (Req 1), interaction under the Crosshair (Req 5.1–5.3, 5.6, 5.7), the Interaction_Indicator (Req 6), keyboard/interchangeable-input/freeze/reduced-motion behavior (Req 8), the Fullscreen_Toggle (Req 9), and the menu 3D-only launch plus internal 2D fallback (Req 10) — stay example-based/integration (see Testing Strategy) and are **not** forced into properties, mirroring how the FP3D design treats its visual/scene criteria. Grid-locked movement, tunnel-wrap, and at-most-one buffering are **reused** from the FP3D design's Properties 2, 4, and 5 (`fp3dLogic`) and are not re-proven here; the gesture layer only produces the intents those functions consume.
 
-After the prework analysis, redundant candidates were consolidated: the per-cardinal sector mappings (Req 2.1–2.3) and the diagonal ordering (Req 2.4) are folded into the single totality property (Property 1) rather than one property each, and the sub-deadzone boundary (Req 2.8) is its partner (Property 2); the forward-assist precedence (Req 3.1, 3.3) is Property 3.
+After the prework analysis, redundant candidates were consolidated: the per-cardinal sector mappings (Req 2.1–2.3) and the diagonal ordering (Req 2.4) are folded into the single totality property (Property 1) rather than one property each, and the sub-deadzone boundary (Req 2.8) is its partner (Property 2); the forward-assist precedence (Req 3.1, 3.3) is Property 3, and its complement — deviation beyond the cone resolves by nearest sector without the forward snap (Req 3.2) — is covered by Property 1's full-circle sweep rather than a separate property.
 
 ### Property 1: Movement-vector resolution is total and single-valued at or above the deadzone
 
-*For any* Movement_Vector whose magnitude is at or above the `Movement_Deadzone`, `resolveMovementVector` returns exactly one `move` outcome whose `intent` is exactly one member of `{forward, backward, strafe-left, strafe-right, diagonal}` — never zero and never more than one — and when the `intent` is `diagonal` its `steps` are exactly the two nearest cardinal moves ordered dominant-axis-first.
+*For any* Movement_Vector whose magnitude is at or above the `Movement_Deadzone`, `resolveMovementVector` returns exactly one `move` outcome whose `intent` is exactly one member of `{forward, backward, strafe-left, strafe-right, diagonal}` — never zero and never more than one — and when the `intent` is `diagonal` its `steps` are exactly the two nearest cardinal moves ordered dominant-axis-first. Because the generator sweeps the full angular range, every direction whose deviation from straight up exceeds the `Forward_Assist_Cone` is classified by its nearest sector rather than snapped to forward — the complement of Property 3 (Req 3.2).
 
-**Validates: Requirements 11.2, 2.1, 2.2, 2.3, 2.4**
+**Validates: Requirements 11.2, 2.1, 2.2, 2.3, 2.4, 3.2**
 
 ### Property 2: Below the deadzone resolves to steer, never a move
 

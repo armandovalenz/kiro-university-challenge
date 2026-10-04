@@ -65,9 +65,9 @@ Property tasks carry a `_Properties:_` line linking them to the design's Core Pr
   - **Validates: Requirements 3.7, 3.8**
 
 - [x]* 10. Write property test for scoring/lives reuse
-  - In `fp3dLogic.test.js` (or a colocated pure-logic test), add a `fast-check` property (≥100 cases) asserting that item collection awards the existing `POINTS` value per type via `MazeGrid.pointsFor` + `ScoreSystem.addScore`, and that over any run lives start at 6, `gainLife` never exceeds 10, `loseLife` never drops below 0, a correct answer costs 0 lives, and a wrong answer costs exactly 1 (`lifeCostFor`). Run `npm run test -- --run`.
+  - In `fp3dLogic.test.js` (or a colocated pure-logic test), add a `fast-check` property (≥100 cases) asserting that item collection awards the existing `POINTS` value per type via `MazeGrid.pointsFor` + `ScoreSystem.addScore`, and that over any run lives start at 6, `gainLife` grants a life below the cap and never exceeds 10 (fruit at 10 leaves lives unchanged), `loseLife` never drops below 0, a correct answer costs 0 lives, and a wrong answer costs exactly 1 (`lifeCostFor`). Run `npm run test -- --run`.
   - **Property 7: Scoring and lives reuse matches the 2D rules**
-  - **Validates: Requirements 5.1, 5.3, 5.4, 5.5**
+  - **Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5**
 
 - [x] 11. Checkpoint - pure FP3D logic verified
   - Run `npm run test -- --run` and confirm Properties 1–7 all pass; run `npm run build` and confirm the 2D build is unchanged. Ensure all tests pass, ask the user if questions arise.

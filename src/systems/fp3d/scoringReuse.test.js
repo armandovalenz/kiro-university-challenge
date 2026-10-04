@@ -16,7 +16,7 @@ import { lifeCostFor } from '../QuizSystem.js';
 import { MazeGrid } from '../../maze/mazeLogic.js';
 import { TILE, getLevelLayout } from '../../maze/mazeData.js';
 
-// Feature: first-person-3d-mode, Property 7: Scoring and lives reuse matches the 2D rules — Validates: Requirements 5.1, 5.3, 5.4, 5.5
+// Feature: first-person-3d-mode, Property 7: Scoring and lives reuse matches the 2D rules — Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5
 describe('Property 7: Scoring and lives reuse matches the 2D rules', () => {
   it('awards the existing POINTS value per item type via MazeGrid.pointsFor + ScoreSystem.addScore', () => {
     const grid = new MazeGrid({ layout: getLevelLayout() });

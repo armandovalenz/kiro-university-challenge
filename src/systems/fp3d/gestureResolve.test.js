@@ -35,7 +35,7 @@ function vectorFromUp(angleDeg, magnitude) {
 const { movementDeadzonePx, forwardAssistConeDeg, cardinalSectorDeg } = GESTURE;
 
 describe('gestureResolve — Property 1: movement resolution is total and single-valued at/above the deadzone', () => {
-  // Feature: mobile-gestures-fullscreen, Property 1: Movement-vector resolution is total and single-valued at or above the deadzone — Validates: Requirements 11.2, 2.1, 2.2, 2.3, 2.4
+  // Feature: mobile-gestures-fullscreen, Property 1: Movement-vector resolution is total and single-valued at or above the deadzone — Validates: Requirements 11.2, 2.1, 2.2, 2.3, 2.4, 3.2
   it('returns exactly one move outcome whose intent is one of MOVE_INTENTS, diagonal steps dominant-axis-first', () => {
     fc.assert(
       fc.property(

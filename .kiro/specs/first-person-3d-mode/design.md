@@ -427,9 +427,9 @@ These Core Properties cover the **framework-agnostic** FP3D logic (`fp3dLogic`, 
 
 ### Property 7: Scoring and lives reuse matches the 2D rules
 
-*For any* item type, the points awarded on collection equal the existing `POINTS` value for that type (`pellet`, `powerPellet`, `fruit`) via `MazeGrid.pointsFor` + `ScoreSystem.addScore`; and *for any* `ScoreSystem` run, lives start at 6, `gainLife` never raises lives above 10, `loseLife` never lowers them below 0, a correct answer costs 0 lives and a wrong answer costs exactly 1 (`lifeCostFor`).
+*For any* item type, the points awarded on collection equal the existing `POINTS` value for that type (`pellet`, `powerPellet`, `fruit`) via `MazeGrid.pointsFor` + `ScoreSystem.addScore`; and *for any* `ScoreSystem` run, lives start at 6, `gainLife` grants a life while below the cap and never raises lives above 10 (so a fruit collected at 10 leaves lives unchanged), `loseLife` never lowers them below 0, a correct answer costs 0 lives and a wrong answer costs exactly 1 (`lifeCostFor`).
 
-**Validates: Requirements 5.1, 5.3, 5.4, 5.5**
+**Validates: Requirements 5.1, 5.2, 5.3, 5.4, 5.5**
 
 ## Testing Strategy
 

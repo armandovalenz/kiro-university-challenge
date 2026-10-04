@@ -31,9 +31,9 @@ Property tasks carry a `_Properties:_` line linking them to the design's Core Pr
 
   - [x]* 2.2 Write property test: movement resolution is total and single-valued at or above the deadzone
     - Add `src/systems/fp3d/gestureResolve.test.js` with a `fast-check` property (≥100 cases) drawing vectors as `{ angleDeg ∈ [0,360), magnitude ∈ [deadzone, large] }` and asserting exactly one `move` outcome whose `intent` is exactly one of `MOVE_INTENTS`, with `diagonal` carrying its two nearest-cardinal `steps` dominant-axis-first. Include ±45° boundary angles from the generator.
-    - Tag: `// Feature: mobile-gestures-fullscreen, Property 1: Movement-vector resolution is total and single-valued at or above the deadzone — Validates: Requirements 11.2, 2.1, 2.2, 2.3, 2.4` and run `npm run test -- --run`.
+    - Tag: `// Feature: mobile-gestures-fullscreen, Property 1: Movement-vector resolution is total and single-valued at or above the deadzone — Validates: Requirements 11.2, 2.1, 2.2, 2.3, 2.4, 3.2` and run `npm run test -- --run`.
     - **Property 1: Movement-vector resolution is total and single-valued at or above the deadzone**
-    - **Validates: Requirements 11.2, 2.1, 2.2, 2.3, 2.4**
+    - **Validates: Requirements 11.2, 2.1, 2.2, 2.3, 2.4, 3.2**
 
   - [x]* 2.3 Write property test: below the deadzone resolves to steer, never a move
     - In `gestureResolve.test.js`, add a `fast-check` property (≥100 cases) drawing vectors with magnitude `[0, deadzone)` (including zero-length) and asserting the outcome is always `{ kind:'steer' }` toward a nearest cardinal and never a `move` intent.
