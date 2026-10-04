@@ -4,7 +4,7 @@
 
 This plan implements Math Man as a Phaser 3 + Vite browser game, ordered so the game is runnable early and grows incrementally. Each task is coding-only and builds on prior tasks. Foundational modules (project scaffold, Storage, ScoreSystem) come first, followed by scenes and gameplay, then the educational systems (quiz/lesson), and finally audio, mandatory property-based tests, and verification. Task 18 covers the required property-based test coverage for the pure logic modules; additional example-based unit tests are discretionary.
 
-The testable acceptance criteria are captured as universal **Correctness Properties** (`Property 1`–`Property 30`) in `design.md` and validated with **property-based testing** (Vitest + `fast-check`) in task 18. Tasks that own a pure-logic module list the properties they must satisfy via a `_Properties:_` line, preserving the requirement → property → task → test trace. Property tests are **mandatory** per `.kiro/steering/testing.md`: task 18 must be executed (not skipped or deferred), and a pure-logic task is not done until its associated property tests exist and pass.
+The testable acceptance criteria are captured as universal **Correctness Properties** (`Property 1`–`Property 31`) in `design.md` and validated with **property-based testing** (Vitest + `fast-check`) in task 18. Tasks that own a pure-logic module list the properties they must satisfy via a `_Properties:_` line, preserving the requirement → property → task → test trace. Property tests are **mandatory** per `.kiro/steering/testing.md`: task 18 must be executed (not skipped or deferred), and a pure-logic task is not done until its associated property tests exist and pass.
 
 ## Tasks
 
@@ -53,8 +53,9 @@ The testable acceptance criteria are captured as universal **Correctness Propert
   - Create `src/maze/mazeData.js` (tile-code rows) and `src/maze/Maze.js` that builds a Phaser Tilemap with a wall collision layer.
   - Implement helpers: `isWall`, `tileToWorld`, `worldToTile`, `wrapIfTunnel`, `pelletCount`, `eatPelletAt`, and `reset(level)`.
   - Spawn pellets and fruit points as sprite groups from the tile codes, using icons from `05_collectibles_and_math_icons.png`.
-  - _Requirements: 1.1, 1.3, 1.5, 13.2_
-  - _Properties: Property 5, Property 6, Property 7, Property 8_
+  - Expose `pointsFor(tileCode)` returning the fixed values `POINTS.pellet` = 10 and `POINTS.powerPellet` = 100.
+  - _Requirements: 1.1, 1.3, 1.5, 1.7, 13.2_
+  - _Properties: Property 5, Property 6, Property 7, Property 8, Property 31_
 
 - [x] 8. Implement Math Man with grid-locked movement and input
   - Create `src/entities/MathMan.js` as a Phaser sprite using frames from `04_mascot_sprite_sheet.png`, with `direction`/`nextDirection`/`speed`.
@@ -65,9 +66,10 @@ The testable acceptance criteria are captured as universal **Correctness Propert
 
 - [x] 9. Wire pellet collection, scoring, and the HUD (UIScene)
   - Create `src/scenes/GameScene.js` that builds the maze and Math Man and runs the gameplay `update()`.
-  - Use Arcade overlap to eat pellets, remove them, and call `ScoreSystem.addScore`.
+  - Use Arcade overlap to eat pellets, remove them, and call `ScoreSystem.addScore` with the pellet's `pointsFor` value (regular 10, power pellet 100).
   - Create `src/scenes/UIScene.js` run in parallel to display score, lives (life icons from `05_collectibles_and_math_icons.png`), and level, styled with the UI kit (`06_ui_kit.png`) and updating on `ScoreSystem` events.
-  - _Requirements: 1.1, 1.4, 1.6, 13.2, 13.3_
+  - _Requirements: 1.1, 1.4, 1.6, 1.7, 13.2, 13.3_
+  - _Properties: Property 7, Property 31_
 
 - [x] 10. Implement Einstein ghosts and AI
   - Create `src/entities/Ghost.js` as a Phaser sprite with a color and a Pac-Man-style `personality` (red chase, pink ahead, cyan vector, orange chase/scatter).
@@ -123,12 +125,12 @@ The testable acceptance criteria are captured as universal **Correctness Propert
 
 - [x] 18. Add property-based tests for pure logic modules (mandatory)
   - Configure Vitest (the `vitest` + `fast-check` devDependencies are added in task 1) and add a `test` script that runs the suite once (non-watch).
-  - Implement the **Core Properties** (`Property 1`–`Property 30` in `design.md`) as `fast-check` properties, each generating many randomized inputs and shrinking counterexamples on failure. Name every test after its property and include its `Validates: Requirements x.y` link so the requirement → property → test trace is explicit.
-  - Group by module: `ScoreSystem` — Properties 1, 2, 3, 4 (lives start at six, lives bounds 0..10, game-over at zero, restart reset); `Maze` helpers — Properties 5, 6, 7, 8 (movement respects walls, tile/world round-trip, pellet eat, level clear); `QuestionBank` — Properties 9, 10, 12, 13, 30 (grade/filter match, record validity, no immediate repeat, fallback set); `QuizSystem` — Property 11 (answer checking + life cost); `LessonBank` — Property 14 (lessons vary); `Storage` — Properties 15, 16, 17, 18, 19 (persisted monotonic high score, in-memory fallback, quiz stats, difficulty default/persist, single global high score); `AudioBus` map — Properties 20, 21, 22 (event→sound totality, mute persistence + no gameplay effect, missing-asset no-op). Include Property 23 (ghost legal-move invariant) and Property 24 (optional difficulty scaling) where the config/AI helpers are pure; `Maze` helpers also own Property 25 (saved life keeps Math Man in place, ghosts go home) and Property 26 (random fruit tile) and Property 27 (one fruit per quadrant); `pressure.js` owns Properties 28–29 (ghost walking distance + gradual score speed-up) in `src/systems/pressure.test.js` in `src/maze/catchAndFruit.test.js`.
+  - Implement the **Core Properties** (`Property 1`–`Property 31` in `design.md`) as `fast-check` properties, each generating many randomized inputs and shrinking counterexamples on failure. Name every test after its property and include its `Validates: Requirements x.y` link so the requirement → property → test trace is explicit.
+  - Group by module: `ScoreSystem` — Properties 1, 2, 3, 4 (lives start at six, lives bounds 0..10, game-over at zero, restart reset); `Maze` helpers — Properties 5, 6, 7, 8, 31 (movement respects walls, tile/world round-trip, pellet eat, level clear, fixed pellet point values); `QuestionBank` — Properties 9, 10, 12, 13, 30 (grade/filter match, record validity, no immediate repeat, fallback set); `QuizSystem` — Property 11 (answer checking + life cost); `LessonBank` — Property 14 (lessons vary); `Storage` — Properties 15, 16, 17, 18, 19 (persisted monotonic high score, in-memory fallback, quiz stats, difficulty default/persist, single global high score); `AudioBus` map — Properties 20, 21, 22 (event→sound totality, mute persistence + no gameplay effect, missing-asset no-op). Include Property 23 (ghost legal-move invariant) and Property 24 (optional difficulty scaling) where the config/AI helpers are pure; `Maze` helpers also own Property 25 (saved life keeps Math Man in place, ghosts go home), Property 26 (random fruit tile), Property 27 (one fruit per quadrant), and Property 31 (fixed pellet point values) in `src/maze/catchAndFruit.test.js`; `pressure.js` owns Properties 28–29 (ghost walking distance + gradual score speed-up) in `src/systems/pressure.test.js`.
   - Run them with `npm run test -- --run`; these tests are required (not optional) and must pass before the owning pure-logic tasks are marked done. A failing property signals a fix to the implementation, the property, or the requirement — decide per case rather than weakening or deleting the test.
   - The example-based acceptance criteria (see the Correctness Properties "Example-based criteria" table) stay covered by the manual/integration and cross-browser checks in task 19, not here.
-  - _Requirements: 2.1, 2.2, 2.3, 2.5, 2.6, 4.3, 4.5, 4.6, 4.8, 4.9, 5.5, 6.4, 6.5, 6.6, 10.2, 10.5, 10.6, 12.2, 12.4, 12.5_
-  - _Properties: Property 1–Property 22 (Property 23, Property 24 where pure)_
+  - _Requirements: 1.7, 2.1, 2.2, 2.3, 2.5, 2.6, 4.3, 4.5, 4.6, 4.8, 4.9, 5.5, 6.4, 6.5, 6.6, 10.2, 10.5, 10.6, 12.2, 12.4, 12.5_
+  - _Properties: Property 1–Property 31 (Property 23, Property 24 where pure)_
 
 - [x] 19. Accessibility, fallbacks, and final verification
   - Ensure quiz/lesson modals are keyboard-operable and dismissible, with sufficient contrast; add visible life gain/loss feedback.
@@ -220,6 +222,6 @@ graph TD
 
 - Requirement references map back to `requirements.md`; the design details each module in `design.md`.
 - The game should be manually runnable after task 9 (maze, movement, pellets, HUD); ghosts and the educational loop layer on top.
-- Task 18 is mandatory (per `.kiro/steering/testing.md`): it applies property-based testing (Vitest + `fast-check`) against the `Property 1`–`Property 30` Correctness Properties in `design.md`. The `_Properties:_` line on each implementation task links that module's code to the properties it must satisfy, and those properties must have passing tests before the owning task is done.
+- Task 18 is mandatory (per `.kiro/steering/testing.md`): it applies property-based testing (Vitest + `fast-check`) against the `Property 1`–`Property 31` Correctness Properties in `design.md`. The `_Properties:_` line on each implementation task links that module's code to the properties it must satisfy, and those properties must have passing tests before the owning task is done.
 - Audio (task 17) is wired near the end so each event cue can attach to working game events, but placeholder MP3s can be dropped in earlier.
 - Final art and audio assets can start as placeholders; the BootScene load-error handling keeps the game runnable until real assets are supplied.

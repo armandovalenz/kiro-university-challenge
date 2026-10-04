@@ -573,8 +573,8 @@ Vite pairs natively with **Vitest** for the framework-agnostic logic. Property-b
 
 The testable invariants in the **Correctness Properties** section are validated with **property-based testing (PBT)** rather than only example-based cases. Instead of asserting one concrete input/output pair, each property states a universal rule and the tool generates hundreds of randomized inputs (including empty values, boundaries, and unusual characters) that try to violate it; on failure it *shrinks* the counterexample to the smallest reproducing input.
 
-- **Tooling:** [`fast-check`](https://github.com/dubzzz/fast-check) as the PBT generator, run through Vitest (`fast-check` integrates directly with Vitest's `test`/`expect`). It is added as an optional `devDependency` alongside Vitest.
-- **Source of properties:** each Core Property (`Property 1`–`Property 30`) in Correctness Properties maps to a `fast-check` `test.prop`/`fc.assert(fc.property(...))` case over generated inputs, and carries its `Validates: Requirements x.y` link in the test name/comment so the requirement → property → test trace is preserved.
+- **Tooling:** [`fast-check`](https://github.com/dubzzz/fast-check) as the PBT generator, run through Vitest (`fast-check` integrates directly with Vitest's `test`/`expect`). It is kept as a `devDependency` alongside Vitest (property tests are mandatory per `.kiro/steering/testing.md`, so this is not optional).
+- **Source of properties:** each Core Property (`Property 1`–`Property 31`) in Correctness Properties maps to a `fast-check` `test.prop`/`fc.assert(fc.property(...))` case over generated inputs, and carries its `Validates: Requirements x.y` link in the test name/comment so the requirement → property → test trace is preserved.
 - **Scope:** PBT targets the framework-agnostic modules (`ScoreSystem`, `QuestionBank`, `LessonBank`, `Storage`, `Maze` helpers, and the `AudioBus` event→sound map), which take plain data and need no Phaser runtime.
 - **Mandatory:** per `.kiro/steering/testing.md`, property tests are required — every Core Property must have a passing `fast-check` test before its owning task is complete. The example-based criteria remain covered by the manual/integration checks above.
 - **On failure:** treat a shrunk counterexample as a signal to fix the implementation, tighten the property, or refine the requirement — not automatically the test.
@@ -599,6 +599,7 @@ The testable properties map directly onto the framework-agnostic modules called 
 
 After analyzing all acceptance criteria, several properties can be consolidated:
 - Properties for lives arithmetic (Req 2.2 decrement, 2.4 increment, 2.5/2.6 cap at 10, 5.2 fruit life) all describe one bounded-counter invariant — we'll combine them into a single lives-bounds property.
+- Pellet scoring splits into two independent facts: eating a pellet removes exactly that pellet and adds its value (Req 1.4 → Property 7), and the fixed point values themselves — regular 10, power pellet 100 (Req 1.7 → Property 31). We keep them as two properties so the removal/count invariant and the value table are each exercised directly.
 - Wall-blocking (Req 1.3) and legal forward movement (Req 1.2) are two halves of the same movement rule — we'll combine them.
 - Correct-answer (Req 4.5) and wrong-answer (Req 4.6) handling are the two branches of one answer-checking contract — we'll combine them.
 - High-score persistence (Req 6.2/6.3) and update-when-greater (Req 6.4) describe one monotonic persisted maximum — we'll combine them.
@@ -636,6 +637,10 @@ The remaining criteria are either independent properties (below) or example-base
 ### Property 7: Eating a pellet removes it and scores
 *For any* pellet tile occupied by Math Man, eating removes exactly that pellet (the pellet count drops by one) and increases the score by the pellet's value.
 **Validates: Requirements 1.4**
+
+### Property 31: Pellet point values are fixed
+*For any* collectible tile, `pointsFor` returns exactly `POINTS.powerPellet` = 100 for a big (power) pellet — double its original 50 — and `POINTS.pellet` = 10 for a regular pellet, so a power pellet is always worth 10× a regular pellet.
+**Validates: Requirements 1.7**
 
 ### Property 8: Clearing all pellets advances the level
 *For any* maze state where the pellet count reaches 0, the level increments and the pellet layer is rebuilt.
@@ -719,15 +724,15 @@ The remaining criteria are either independent properties (below) or example-base
 
 ### Property 28: Pressure uses walking distance to the nearest ghost
 *For any* open tile, ghost set and search radius, `nearestGhostPathDistance` is 0 when a ghost shares the tile, 1 for a ghost one legal move away, otherwise a value in `[1, maxSteps]` or `Infinity`; adding ghosts never increases it, a larger radius never changes a found distance, and it is never shorter than the wrap-aware Manhattan distance (walls only lengthen paths).
-**Validates: Requirements 12.9**
+**Validates: Requirements 12.9 (pressure distance)**
+
+### Property 29: Score music speeds up gradually as a ghost closes in
+*For any* distance and config, `pressureTargetRate` is 1 at or beyond `startTiles`, `maxRate` at distance 0, always within `[1, maxRate]`, never slower for a closer ghost, and with `curve >= 1` never faster than the linear ramp at the same distance; and *for any* current/target rate and frame time, `approachRate` moves toward the target without overshooting and by at most `rampUpPerSec` (or `rampDownPerSec`) × seconds, landing exactly on the target when it is within that step.
+**Validates: Requirements 12.9 (score-music speed-up curve)**
 
 ### Property 30: No question repeats within a level
 *For any* grade pool of N questions, RNG sequence and prior history, after `QuestionBank.startLevel()` the next N questions served are all distinct, the first one differs from the last question asked before the level began, and once the pool is exhausted a new cycle starts without an immediate repeat.
 **Validates: Requirements 4.10**
-
-### Property 29: Score music speeds up gradually as a ghost closes in
-*For any* distance and config, `pressureTargetRate` is 1 at or beyond `startTiles`, `maxRate` at distance 0, always within `[1, maxRate]`, never slower for a closer ghost, and with `curve >= 1` never faster than the linear ramp at the same distance; and *for any* current/target rate and frame time, `approachRate` moves toward the target without overshooting and by at most `rampUpPerSec` (or `rampDownPerSec`) × seconds, landing exactly on the target when it is within that step.
-**Validates: Requirements 12.9**
 
 ### Example-based criteria
 
@@ -765,6 +770,8 @@ These are not expressed as universal properties; each line notes why and how it 
 | Req 12.6 (autoplay) | Autoplay-blocked resume after first interaction — browser autoplay-policy integration. |
 | Req 12.7 | Web Audio low-latency pre-decoded playback — architectural/engine concern. |
 | Req 12.8 | Looping/tempo-shifting music — optional audio enhancement. |
+| Req 12.9 (win-music cue) | Playing "12. Stage Clear.mp3" once on level clear / correct answer then returning to the gameplay loop — audio playback scenario. (The pressure distance and gradual speed-up curve are captured as Properties 28 and 29.) |
+| Req 12.10 | Playing the tunnel/teleport sound once per tunnel crossing — audio playback tied to Phaser movement/scene events, verified by scenario test. |
 | Req 13.1–13.4 | Sprite/art rendering (mascot, collectibles, UI kit, ghosts) — visual assertions. |
 | Req 13.5 | Fallback to drawn shape/text on asset load failure — rendering fallback path, integration/visual check. |
 | Req 13.6 | Optimized/resized source art — build/asset-pipeline concern. |
